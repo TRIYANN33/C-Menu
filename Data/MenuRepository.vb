@@ -1,0 +1,94 @@
+Imports Microsoft.Data.Sqlite
+Imports System.IO
+Imports System.Collections.Generic
+
+Public Class MenuRepository
+    Private ReadOnly connectionString As String
+
+    Public Sub New()
+        Dim folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu")
+        Directory.CreateDirectory(folder)
+        connectionString = New SqliteConnectionStringBuilder With {.DataSource = Path.Combine(folder, "CMenu.db")}.ToString()
+        Using cn As New SqliteConnection(connectionString)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "CREATE TABLE IF NOT EXISTS Menus (Id INTEGER PRIMARY KEY AUTOINCREMENT, SaisieLe TEXT NOT NULL, ModifierLe TEXT, NumMenu TEXT NOT NULL, NumSousMenu TEXT NOT NULL, Menu TEXT NOT NULL, SousMenu TEXT NOT NULL, Info01 TEXT NOT NULL, Info02 TEXT NOT NULL, Action TEXT NOT NULL, Chemin TEXT NOT NULL)"
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Private Shared Sub Bind(cmd As SqliteCommand, item As MenuItem)
+        cmd.Parameters.AddWithValue("$numMenu", item.NumMenu)
+        cmd.Parameters.AddWithValue("$numSousMenu", item.NumSousMenu)
+        cmd.Parameters.AddWithValue("$menu", item.Menu)
+        cmd.Parameters.AddWithValue("$sousMenu", item.SousMenu)
+        cmd.Parameters.AddWithValue("$info01", item.Info01)
+        cmd.Parameters.AddWithValue("$info02", item.Info02)
+        cmd.Parameters.AddWithValue("$action", item.Action)
+        cmd.Parameters.AddWithValue("$chemin", item.Chemin)
+    End Sub
+
+    Public Sub Insert(item As MenuItem)
+        Using cn As New SqliteConnection(connectionString)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Menu, SousMenu, Info01, Info02, Action, Chemin) VALUES ($created, NULL, $numMenu, $numSousMenu, $menu, $sousMenu, $info01, $info02, $action, $chemin)"
+                cmd.Parameters.AddWithValue("$created", DateTime.Now.ToString("o"))
+                Bind(cmd, item)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Public Sub Update(item As MenuItem)
+        Using cn As New SqliteConnection(connectionString)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Action=$action, Chemin=$chemin WHERE Id=$id"
+                cmd.Parameters.AddWithValue("$modified", DateTime.Now.ToString("o"))
+                cmd.Parameters.AddWithValue("$id", item.Id)
+                Bind(cmd, item)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Public Sub Delete(id As Integer)
+        Using cn As New SqliteConnection(connectionString)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id"
+                cmd.Parameters.AddWithValue("$id", id)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Public Function GetAll(Optional search As String = "", Optional alphabetical As Boolean = False) As List(Of MenuItem)
+        Dim results As New List(Of MenuItem)()
+        Using cn As New SqliteConnection(connectionString)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "SELECT Id,SaisieLe,ModifierLe,NumMenu,NumSousMenu,Menu,SousMenu,Info01,Info02,Action,Chemin FROM Menus WHERE $search='' OR NumMenu LIKE $pattern OR NumSousMenu LIKE $pattern OR Menu LIKE $pattern OR SousMenu LIKE $pattern ORDER BY " & If(alphabetical, "Menu COLLATE NOCASE, SousMenu COLLATE NOCASE", "Id DESC")
+                cmd.Parameters.AddWithValue("$search", search)
+                cmd.Parameters.AddWithValue("$pattern", "%" & search & "%")
+                Using reader = cmd.ExecuteReader()
+                    While reader.Read()
+                        Dim modified As DateTime? = Nothing
+                        If Not reader.IsDBNull(2) Then modified = DateTime.Parse(reader.GetString(2), Globalization.CultureInfo.InvariantCulture, Globalization.DateTimeStyles.RoundtripKind)
+                        results.Add(New MenuItem With {
+                            .Id = reader.GetInt32(0),
+                            .SaisieLe = DateTime.Parse(reader.GetString(1), Globalization.CultureInfo.InvariantCulture, Globalization.DateTimeStyles.RoundtripKind),
+                            .ModifierLe = modified,
+                            .NumMenu = reader.GetString(3), .NumSousMenu = reader.GetString(4),
+                            .Menu = reader.GetString(5), .SousMenu = reader.GetString(6),
+                            .Info01 = reader.GetString(7), .Info02 = reader.GetString(8),
+                            .Action = reader.GetString(9), .Chemin = reader.GetString(10)})
+                    End While
+                End Using
+            End Using
+        End Using
+        Return results
+    End Function
+End Class
