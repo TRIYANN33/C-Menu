@@ -1,6 +1,7 @@
 Imports System
 Imports System.Diagnostics
 Imports System.IO
+Imports System.IO.Compression
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
@@ -88,6 +89,17 @@ Public NotInheritable Class CMenuPublisher
                                 Environment.NewLine & shortcutError.Message, "Raccourci C-Menu",
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End Try
+            Dim zipPath = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Menu", "C-Menu-Distribution.zip")
+            If File.Exists(zipPath) Then File.Delete(zipPath)
+            Using archive = ZipFile.Open(zipPath, ZipArchiveMode.Create)
+                For Each filePath In Directory.GetFiles(destination)
+                    If Not filePath.EndsWith(".db", StringComparison.OrdinalIgnoreCase) AndAlso
+                       Not filePath.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase) Then
+                        archive.CreateEntryFromFile(filePath, "C-Menu/" & Path.GetFileName(filePath),
+                                                    CompressionLevel.Optimal)
+                    End If
+                Next
+            End Using
             Return publishedExe
         Finally
             Try
