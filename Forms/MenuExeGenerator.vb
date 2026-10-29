@@ -6,6 +6,7 @@ Imports System.Reflection
 Imports System.Text
 Imports System.Threading.Tasks
 Imports Microsoft.Data.Sqlite
+Imports System.Windows.Forms
 
 Public NotInheritable Class MenuExeGenerator
     Private Sub New()
@@ -91,6 +92,37 @@ Public NotInheritable Class MenuExeGenerator
                 source.BackupDatabase(target)
             End Using
         End Using
+        ' Créer un raccourci sur le Bureau pour le menu autonome généré.
+        Try
+            Dim shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), safe & ".lnk")
+            Dim script = "$ErrorActionPreference = 'Stop'; " &
+                "$w = New-Object -ComObject WScript.Shell; " &
+                "$s = $w.CreateShortcut('" & shortcutPath.Replace("'", "''") & "'); " &
+                "$s.TargetPath = '" & exePath.Replace("'", "''") & "'; " &
+                "$s.WorkingDirectory = '" & publishFolder.Replace("'", "''") & "'; " &
+                "$s.IconLocation = '" & exePath.Replace("'", "''") & ",0'; " &
+                "$s.Save()"
+            Dim shortcutStart As New ProcessStartInfo("powershell.exe") With {
+                .UseShellExecute = False,
+                .CreateNoWindow = True,
+                .RedirectStandardError = True
+            }
+            shortcutStart.ArgumentList.Add("-NoProfile")
+            shortcutStart.ArgumentList.Add("-NonInteractive")
+            shortcutStart.ArgumentList.Add("-Command")
+            shortcutStart.ArgumentList.Add(script)
+            Using shortcutProcess = Process.Start(shortcutStart)
+                If shortcutProcess Is Nothing Then Throw New InvalidOperationException("PowerShell ne démarre pas.")
+                Dim shortcutErrorText = Await shortcutProcess.StandardError.ReadToEndAsync()
+                Await shortcutProcess.WaitForExitAsync()
+                If shortcutProcess.ExitCode <> 0 Then Throw New InvalidOperationException(shortcutErrorText)
+            End Using
+            If Not File.Exists(shortcutPath) Then Throw New IOException("Le raccourci n'a pas été enregistré sur le Bureau.")
+        Catch shortcutError As Exception
+            MessageBox.Show("Le menu " & safe & ".exe a été créé, mais le raccourci Bureau a échoué :" &
+                            Environment.NewLine & shortcutError.Message, "Raccourci Créer Menu",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
         Return exePath
     End Function
 
