@@ -121,7 +121,7 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
-        toolbarPanel.Controls.Add(ButtonFor("Créer Menu", AddressOf OpenMenuClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Créer Menus", AddressOf OpenMenuClicked))
 #If Not DISTRIBUTED Then
         toolbarPanel.Controls.Add(ButtonFor("Publier", AddressOf PublishCMenuClicked))
         toolbarPanel.Controls.Add(ButtonFor("Sauvegarder", AddressOf BackupClicked))
