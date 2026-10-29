@@ -6,6 +6,7 @@ Imports System.Linq
 Imports System.Diagnostics
 Imports System.IO
 Imports System.IO.Compression
+Imports System.Text.Json
 
 Public Class FrmMenu
     Inherits Form
@@ -26,7 +27,7 @@ Public Class FrmMenu
     Private miniMode As Boolean = False
     Private normalBounds As Rectangle
     Private normalMinimumSize As Size
-    Private copiedRow As MenuItem
+    Private Const ClipboardRowPrefix As String = "CMENU_ROW_V1:"
     Private selectedId As Integer
     Private sortFields As New List(Of (Field As String, Descending As Boolean))()
     Private activeFilters As New List(Of (Field As String, OperatorName As String, Value As String))()
@@ -441,18 +442,36 @@ Public Class FrmMenu
             MessageBox.Show("Sélectionnez une ligne à copier.", "Copier")
             Return
         End If
-        copiedRow = item
+        Try
+            Clipboard.SetText(ClipboardRowPrefix & JsonSerializer.Serialize(item))
+        Catch ex As Exception
+            MessageBox.Show("Impossible de copier la ligne : " & ex.Message, "Copier",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub PasteRowClicked(sender As Object, e As EventArgs)
-        If copiedRow Is Nothing Then
-            MessageBox.Show("Copiez d'abord une ligne du tableau.", "Coller")
-            Return
-        End If
-        If Not IsValid(copiedRow) Then Return
-        repo.Insert(copiedRow)
-        ClearForm()
-        ReloadGrid()
+        Try
+            If Not Clipboard.ContainsText() Then
+                MessageBox.Show("Copiez d'abord une ligne dans MenuPublier ou C-Menu.", "Coller")
+                Return
+            End If
+            Dim clipboardText = Clipboard.GetText()
+            If Not clipboardText.StartsWith(ClipboardRowPrefix, StringComparison.Ordinal) Then
+                MessageBox.Show("Le presse-papiers ne contient pas une ligne C-Menu.", "Coller")
+                Return
+            End If
+            Dim item = JsonSerializer.Deserialize(Of MenuItem)(clipboardText.Substring(ClipboardRowPrefix.Length))
+            If item Is Nothing Then Throw New InvalidDataException("Ligne copiée invalide.")
+            item.Id = 0
+            If Not IsValid(item) Then Return
+            repo.Insert(item)
+            ClearForm()
+            ReloadGrid()
+        Catch ex As Exception
+            MessageBox.Show("Impossible de coller la ligne : " & ex.Message, "Coller",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub DuplicateClicked(sender As Object, e As EventArgs)
