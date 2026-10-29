@@ -9,6 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Menu-Autonome/**/*.vb" />
+    <EmbeddedResource Include="Menu-Autonome/Program.vb" LogicalName="CMenu.Template.Program.vb" />
+    <EmbeddedResource Include="Menu-Autonome/FrmMenuAutonome.vb" LogicalName="CMenu.Template.FrmMenuAutonome.vb" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.36" />
