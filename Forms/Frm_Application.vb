@@ -4,6 +4,7 @@ Imports System.Globalization
 Imports System.IO
 Imports System.Linq
 Imports System.Windows.Forms
+Imports Microsoft.Data.Sqlite
 
 Public Class Frm_Application
     Inherits Form
@@ -106,7 +107,11 @@ Public Class Frm_Application
                 }
                 AddHandler child.Click, Sub(sender, e)
                     Dim selected = DirectCast(DirectCast(sender, ToolStripMenuItem).Tag, MenuItem)
-                    If IsSlideshow(selected.SousMenu, selected.Action) Then
+                    If String.Equals(selected.SousMenu.Trim(), "Anniversaire", StringComparison.OrdinalIgnoreCase) Then
+                        Using dialog As New FrmAnniversaire()
+                            dialog.ShowDialog(Me)
+                        End Using
+                    ElseIf IsSlideshow(selected.SousMenu, selected.Action) Then
                         StartSlideshow()
                     Else
                         ShowInfo(selected.Info01, selected.Info02)
@@ -321,5 +326,128 @@ Public Class Frm_Application
             MessageBox.Show("Impossible d'ouvrir : " & target & Environment.NewLine & ex.Message,
                             "C-Menu", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
+    End Sub
+End Class
+
+
+Public Class FrmAnniversaire
+    Inherits Form
+
+    Private ReadOnly databaseFile As String = Path.Combine("C:\", "Menu", "applications", "Anniversaire", "Anniversaires.db")
+    Private ReadOnly nom As New TextBox()
+    Private ReadOnly prenom As New TextBox()
+    Private ReadOnly naissance As New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False}
+    Private ReadOnly fete As New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False}
+    Private ReadOnly noter As New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False}
+    Private ReadOnly eventsGrid As New DataGridView With {
+        .Dock = DockStyle.Fill, .ReadOnly = True, .AllowUserToAddRows = False,
+        .AllowUserToDeleteRows = False, .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+        .SelectionMode = DataGridViewSelectionMode.FullRowSelect
+    }
+
+    Public Sub New()
+        Text = "Anniversaires et événements à venir"
+        StartPosition = FormStartPosition.CenterParent
+        Size = New Size(800, 540)
+        MinimumSize = New Size(650, 430)
+        Font = New Font("Segoe UI", 10)
+        Dim entry As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 200, .ColumnCount = 2, .RowCount = 5, .Padding = New Padding(12)}
+        entry.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 180))
+        entry.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+        Dim labels = {"Nom", "Prénom", "Date de naissance", "Date de fête", "Date à noter"}
+        Dim controls As Control() = {nom, prenom, naissance, fete, noter}
+        For i = 0 To labels.Length - 1
+            entry.RowStyles.Add(New RowStyle(SizeType.Percent, 20))
+            entry.Controls.Add(New Label With {.Text = labels(i), .AutoSize = True, .Anchor = AnchorStyles.Left}, 0, i)
+            controls(i).Dock = DockStyle.Fill
+            entry.Controls.Add(controls(i), 1, i)
+        Next
+        Dim saveButton As New Button With {.Text = "Enregistrer", .AutoSize = True}
+        AddHandler saveButton.Click, AddressOf SaveEvent
+        Dim toolbar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 43, .Padding = New Padding(12, 5, 0, 0)}
+        toolbar.Controls.Add(saveButton)
+        Controls.Add(eventsGrid)
+        Controls.Add(toolbar)
+        Controls.Add(entry)
+        Directory.CreateDirectory(Path.GetDirectoryName(databaseFile))
+        Using cn As New SqliteConnection("Data Source=" & databaseFile)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "CREATE TABLE IF NOT EXISTS Evenements (Id INTEGER PRIMARY KEY AUTOINCREMENT, Nom TEXT NOT NULL, Prenom TEXT NOT NULL, Naissance TEXT, Fete TEXT, ANoter TEXT)"
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+        RefreshEvents()
+    End Sub
+
+    Private Sub SaveEvent(sender As Object, e As EventArgs)
+        If String.IsNullOrWhiteSpace(nom.Text) OrElse String.IsNullOrWhiteSpace(prenom.Text) Then
+            MessageBox.Show(Me, "Saisissez le nom et le prénom.", "Anniversaire")
+            Return
+        End If
+        Using cn As New SqliteConnection("Data Source=" & databaseFile)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "INSERT INTO Evenements (Nom, Prenom, Naissance, Fete, ANoter) VALUES ($nom, $prenom, $naissance, $fete, $noter)"
+                cmd.Parameters.AddWithValue("$nom", nom.Text.Trim())
+                cmd.Parameters.AddWithValue("$prenom", prenom.Text.Trim())
+                cmd.Parameters.AddWithValue("$naissance", If(naissance.Checked, naissance.Value.ToString("yyyy-MM-dd"), CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("$fete", If(fete.Checked, fete.Value.ToString("yyyy-MM-dd"), CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("$noter", If(noter.Checked, noter.Value.ToString("yyyy-MM-dd"), CType(DBNull.Value, Object)))
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+        nom.Clear()
+        prenom.Clear()
+        naissance.Checked = False
+        fete.Checked = False
+        noter.Checked = False
+        RefreshEvents()
+    End Sub
+
+    Private Shared Function NextOccurrence(value As Date) As Date
+        Dim year = Date.Today.Year
+        Dim day = Math.Min(value.Day, Date.DaysInMonth(year, value.Month))
+        Dim result = New Date(year, value.Month, day)
+        If result < Date.Today Then
+            year += 1
+            result = New Date(year, value.Month, Math.Min(value.Day, Date.DaysInMonth(year, value.Month)))
+        End If
+        Return result
+    End Function
+
+    Private Sub RefreshEvents()
+        Dim upcoming As New List(Of (DateValue As Date, Person As String, Kind As String))()
+        Using cn As New SqliteConnection("Data Source=" & databaseFile)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "SELECT Nom, Prenom, Naissance, Fete, ANoter FROM Evenements"
+                Using reader = cmd.ExecuteReader()
+                    While reader.Read()
+                        Dim person = reader.GetString(1) & " " & reader.GetString(0)
+                        For i = 2 To 4
+                            If reader.IsDBNull(i) Then Continue For
+                            Dim dateValue As Date
+                            If Date.TryParseExact(reader.GetString(i), "yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture, Globalization.DateTimeStyles.None, dateValue) Then
+                                upcoming.Add((NextOccurrence(dateValue), person, If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))))
+                            End If
+                        Next
+                    End While
+                End Using
+            End Using
+        End Using
+        eventsGrid.DataSource = upcoming.OrderBy(Function(x) x.DateValue).
+            Select(Function(x) New With {
+                .DateEvenement = x.DateValue.ToString("dd/MM/yyyy"),
+                .Dans = (x.DateValue - Date.Today).Days.ToString() & " jour(s)",
+                .Personne = x.Person,
+                .Evenement = x.Kind
+            }).ToList()
+        If eventsGrid.Columns.Count = 4 Then
+            eventsGrid.Columns(0).HeaderText = "Date"
+            eventsGrid.Columns(1).HeaderText = "Dans"
+            eventsGrid.Columns(2).HeaderText = "Nom et prénom"
+            eventsGrid.Columns(3).HeaderText = "Événement"
+        End If
     End Sub
 End Class
