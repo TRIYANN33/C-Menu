@@ -12,18 +12,30 @@ Public Class FrmMenuAutonome
     Inherits Form
 
     Private ReadOnly menuBar As New MenuStrip()
+    Private ReadOnly titleBanner As New Label()
+    Private ReadOnly settingsPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "Theme_" & GeneratedConfig.SafeName & ".txt")
+    Private titleColor As Color = Color.FromArgb(127, 255, 127)
+    Private barColor As Color = Color.FromArgb(62, 130, 137)
+    Private bodyColor As Color = Color.FromArgb(255, 128, 0)
     Private ReadOnly clock As New Timer With {.Interval = 1000}
     Private ReadOnly databasePath As String = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "C-Menu", "CMenu.db")
 
     Public Sub New()
-        Text = "Menu -- Bureau"
+        Text = "C-Menu — " & GeneratedConfig.FormName
         StartPosition = FormStartPosition.CenterScreen
         Size = New Size(1050, 680)
         MinimumSize = New Size(650, 400)
         Font = New Font("Segoe UI", 10)
-        BackColor = Color.FromArgb(241, 247, 237)
+        BackColor = bodyColor
+        LoadColors()
+        titleBanner.Dock = DockStyle.Top
+        titleBanner.Height = 60
+        titleBanner.TextAlign = ContentAlignment.MiddleLeft
+        titleBanner.Padding = New Padding(20, 0, 0, 0)
+        titleBanner.Font = New Font("Segoe UI", 12, FontStyle.Bold)
+        titleBanner.BackColor = titleColor
 
         menuBar.Dock = DockStyle.Top
         menuBar.AutoSize = True
@@ -31,6 +43,8 @@ Public Class FrmMenuAutonome
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
         menuBar.Padding = New Padding(10, 6, 10, 6)
         Controls.Add(menuBar)
+        Controls.Add(titleBanner)
+        ApplyColors()
         MainMenuStrip = menuBar
 
         AddHandler clock.Tick, Sub(sender, e) RefreshClock()
@@ -44,7 +58,8 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshClock()
         Dim nowValue = DateTime.Now
-        Text = "Menu -- Bureau — Nous sommes le " &
+        Text = "C-Menu — " & GeneratedConfig.FormName
+        titleBanner.Text = GeneratedConfig.FormName & " — Nous sommes le " &
             nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
             " à " & nowValue.ToString("HH:mm:ss")
     End Sub
@@ -67,10 +82,10 @@ Public Class FrmMenuAutonome
                     cmd.CommandText =
                         "SELECT Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Chemin " &
                         "FROM Menus WHERE TRIM(COALESCE(Menu,'')) <> '' " &
-                        "AND LOWER(TRIM(Menu)) NOT LIKE 'couleurs%' " &
-                        "AND LOWER(TRIM(COALESCE(SousMenu,''))) NOT LIKE 'couleurs%' " &
+                        "AND Frm_Menu = $form COLLATE NOCASE " &
                         "ORDER BY Frm_Menu COLLATE NOCASE, CAST(NumMenu AS INTEGER), " &
                         "CAST(NumSousMenu AS INTEGER), Menu COLLATE NOCASE, SousMenu COLLATE NOCASE"
+                    cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
                             records.Add(New MenuRow With {
@@ -105,19 +120,77 @@ Public Class FrmMenuAutonome
                             .Tag = record.Path
                         }
                         AddHandler child.Click, Sub(sender, e)
-                            OpenPath(CStr(DirectCast(sender, ToolStripMenuItem).Tag))
+                            Dim clicked = DirectCast(sender, ToolStripMenuItem)
+                            If clicked.Text.StartsWith("Couleurs", StringComparison.OrdinalIgnoreCase) Then
+                                ChangeColor(clicked.Text)
+                            Else
+                                OpenPath(CStr(clicked.Tag))
+                            End If
                         End Sub
                         top.DropDownItems.Add(child)
                     End If
                 Next
+                If top.Text.StartsWith("Couleurs", StringComparison.OrdinalIgnoreCase) Then
+                    AddHandler top.Click, Sub(sender, e) ChangeColor(top.Text)
+                End If
                 menuBar.Items.Add(top)
             Next
             If menuBar.Items.Count = 0 Then
-                ShowProblem("Aucun menu disponible (les menus Couleurs sont exclus).")
+                ShowProblem("Aucun menu disponible pour " & GeneratedConfig.FormName & ".")
             End If
         Catch ex As Exception
             ShowProblem("Lecture de SQLite impossible : " & ex.Message)
         End Try
+    End Sub
+
+    Private Sub ChangeColor(menuText As String)
+        Dim key = menuText.ToLowerInvariant()
+        Using picker As New ColorDialog With {.FullOpen = True, .AnyColor = True}
+            If key.Contains("libell") Then
+                picker.Color = titleColor
+            ElseIf key.Contains("bar") Then
+                picker.Color = barColor
+            ElseIf key.Contains("corps") Then
+                picker.Color = bodyColor
+            Else
+                Return
+            End If
+            If picker.ShowDialog(Me) <> DialogResult.OK Then Return
+            If key.Contains("libell") Then
+                titleColor = picker.Color
+            ElseIf key.Contains("bar") Then
+                barColor = picker.Color
+            Else
+                bodyColor = picker.Color
+            End If
+            ApplyColors()
+            Try
+                Directory.CreateDirectory(Path.GetDirectoryName(settingsPath))
+                File.WriteAllLines(settingsPath, {titleColor.ToArgb().ToString(), barColor.ToArgb().ToString(), bodyColor.ToArgb().ToString()})
+            Catch ex As Exception
+                MessageBox.Show(Me, "Couleurs appliquées, mais sauvegarde impossible : " & ex.Message)
+            End Try
+        End Using
+    End Sub
+
+    Private Sub LoadColors()
+        Try
+            If File.Exists(settingsPath) Then
+                Dim lines = File.ReadAllLines(settingsPath)
+                If lines.Length >= 3 Then
+                    titleColor = Color.FromArgb(Integer.Parse(lines(0)))
+                    barColor = Color.FromArgb(Integer.Parse(lines(1)))
+                    bodyColor = Color.FromArgb(Integer.Parse(lines(2)))
+                End If
+            End If
+        Catch
+        End Try
+    End Sub
+
+    Private Sub ApplyColors()
+        titleBanner.BackColor = titleColor
+        menuBar.BackColor = barColor
+        BackColor = bodyColor
     End Sub
 
     Private Shared Function Value(reader As SqliteDataReader, index As Integer) As String
