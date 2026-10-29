@@ -442,8 +442,15 @@ Public Class FrmMenu
             Dim tempDb = Path.Combine(Path.GetTempPath(), "CMenuBackup-" & Guid.NewGuid().ToString("N") & ".db")
             Try
                 PublisherBackup.SaveTo(tempDb)
+                ' SQLite peut garder un handle ouvert brièvement après BackupDatabase.
+                ' Ouvrir le fichier en lecture partagée évite le verrouillage lors du ZIP.
                 Using archive = ZipFile.Open(dialog.FileName, ZipArchiveMode.Create)
-                    archive.CreateEntryFromFile(tempDb, "CMenu.db", CompressionLevel.Optimal)
+                    Dim entry = archive.CreateEntry("CMenu.db", CompressionLevel.Optimal)
+                    Using input = New FileStream(tempDb, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
+                        Using output = entry.Open()
+                            input.CopyTo(output)
+                        End Using
+                    End Using
                 End Using
                 Dim publishDir = Path.Combine("C:\Menu", "Sauvegardes")
                 Directory.CreateDirectory(publishDir)
