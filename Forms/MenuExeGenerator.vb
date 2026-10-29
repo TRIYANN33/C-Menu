@@ -33,6 +33,8 @@ Public NotInheritable Class MenuExeGenerator
         Dim publishFolder = Path.Combine("C:\\", "Menu", "applications", safe)
         Directory.CreateDirectory(sourceFolder)
         Directory.CreateDirectory(publishFolder)
+        Dim temporaryPublish = Path.Combine(Path.GetTempPath(), "CMenu-Menu-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(temporaryPublish)
 
         File.WriteAllText(Path.Combine(sourceFolder, "Program.vb"), EmbeddedSource("Program.vb"), Encoding.UTF8)
         File.WriteAllText(Path.Combine(sourceFolder, "FrmMenuAutonome.vb"), EmbeddedSource("FrmMenuAutonome.vb"), Encoding.UTF8)
@@ -60,7 +62,7 @@ Public NotInheritable Class MenuExeGenerator
         For Each arg In {"publish", projectPath, "-c", "Release", "-r", "win-x64",
                          "--self-contained", "true", "-p:PublishSingleFile=true",
                          "-p:IncludeNativeLibrariesForSelfExtract=true",
-                         "-o", publishFolder}
+                         "-o", temporaryPublish}
             start.ArgumentList.Add(arg)
         Next
         Using proc = Process.Start(start)
@@ -73,7 +75,25 @@ Public NotInheritable Class MenuExeGenerator
             If proc.ExitCode <> 0 Then Throw New InvalidOperationException("Publication impossible :" & vbCrLf & output & vbCrLf & errors)
         End Using
         Dim exePath = Path.Combine(publishFolder, safe & ".exe")
-        If Not File.Exists(exePath) Then Throw New FileNotFoundException("L'exécutable n'a pas été créé.", exePath)
+        Dim compiledExe = Path.Combine(temporaryPublish, safe & ".exe")
+        If Not File.Exists(compiledExe) Then Throw New FileNotFoundException("L'exécutable n'a pas été créé.", compiledExe)
+        Try
+            For Each generatedFile In Directory.GetFiles(temporaryPublish)
+                File.Copy(generatedFile, Path.Combine(publishFolder, Path.GetFileName(generatedFile)), True)
+            Next
+        Catch ex As IOException
+            Throw New IOException("Impossible de remplacer " & exePath & "." & vbCrLf &
+                "Fermez le menu " & safe & " s'il est ouvert, puis réessayez Créer Menu." & vbCrLf &
+                "Détail : " & ex.Message, ex)
+        Catch ex As UnauthorizedAccessException
+            Throw New IOException("Accès refusé lors du remplacement de " & exePath & "." & vbCrLf &
+                "Fermez le menu " & safe & " et vérifiez les autorisations du dossier.", ex)
+        Finally
+            Try
+                Directory.Delete(temporaryPublish, True)
+            Catch
+            End Try
+        End Try
 #If DISTRIBUTED Then
         Dim originalDb = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Menu", "C_Menu.db")
 #Else
