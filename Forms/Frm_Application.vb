@@ -116,8 +116,14 @@ Public Class Frm_Application
         End If
         Try
             Dim destination = Environment.ExpandEnvironmentVariables(target.Trim())
-            Dim info As New ProcessStartInfo(destination) With {.UseShellExecute = True}
-            Process.Start(info)
+            If Directory.Exists(destination) Then
+                Process.Start(New ProcessStartInfo("explorer.exe") With {
+                    .UseShellExecute = True,
+                    .ArgumentList = {destination}
+                })
+            Else
+                Process.Start(New ProcessStartInfo(destination) With {.UseShellExecute = True})
+            End If
         Catch ex As Exception
             MessageBox.Show("Impossible d'ouvrir : " & target & Environment.NewLine & ex.Message,
                             "C-Menu", MessageBoxButtons.OK, MessageBoxIcon.Warning)
