@@ -69,6 +69,7 @@ Public Class FrmMenu
         AddField(editor, "Modifier Le", dateModified, 2, 0, 1, True)
         AddField(editor, "N° Menu", "NumMenu", 3, 0)
         AddField(editor, "N° Sous-Menu", "NumSousMenu", 4, 0)
+        AddField(editor, "Frm_Menu", "Frm_Menu", 5, 0)
         AddField(editor, "Menu", "Menu", 0, 1, 2)
         AddField(editor, "Sous-Menu", "SousMenu", 2, 1, 2)
         AddField(editor, "Info_01", "Info01", 4, 1)
@@ -124,7 +125,7 @@ Public Class FrmMenu
         grid.GridColor = Color.FromArgb(207, 222, 202)
         For Each spec In New (String, String, Integer)() {
             ("Id", "N° Saisie", 65), ("NumMenu", "N° Menu", 75),
-            ("NumSousMenu", "N° Sous-Menu", 90), ("Menu", "Menu", 130),
+            ("NumSousMenu", "N° Sous-Menu", 90), ("Frm_Menu", "Frm_Menu", 120), ("Menu", "Menu", 130),
             ("SousMenu", "Sous-Menu", 130), ("Info01", "Info_01", 90),
             ("Info02", "Info_02", 90), ("Action", "Action", 130),
             ("Chemin", "Chemin", 170), ("SaisieLe", "Saisie Le", 115),
@@ -204,6 +205,7 @@ Public Class FrmMenu
         Return New MenuItem With {
             .Id = selectedId, .NumMenu = fields("NumMenu").Text.Trim(),
             .NumSousMenu = fields("NumSousMenu").Text.Trim(),
+            .Frm_Menu = fields("Frm_Menu").Text.Trim(),
             .Menu = fields("Menu").Text.Trim(),
             .SousMenu = fields("SousMenu").Text.Trim(),
             .Info01 = fields("Info01").Text.Trim(),
@@ -276,6 +278,7 @@ Public Class FrmMenu
                                item.ModifierLe.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"), "")
         fields("NumMenu").Text = item.NumMenu
         fields("NumSousMenu").Text = item.NumSousMenu
+        fields("Frm_Menu").Text = item.Frm_Menu
         fields("Menu").Text = item.Menu
         fields("SousMenu").Text = item.SousMenu
         fields("Info01").Text = item.Info01
