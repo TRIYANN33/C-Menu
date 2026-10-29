@@ -11,7 +11,7 @@ Public Class Frm_Tri
         ("NumMenu", "N° Menu"), ("NumSousMenu", "N° Sous-Menu"),
         ("Frm_Menu", "Frm_Menu"), ("Menu", "Menu"),
         ("SousMenu", "Sous-Menu"), ("Info01", "Info_01"),
-        ("Info02", "Info_02"), ("Action", "Action"),
+        ("Info02", "Info_02"), ("Application", "Application"), ("Action", "Action"),
         ("Chemin", "Chemin"), ("SaisieLe", "Saisie Le"),
         ("ModifierLe", "Modifier Le"), ("Id", "N° Saisie")
     }
