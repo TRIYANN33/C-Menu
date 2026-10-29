@@ -74,7 +74,7 @@ Public NotInheritable Class MenuExeGenerator
         Dim exePath = Path.Combine(publishFolder, safe & ".exe")
         If Not File.Exists(exePath) Then Throw New FileNotFoundException("L'exécutable n'a pas été créé.", exePath)
         Dim dbFolder = If(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar).Equals(
-            Path.Combine("C:\\", "Menu", "C-Menu"), StringComparison.OrdinalIgnoreCase),
+            Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Menu", "C-Menu"), StringComparison.OrdinalIgnoreCase),
             "C-Menu-Distribue", "C-Menu")
         Dim originalDb = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), dbFolder, "CMenu.db")
         If Not File.Exists(originalDb) Then Throw New FileNotFoundException("Base SQLite source introuvable.", originalDb)
