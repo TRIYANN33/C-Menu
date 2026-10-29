@@ -464,6 +464,7 @@ Public Class FrmMenu
                 MessageBox.Show("Programme C-Menu.exe et base CMenu.db sauvegardés en ZIP :" & Environment.NewLine & dialog.FileName &
                                 Environment.NewLine & Environment.NewLine & "Copie publiée :" & Environment.NewLine & publishedPath,
                                 "Sauvegarder")
+                Process.Start(New ProcessStartInfo("explorer.exe", "/select,""" & dialog.FileName & """") With {.UseShellExecute = True})
             Catch ex As Exception
                 MessageBox.Show("Sauvegarde ou publication impossible : " & ex.Message, "Sauvegarder",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error)
