@@ -226,7 +226,10 @@ Public Class FrmMenuAutonome
         End If
         infoText.Text = If(info1, "") & Environment.NewLine & If(info2, "")
         Try
-            Clipboard.SetText(infoText.Text)
+            ' Deux copies distinctes pour l'historique Windows (Win+V).
+            ' Une seule valeur peut rester active pour Ctrl+V : Info02 est la dernière.
+            If Not String.IsNullOrWhiteSpace(info1) Then Clipboard.SetText(info1)
+            If Not String.IsNullOrWhiteSpace(info2) Then Clipboard.SetText(info2)
         Catch ex As Exception
             MessageBox.Show(Me, "Impossible de copier les informations dans le presse-papiers : " & ex.Message,
                             "Presse-papiers", MessageBoxButtons.OK, MessageBoxIcon.Warning)
