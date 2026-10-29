@@ -56,11 +56,11 @@ Public Class FrmMenu
             .BackColor = Color.FromArgb(226, 234, 240)
         }
         toolbarPanel.Controls.Add(ButtonFor("Nouveau", AddressOf NewClicked))
-        toolbar.Controls.Add(ButtonFor("Enregistrer", AddressOf SaveClicked))
-        toolbar.Controls.Add(ButtonFor("Modifier", AddressOf UpdateClicked))
-        toolbar.Controls.Add(ButtonFor("Supprimer", AddressOf DeleteClicked))
-        toolbar.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
-        toolbar.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Enregistrer", AddressOf SaveClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Modifier", AddressOf UpdateClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Supprimer", AddressOf DeleteClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
+        toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
 
         editorPanel = New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 162, .ColumnCount = 6, .RowCount = 3,
@@ -71,21 +71,21 @@ Public Class FrmMenu
             editorPanel.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F / 6))
         Next
         editorPanel.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
-        editor.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
-        editor.RowStyles.Add(New RowStyle(SizeType.Percent, 34.0F))
+        editorPanel.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
+        editorPanel.RowStyles.Add(New RowStyle(SizeType.Percent, 34.0F))
         AddField(editorPanel, "N° Saisie", idBox, 0, 0, 1, True)
-        AddField(editor, "Saisie Le", dateCreated, 1, 0, 1, True)
-        AddField(editor, "Modifier Le", dateModified, 2, 0, 1, True)
-        AddField(editor, "N° Menu", "NumMenu", 3, 0)
-        AddField(editor, "N° Sous-Menu", "NumSousMenu", 4, 0)
-        AddField(editor, "Frm_Menu", "Frm_Menu", 5, 0)
-        AddField(editor, "Menu", "Menu", 0, 1)
-        AddField(editor, "Sous-Menu", "SousMenu", 1, 1)
-        AddField(editor, "Info_01", "Info01", 2, 1, 2)
-        AddField(editor, "Info_02", "Info02", 4, 1, 2)
-        AddField(editor, "Application", "Application", 0, 2, 2)
-        AddField(editor, "Action", "Action", 2, 2, 2)
-        AddField(editor, "Chemin", "Chemin", 4, 2, 2)
+        AddField(editorPanel, "Saisie Le", dateCreated, 1, 0, 1, True)
+        AddField(editorPanel, "Modifier Le", dateModified, 2, 0, 1, True)
+        AddField(editorPanel, "N° Menu", "NumMenu", 3, 0)
+        AddField(editorPanel, "N° Sous-Menu", "NumSousMenu", 4, 0)
+        AddField(editorPanel, "Frm_Menu", "Frm_Menu", 5, 0)
+        AddField(editorPanel, "Menu", "Menu", 0, 1)
+        AddField(editorPanel, "Sous-Menu", "SousMenu", 1, 1)
+        AddField(editorPanel, "Info_01", "Info01", 2, 1, 2)
+        AddField(editorPanel, "Info_02", "Info02", 4, 1, 2)
+        AddField(editorPanel, "Application", "Application", 0, 2, 2)
+        AddField(editorPanel, "Action", "Action", 2, 2, 2)
+        AddField(editorPanel, "Chemin", "Chemin", 4, 2, 2)
 
         Dim searchPanel As New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 60, .ColumnCount = 2,
