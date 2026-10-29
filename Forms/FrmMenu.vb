@@ -26,6 +26,7 @@ Public Class FrmMenu
     Private miniMode As Boolean = False
     Private normalBounds As Rectangle
     Private normalMinimumSize As Size
+    Private copiedRow As MenuItem
     Private selectedId As Integer
     Private sortFields As New List(Of (Field As String, Descending As Boolean))()
     Private activeFilters As New List(Of (Field As String, OperatorName As String, Value As String))()
@@ -115,6 +116,7 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Enregistrer", AddressOf SaveClicked))
         toolbarPanel.Controls.Add(ButtonFor("Modifier", AddressOf UpdateClicked))
         toolbarPanel.Controls.Add(ButtonFor("Supprimer", AddressOf DeleteClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Dupliquer", AddressOf DuplicateClicked))
         toolbarPanel.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
@@ -213,6 +215,19 @@ Public Class FrmMenu
             End If
             grid.Columns.Add(column)
         Next
+        Dim rowMenu As New ContextMenuStrip()
+        rowMenu.Items.Add("Copier la ligne (Ctrl+C)", Nothing, AddressOf CopyRowClicked)
+        rowMenu.Items.Add("Coller comme nouvelle ligne (Ctrl+V)", Nothing, AddressOf PasteRowClicked)
+        rowMenu.Items.Add("Dupliquer la ligne (Ctrl+D)", Nothing, AddressOf DuplicateClicked)
+        grid.ContextMenuStrip = rowMenu
+        AddHandler grid.KeyDown, AddressOf GridKeyDown
+        AddHandler grid.CellMouseDown, Sub(sender, e)
+            If e.Button = MouseButtons.Right AndAlso e.RowIndex >= 0 Then
+                grid.ClearSelection()
+                grid.Rows(e.RowIndex).Selected = True
+                grid.CurrentCell = grid.Rows(e.RowIndex).Cells(0)
+            End If
+        End Sub
         AddHandler grid.SelectionChanged, AddressOf GridSelectionChanged
 
         Dim gridHost As New Panel With {
@@ -405,6 +420,67 @@ Public Class FrmMenu
         repo.Update(item)
         ClearForm()
         ReloadGrid()
+    End Sub
+
+    Private Function SelectedRowCopy() As MenuItem
+        If grid.SelectedRows.Count = 0 Then Return Nothing
+        Dim source = TryCast(grid.SelectedRows(0).DataBoundItem, MenuItem)
+        If source Is Nothing Then Return Nothing
+        Return New MenuItem With {
+            .NumMenu = source.NumMenu, .NumSousMenu = source.NumSousMenu,
+            .Frm_Menu = source.Frm_Menu, .Menu = source.Menu,
+            .SousMenu = source.SousMenu, .Info01 = source.Info01,
+            .Info02 = source.Info02, .Application = source.Application,
+            .Action = source.Action, .Chemin = source.Chemin
+        }
+    End Function
+
+    Private Sub CopyRowClicked(sender As Object, e As EventArgs)
+        Dim item = SelectedRowCopy()
+        If item Is Nothing Then
+            MessageBox.Show("Sélectionnez une ligne à copier.", "Copier")
+            Return
+        End If
+        copiedRow = item
+    End Sub
+
+    Private Sub PasteRowClicked(sender As Object, e As EventArgs)
+        If copiedRow Is Nothing Then
+            MessageBox.Show("Copiez d'abord une ligne du tableau.", "Coller")
+            Return
+        End If
+        If Not IsValid(copiedRow) Then Return
+        repo.Insert(copiedRow)
+        ClearForm()
+        ReloadGrid()
+    End Sub
+
+    Private Sub DuplicateClicked(sender As Object, e As EventArgs)
+        Dim item = SelectedRowCopy()
+        If item Is Nothing Then
+            MessageBox.Show("Sélectionnez une ligne à dupliquer.", "Dupliquer")
+            Return
+        End If
+        If Not IsValid(item) Then Return
+        repo.Insert(item)
+        ClearForm()
+        ReloadGrid()
+    End Sub
+
+    Private Sub GridKeyDown(sender As Object, e As KeyEventArgs)
+        If Not e.Control Then Return
+        Select Case e.KeyCode
+            Case Keys.C
+                CopyRowClicked(sender, EventArgs.Empty)
+            Case Keys.V
+                PasteRowClicked(sender, EventArgs.Empty)
+            Case Keys.D
+                DuplicateClicked(sender, EventArgs.Empty)
+            Case Else
+                Return
+        End Select
+        e.Handled = True
+        e.SuppressKeyPress = True
     End Sub
 
     Private Sub DeleteClicked(sender As Object, e As EventArgs)
