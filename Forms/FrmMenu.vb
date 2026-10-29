@@ -47,9 +47,9 @@ Public Class FrmMenu
             If WindowState = FormWindowState.Maximized Then WindowState = FormWindowState.Normal
             normalBounds = Bounds
             normalMinimumSize = MinimumSize
-            MinimumSize = New Size(640, 440)
-            Dim targetWidth = CInt(Math.Round(normalBounds.Width * 0.8))
-            Dim targetHeight = CInt(Math.Round(normalBounds.Height * 0.8))
+            MinimumSize = Size.Empty
+            Dim targetWidth = Math.Max(180, CInt(Math.Round(normalBounds.Width * 0.1)))
+            Dim targetHeight = Math.Max(100, CInt(Math.Round(normalBounds.Height * 0.1)))
             Bounds = New Rectangle(normalBounds.Left + (normalBounds.Width - targetWidth) \ 2,
                                    normalBounds.Top + (normalBounds.Height - targetHeight) \ 2,
                                    targetWidth, targetHeight)
