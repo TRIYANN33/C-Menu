@@ -1,0 +1,126 @@
+Imports System.Drawing
+Imports System.Diagnostics
+Imports System.Globalization
+Imports System.IO
+Imports System.Linq
+Imports System.Windows.Forms
+
+Public Class Frm_Application
+    Inherits Form
+
+    Private ReadOnly menuName As String
+    Private ReadOnly header As New Label()
+    Private ReadOnly menuBar As New MenuStrip()
+    Private ReadOnly clock As New Timer With {.Interval = 1000}
+
+    Public Sub New(frmMenuValue As String)
+        menuName = If(frmMenuValue, "").Trim()
+        If menuName = "" Then Throw New ArgumentException("Frm_Menu est obligatoire.")
+        Text = "C-Menu — " & menuName
+        StartPosition = FormStartPosition.CenterParent
+        Size = New Size(1000, 660)
+        MinimumSize = New Size(650, 400)
+        Font = New Font("Segoe UI", 10)
+
+        Dim colors = MenuColors.Load()
+        BackColor = Color.FromArgb(colors.Entry)
+
+        header.Dock = DockStyle.Top
+        header.Height = 65
+        header.Padding = New Padding(16, 0, 16, 0)
+        header.TextAlign = ContentAlignment.MiddleLeft
+        header.Font = New Font("Segoe UI", 13, FontStyle.Bold)
+        header.BackColor = Color.FromArgb(colors.Table)
+        header.ForeColor = Color.FromArgb(colors.Labels)
+
+        menuBar.Dock = DockStyle.Top
+        menuBar.AutoSize = True
+        menuBar.BackColor = Color.FromArgb(colors.Toolbar)
+        menuBar.ForeColor = Color.FromArgb(colors.Labels)
+        menuBar.Padding = New Padding(10, 6, 10, 6)
+        menuBar.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow
+
+        Controls.Add(menuBar)
+        Controls.Add(header)
+        MainMenuStrip = menuBar
+
+        AddHandler clock.Tick, Sub(sender, e) UpdateHeader()
+        AddHandler FormClosed, Sub(sender, e) clock.Stop()
+        AddHandler Shown, Sub(sender, e)
+            LoadMenus()
+            UpdateHeader()
+            clock.Start()
+        End Sub
+    End Sub
+
+    Private Sub UpdateHeader()
+        Dim nowValue = DateTime.Now
+        header.Text = menuName & " — Nous sommes le " &
+            nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
+            " à " & nowValue.ToString("HH:mm:ss")
+    End Sub
+
+    Private Sub LoadMenus()
+        menuBar.Items.Clear()
+        Dim rows = New MenuRepository().GetAll().Where(
+            Function(item) String.Equals(item.Frm_Menu.Trim(), menuName, StringComparison.OrdinalIgnoreCase)
+        ).OrderBy(Function(item) NumericOrder(item.NumMenu)).
+          ThenBy(Function(item) NumericOrder(item.NumSousMenu)).
+          ThenBy(Function(item) item.Id).ToList()
+
+        For Each group In rows.Where(Function(item) Not String.IsNullOrWhiteSpace(item.Menu)).
+            GroupBy(Function(item) item.NumMenu & "|" & item.Menu, StringComparer.OrdinalIgnoreCase)
+
+            Dim first = group.First()
+            Dim topItem As New ToolStripMenuItem(first.Menu.Trim()) With {
+                .AutoSize = True,
+                .ForeColor = menuBar.ForeColor
+            }
+            For Each item In group
+                If String.IsNullOrWhiteSpace(item.SousMenu) Then
+                    If Not String.IsNullOrWhiteSpace(item.Chemin) Then
+                        Dim destination = item.Chemin
+                        AddHandler topItem.Click, Sub(sender, e) OpenDestination(destination)
+                    End If
+                    Continue For
+                End If
+                Dim child As New ToolStripMenuItem(item.SousMenu.Trim()) With {
+                    .ToolTipText = If(item.Info01, ""),
+                    .Tag = item.Chemin
+                }
+                AddHandler child.Click, Sub(sender, e)
+                    Dim target = CStr(DirectCast(sender, ToolStripMenuItem).Tag)
+                    OpenDestination(target)
+                End Sub
+                topItem.DropDownItems.Add(child)
+            Next
+            menuBar.Items.Add(topItem)
+        Next
+
+        If menuBar.Items.Count = 0 Then
+            menuBar.Items.Add(New ToolStripLabel("Aucun menu trouvé pour " & menuName))
+        End If
+    End Sub
+
+    Private Shared Function NumericOrder(value As String) As Long
+        Dim parsed As Long
+        If Long.TryParse(value, parsed) Then Return parsed
+        Return Long.MaxValue
+    End Function
+
+    Private Sub OpenDestination(target As String)
+        If String.IsNullOrWhiteSpace(target) Then
+            MessageBox.Show("Aucun chemin n'est renseigné pour ce sous-menu.", "C-Menu",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+        Try
+            Dim destination = Environment.ExpandEnvironmentVariables(target.Trim())
+            Dim info As New ProcessStartInfo(destination) With {.UseShellExecute = True}
+            Process.Start(info)
+        Catch ex As Exception
+            MessageBox.Show("Impossible d'ouvrir : " & target & Environment.NewLine & ex.Message,
+                            "C-Menu", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
+    End Sub
+End Class
