@@ -146,9 +146,9 @@ Public Class FrmMenu
         AddField(editorPanel, "Sous-Menu", "SousMenu", 1, 1)
         AddField(editorPanel, "Info_01", "Info01", 2, 1, 2)
         AddField(editorPanel, "Info_02", "Info02", 4, 1, 2)
-        AddField(editorPanel, "Application", "Application", 0, 2, 2)
-        AddField(editorPanel, "Action", "Action", 2, 2, 2)
-        AddField(editorPanel, "Chemin", "Chemin", 4, 2, 2)
+        AddField(editorPanel, "Application", "Application", 0, 2, 1)
+        AddField(editorPanel, "Action", "Action", 1, 2, 1)
+        AddField(editorPanel, "Chemin", "Chemin", 2, 2, 4)
 
         Dim searchPanel As New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 60, .ColumnCount = 2,
