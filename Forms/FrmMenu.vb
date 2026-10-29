@@ -39,8 +39,8 @@ Public Class FrmMenu
 
     Private Function ButtonFor(title As String, handler As EventHandler) As Button
         Dim b As New Button With {
-            .Text = title, .Size = New Size(130, 36),
-            .Margin = New Padding(0, 0, 10, 0),
+            .Text = title, .Size = New Size(112, 36),
+            .Margin = New Padding(0, 0, 8, 0),
             .BackColor = Color.FromArgb(223, 235, 253),
             .ForeColor = Color.FromArgb(25, 55, 83),
             .FlatStyle = FlatStyle.Flat, .Cursor = Cursors.Hand
@@ -52,7 +52,8 @@ Public Class FrmMenu
 
     Private Sub BuildUI()
         toolbarPanel = New FlowLayoutPanel With {
-            .Dock = DockStyle.Top, .Height = 58, .Padding = New Padding(16, 10, 0, 8),
+            .Dock = DockStyle.Top, .Height = 58, .Padding = New Padding(12, 10, 0, 8),
+            .WrapContents = False, .AutoScroll = True,
             .BackColor = Color.FromArgb(226, 234, 240)
         }
         toolbarPanel.Controls.Add(ButtonFor("Nouveau", AddressOf NewClicked))
@@ -61,6 +62,7 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Supprimer", AddressOf DeleteClicked))
         toolbarPanel.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
 
         editorPanel = New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 162, .ColumnCount = 6, .RowCount = 3,
