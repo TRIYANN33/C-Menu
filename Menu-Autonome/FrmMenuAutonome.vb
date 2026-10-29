@@ -45,6 +45,7 @@ Public Class FrmMenuAutonome
         ApplyColors()
         MainMenuStrip = menuBar
 
+        AddHandler Resize, Sub(sender, e) PositionNextEvent()
         AddHandler clock.Tick, Sub(sender, e) RefreshClock()
         AddHandler Shown, Sub(sender, e)
             RefreshClock()
@@ -231,13 +232,26 @@ Public Class FrmMenuAutonome
     Private Const SlideshowFolder As String = "C:\Menu\applications\Diaporama"
 
     Private ReadOnly nextEventLabel As New Label With {
-        .Dock = DockStyle.Right,
         .AutoSize = False,
         .TextAlign = ContentAlignment.MiddleRight,
         .Padding = New Padding(8, 4, 12, 4),
         .Font = New Font("Segoe UI", 9, FontStyle.Bold),
         .Visible = False
     }
+    Private Sub PositionNextEvent()
+        If Not nextEventLabel.Visible Then Return
+        Dim offsetPixels As Integer
+        Using graphics = CreateGraphics()
+            offsetPixels = CInt(Math.Round(graphics.DpiY * 0.5 / 2.54))
+        End Using
+        Dim topOfBody = menuBar.Bottom
+        
+        nextEventLabel.Location = New Point(Math.Max(0, ClientSize.Width - nextEventLabel.Width - 12),
+                                            topOfBody + offsetPixels)
+        nextEventLabel.Height = Math.Max(28, nextEventLabel.Font.Height + 10)
+        nextEventLabel.BringToFront()
+    End Sub
+
     Private Const AnniversaryDatabase As String = "C:\Menu\applications\Anniversaire\Anniversaires.db"
 
     Private Sub RefreshNextEvent()
@@ -282,7 +296,7 @@ Public Class FrmMenuAutonome
                 nextEventLabel.Text = nextText
                 nextEventLabel.Width = TextRenderer.MeasureText(nextText, nextEventLabel.Font).Width + 28
                 nextEventLabel.Visible = True
-                nextEventLabel.BringToFront()
+                PositionNextEvent()
             End If
         Catch ex As SqliteException
             ' Base absente de table ou temporairement indisponible : ne pas bloquer le menu.
@@ -309,6 +323,7 @@ Public Class FrmMenuAutonome
         targetWidth = Math.Min(targetWidth, availableWidth)
         MinimumSize = New Size(Math.Min(targetWidth, availableWidth), MinimumSize.Height)
         Width = targetWidth
+        PositionNextEvent()
     End Sub
 
     Private Sub StartSlideshow()
