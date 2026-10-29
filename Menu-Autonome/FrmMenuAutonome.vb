@@ -11,6 +11,8 @@ Imports Microsoft.Data.Sqlite
 Public Class FrmMenuAutonome
     Inherits Form
 
+    Private infoWindow As Form
+    Private infoText As TextBox
     Private ReadOnly menuBar As New MenuStrip()
     Private ReadOnly settingsPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "Theme_" & GeneratedConfig.SafeName & ".txt")
     Private titleColor As Color = Color.FromArgb(127, 255, 127)
@@ -69,7 +71,7 @@ Public Class FrmMenuAutonome
                 cn.Open()
                 Using cmd = cn.CreateCommand()
                     cmd.CommandText =
-                        "SELECT Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Chemin, Action " &
+                        "SELECT Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Chemin, Action, Info01, Info02 " &
                         "FROM Menus WHERE TRIM(COALESCE(Menu,'')) <> '' " &
                         "AND Frm_Menu = $form COLLATE NOCASE " &
                         "ORDER BY Frm_Menu COLLATE NOCASE, CAST(NumMenu AS INTEGER), " &
@@ -84,7 +86,9 @@ Public Class FrmMenuAutonome
                                 .MenuText = Value(reader, 3),
                                 .SubText = Value(reader, 4),
                                 .Path = Value(reader, 5),
-                                .ActionName = Value(reader, 6)
+                                .ActionName = Value(reader, 6),
+                                .Info01 = Value(reader, 7),
+                                .Info02 = Value(reader, 8)
                             })
                         End While
                     End Using
@@ -104,7 +108,12 @@ Public Class FrmMenuAutonome
                         If Not String.IsNullOrWhiteSpace(record.Path) Then
                             Dim destination = record.Path
                             Dim actionName = record.ActionName
-                            AddHandler top.Click, Sub(sender, e) OpenPath(destination, actionName)
+                            Dim info1 = record.Info01
+                            Dim info2 = record.Info02
+                            AddHandler top.Click, Sub(sender, e)
+                                ShowInfo(info1, info2)
+                                OpenPath(destination, actionName)
+                            End Sub
                         End If
                     Else
                         Dim child As New ToolStripMenuItem(record.SubText.Trim()) With {
@@ -116,6 +125,7 @@ Public Class FrmMenuAutonome
                                 ChangeColor(clicked.Text)
                             Else
                                 Dim selected = DirectCast(clicked.Tag, MenuRow)
+                                ShowInfo(selected.Info01, selected.Info02)
                                 OpenPath(selected.Path, selected.ActionName)
                             End If
                         End Sub
@@ -193,6 +203,32 @@ Public Class FrmMenuAutonome
         MessageBox.Show(Me, message, "Menu autonome", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
+    Private Sub ShowInfo(info1 As String, info2 As String)
+        If infoWindow Is Nothing OrElse infoWindow.IsDisposed Then
+            Dim dpiX As Single
+            Dim dpiY As Single
+            Using graphics = CreateGraphics()
+                dpiX = graphics.DpiX
+                dpiY = graphics.DpiY
+            End Using
+            infoWindow = New Form With {
+                .Text = "Informations du sous-menu",
+                .Size = New Size(CInt(8 / 2.54 * dpiX), CInt(4 / 2.54 * dpiY)),
+                .StartPosition = FormStartPosition.Manual,
+                .Location = New Point(80, 80),
+                .TopMost = True
+            }
+            infoText = New TextBox With {
+                .Multiline = True, .ReadOnly = True, .Dock = DockStyle.Fill,
+                .ScrollBars = ScrollBars.Vertical, .Font = New Font("Segoe UI", 10)
+            }
+            infoWindow.Controls.Add(infoText)
+        End If
+        infoText.Text = If(info1, "") & Environment.NewLine & If(info2, "")
+        If Not infoWindow.Visible Then infoWindow.Show(Me)
+        infoWindow.BringToFront()
+    End Sub
+
     Private Sub OpenPath(pathValue As String, actionName As String)
         If String.IsNullOrWhiteSpace(pathValue) Then
             MessageBox.Show(Me, "Aucun chemin défini pour ce sous-menu.", "Menu autonome")
@@ -230,5 +266,7 @@ Public Class FrmMenuAutonome
         Public Property SubText As String = ""
         Public Property Path As String = ""
         Public Property ActionName As String = ""
+        Public Property Info01 As String = ""
+        Public Property Info02 As String = ""
     End Class
 End Class
