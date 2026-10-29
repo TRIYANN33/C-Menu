@@ -129,11 +129,12 @@ Public Class Frm_Application
         Return Long.MaxValue
     End Function
 
-    Private ReadOnly slideshowTimer As New Timer With {.Interval = 3000}
+    Private ReadOnly slideshowTimer As New Timer With {.Interval = 8000}
     Private slideshowPanel As Panel
     Private slideshowPicture As PictureBox
     Private slideshowFiles As String() = Array.Empty(Of String)()
     Private slideshowIndex As Integer = 0
+    Private ReadOnly slideshowRandom As New Random()
     Private originalWindowSize As Size
     Private Const SlideshowFolder As String = "C:\Menu\applications\Diaporama"
 
@@ -179,6 +180,7 @@ Public Class Frm_Application
                 Where(Function(f) {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp"}.
                 Contains(Path.GetExtension(f).ToLowerInvariant())).
                 OrderBy(Function(f) f, StringComparer.CurrentCultureIgnoreCase).ToArray()
+            ShuffleSlideshowFiles()
             slideshowIndex = 0
             NextSlideshowImage()
             slideshowTimer.Start()
@@ -192,11 +194,24 @@ Public Class Frm_Application
         End Try
     End Sub
 
+    Private Sub ShuffleSlideshowFiles()
+        For i As Integer = slideshowFiles.Length - 1 To 1 Step -1
+            Dim j = slideshowRandom.Next(i + 1)
+            Dim temp = slideshowFiles(i)
+            slideshowFiles(i) = slideshowFiles(j)
+            slideshowFiles(j) = temp
+        Next
+    End Sub
+
     Private Sub NextSlideshowImage()
         If slideshowFiles.Length = 0 OrElse slideshowPicture Is Nothing Then Return
         Dim attempts = slideshowFiles.Length
         While attempts > 0
-            Dim filePath = slideshowFiles(slideshowIndex Mod slideshowFiles.Length)
+            If slideshowIndex >= slideshowFiles.Length Then
+                ShuffleSlideshowFiles()
+                slideshowIndex = 0
+            End If
+            Dim filePath = slideshowFiles(slideshowIndex)
             slideshowIndex += 1
             attempts -= 1
             Try
