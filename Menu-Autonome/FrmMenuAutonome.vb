@@ -450,20 +450,20 @@ Public Class FrmAnniversaire
         entry.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 180))
         entry.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
         Dim labels = {"Nom", "Prénom", "Date de naissance", "Date de fête", "Date à noter"}
-        Dim controls As Control() = {nom, prenom, naissance, fete, noter}
+        Dim inputControls As Control() = {nom, prenom, naissance, fete, noter}
         For i = 0 To labels.Length - 1
             entry.RowStyles.Add(New RowStyle(SizeType.Percent, 20))
             entry.Controls.Add(New Label With {.Text = labels(i), .AutoSize = True, .Anchor = AnchorStyles.Left}, 0, i)
-            controls(i).Dock = DockStyle.Fill
-            entry.Controls.Add(controls(i), 1, i)
+            inputControls(i).Dock = DockStyle.Fill
+            entry.Controls.Add(inputControls(i), 1, i)
         Next
         Dim saveButton As New Button With {.Text = "Enregistrer", .AutoSize = True}
         AddHandler saveButton.Click, AddressOf SaveEvent
         Dim toolbar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 43, .Padding = New Padding(12, 5, 0, 0)}
         toolbar.Controls.Add(saveButton)
-        Controls.Add(eventsGrid)
-        Controls.Add(toolbar)
-        Controls.Add(entry)
+        Me.Controls.Add(eventsGrid)
+        Me.Controls.Add(toolbar)
+        Me.Controls.Add(entry)
         Directory.CreateDirectory(Path.GetDirectoryName(databaseFile))
         Using cn As New SqliteConnection("Data Source=" & databaseFile)
             cn.Open()
