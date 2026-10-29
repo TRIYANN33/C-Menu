@@ -4,6 +4,7 @@ Imports System.ComponentModel
 Imports System.Collections.Generic
 Imports System.Linq
 Imports System.Diagnostics
+Imports System.IO
 
 Public Class FrmMenu
     Inherits Form
@@ -405,8 +406,10 @@ Public Class FrmMenu
             Cursor = Cursors.WaitCursor
             Dim exePath = Await MenuExeGenerator.CreateAsync(selected.Frm_Menu)
             Cursor = Cursors.Default
-            MessageBox.Show("Formulaire exécutable créé :" & Environment.NewLine & exePath, "Créer Menu")
-            Process.Start(New ProcessStartInfo("explorer.exe", "/select,""" & exePath & """") With {.UseShellExecute = True})
+            Process.Start(New ProcessStartInfo("explorer.exe") With {
+                .UseShellExecute = True,
+                .ArgumentList = {Path.GetDirectoryName(exePath)}
+            })
         Catch ex As Exception
             Cursor = Cursors.Default
             MessageBox.Show("Échec de création de l'exécutable :" & Environment.NewLine & ex.Message,
