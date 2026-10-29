@@ -34,8 +34,8 @@ Public Class FrmMenu
 
     Public Sub New()
         Text = "C-Menu | Gestion des menus"
-        Size = New Size(1160, 770)
-        MinimumSize = New Size(960, 620)
+        Size = New Size(1400, 770)
+        MinimumSize = New Size(1100, 620)
         StartPosition = FormStartPosition.CenterScreen
         Font = New Font("Segoe UI", 10.0F)
         BackColor = Color.FromArgb(241, 247, 237)
