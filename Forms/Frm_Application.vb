@@ -239,7 +239,7 @@ Public Class Frm_Application
         topOfBody = Math.Max(topOfBody, header.Bottom)
         nextEventLabel.Location = New Point(Math.Max(0, ClientSize.Width - nextEventLabel.Width - 12),
                                             topOfBody + offsetPixels)
-        nextEventLabel.Height = Math.Max(28, nextEventLabel.Font.Height + 10)
+        nextEventLabel.Height = Math.Max(28, nextEventLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None).Length * (nextEventLabel.Font.Height + 3) + 10)
         nextEventLabel.BringToFront()
     End Sub
 
@@ -279,8 +279,13 @@ Public Class Frm_Application
                                         Dim age = occurrence.Year - stored.Year
                                         kind = "Anniversaire des " & age.ToString() & " ans"
                                     End If
-                                    nextText = kind & " de " & person & " le " &
-                                        occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))
+                                    If i = 2 Then
+                                        nextText = kind & " de" & Environment.NewLine & person & Environment.NewLine &
+                                            "le " & occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))
+                                    Else
+                                        nextText = kind & " de " & person & " le " &
+                                            occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))
+                                    End If
                                 End If
                             Next
                         End While
@@ -289,7 +294,8 @@ Public Class Frm_Application
             End Using
             If nextText IsNot Nothing Then
                 nextEventLabel.Text = nextText
-                nextEventLabel.Width = TextRenderer.MeasureText(nextText, nextEventLabel.Font).Width + 28
+                nextEventLabel.Width = nextText.Split({Environment.NewLine}, StringSplitOptions.None).
+                    Max(Function(line) TextRenderer.MeasureText(line, nextEventLabel.Font).Width) + 28
                 nextEventLabel.Visible = True
                 PositionNextEvent()
             End If
