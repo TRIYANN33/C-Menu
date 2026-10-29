@@ -18,6 +18,7 @@ Public Class FrmMenu
     Private ReadOnly countLabel As New ToolStripStatusLabel()
     Private selectedId As Integer
     Private sortFields As New List(Of (Field As String, Descending As Boolean))()
+    Private activeFilters As New List(Of (Field As String, OperatorName As String, Value As String))()
 
     Public Sub New()
         Text = "C-Menu | Gestion des menus"
@@ -93,11 +94,11 @@ Public Class FrmMenu
             .TextAlign = ContentAlignment.MiddleLeft, .Font = New Font(Font, FontStyle.Bold)
         }
         searchBox.Dock = DockStyle.Fill
-        searchBox.PlaceholderText = "Menu, sous-menu ou numéro... (Filtrer pour appliquer)"
+        searchBox.PlaceholderText = "Recherche rapide (Entrée pour appliquer)"
         AddHandler searchBox.KeyDown, Sub(sender, e)
                                           If e.KeyCode = Keys.Enter Then
                                               e.SuppressKeyPress = True
-                                              FilterClicked(sender, EventArgs.Empty)
+                                              ReloadGrid()
                                           End If
                                       End Sub
         searchPanel.Controls.Add(searchLabel, 0, 0)
@@ -198,7 +199,7 @@ Public Class FrmMenu
 
     Private Sub ReloadGrid()
         RemoveHandler grid.SelectionChanged, AddressOf GridSelectionChanged
-        Dim data = repo.GetAll(searchBox.Text.Trim(), sortFields)
+        Dim data = repo.GetAll(searchBox.Text.Trim(), sortFields, activeFilters)
         grid.DataSource = New BindingList(Of MenuItem)(data)
         RefreshCombos(data)
         countLabel.Text = data.Count.ToString() & " enregistrement(s)"
@@ -305,8 +306,13 @@ Public Class FrmMenu
     End Sub
 
     Private Sub FilterClicked(sender As Object, e As EventArgs)
-        ClearForm()
-        ReloadGrid()
+        Using dialog As New Frm_Filtre(repo.GetAll(), activeFilters)
+            If dialog.ShowDialog(Me) = DialogResult.OK Then
+                activeFilters = dialog.Filters
+                ClearForm()
+                ReloadGrid()
+            End If
+        End Using
     End Sub
 
     Private Sub SortClicked(sender As Object, e As EventArgs)
