@@ -8,6 +8,8 @@ Imports System.Windows.Forms
 Public Class Frm_Application
     Inherits Form
 
+    Private infoWindow As Form
+    Private infoText As TextBox
     Private ReadOnly menuName As String
     Private ReadOnly header As New Label()
     Private ReadOnly menuBar As New MenuStrip()
@@ -81,7 +83,12 @@ Public Class Frm_Application
                     If Not String.IsNullOrWhiteSpace(item.Chemin) Then
                         Dim destination = item.Chemin
                         Dim actionName = item.Action
-                        AddHandler topItem.Click, Sub(sender, e) OpenDestination(destination, actionName)
+                        Dim info1 = item.Info01
+                        Dim info2 = item.Info02
+                        AddHandler topItem.Click, Sub(sender, e)
+                            ShowInfo(info1, info2)
+                            OpenDestination(destination, actionName)
+                        End Sub
                     End If
                     Continue For
                 End If
@@ -91,6 +98,7 @@ Public Class Frm_Application
                 }
                 AddHandler child.Click, Sub(sender, e)
                     Dim selected = DirectCast(DirectCast(sender, ToolStripMenuItem).Tag, MenuItem)
+                    ShowInfo(selected.Info01, selected.Info02)
                     OpenDestination(selected.Chemin, selected.Action)
                 End Sub
                 topItem.DropDownItems.Add(child)
@@ -108,6 +116,32 @@ Public Class Frm_Application
         If Long.TryParse(value, parsed) Then Return parsed
         Return Long.MaxValue
     End Function
+
+    Private Sub ShowInfo(info1 As String, info2 As String)
+        If infoWindow Is Nothing OrElse infoWindow.IsDisposed Then
+            Dim dpiX As Single
+            Dim dpiY As Single
+            Using graphics = CreateGraphics()
+                dpiX = graphics.DpiX
+                dpiY = graphics.DpiY
+            End Using
+            infoWindow = New Form With {
+                .Text = "Informations du sous-menu",
+                .Size = New Size(CInt(8 / 2.54 * dpiX), CInt(4 / 2.54 * dpiY)),
+                .StartPosition = FormStartPosition.Manual,
+                .Location = New Point(80, 80),
+                .TopMost = True
+            }
+            infoText = New TextBox With {
+                .Multiline = True, .ReadOnly = True, .Dock = DockStyle.Fill,
+                .ScrollBars = ScrollBars.Vertical, .Font = New Font("Segoe UI", 10)
+            }
+            infoWindow.Controls.Add(infoText)
+        End If
+        infoText.Text = If(info1, "") & Environment.NewLine & If(info2, "")
+        If Not infoWindow.Visible Then infoWindow.Show(Me)
+        infoWindow.BringToFront()
+    End Sub
 
     Private Sub OpenDestination(target As String, actionName As String)
         If String.IsNullOrWhiteSpace(target) Then
