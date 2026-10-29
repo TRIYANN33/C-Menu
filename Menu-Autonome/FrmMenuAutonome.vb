@@ -18,7 +18,7 @@ Public Class FrmMenuAutonome
         "C-Menu", "CMenu.db")
 
     Public Sub New()
-        Text = "Menu autonome"
+        Text = "Menu -- Bureau"
         StartPosition = FormStartPosition.CenterScreen
         Size = New Size(1050, 680)
         MinimumSize = New Size(650, 400)
@@ -44,7 +44,7 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshClock()
         Dim nowValue = DateTime.Now
-        Text = "Menus — Nous sommes le " &
+        Text = "Menu -- Bureau — Nous sommes le " &
             nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
             " à " & nowValue.ToString("HH:mm:ss")
     End Sub
