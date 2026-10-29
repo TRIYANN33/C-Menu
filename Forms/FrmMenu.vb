@@ -431,7 +431,7 @@ Public Class FrmMenu
     End Sub
 
 #If Not DISTRIBUTED Then
-    Private Sub BackupClicked(sender As Object, e As EventArgs)
+    Private Async Sub BackupClicked(sender As Object, e As EventArgs)
         Using dialog As New SaveFileDialog With {
             .Title = "Sauvegarder et publier la base en ZIP",
             .Filter = "Archive ZIP (*.zip)|*.zip",
@@ -441,10 +441,13 @@ Public Class FrmMenu
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
             Dim tempDb = Path.Combine(Path.GetTempPath(), "CMenuBackup-" & Guid.NewGuid().ToString("N") & ".db")
             Try
+                Cursor = Cursors.WaitCursor
+                Dim exePath = Await CMenuPublisher.PublishAsync()
                 PublisherBackup.SaveTo(tempDb)
                 ' SQLite peut garder un handle ouvert brièvement après BackupDatabase.
                 ' Ouvrir le fichier en lecture partagée évite le verrouillage lors du ZIP.
                 Using archive = ZipFile.Open(dialog.FileName, ZipArchiveMode.Create)
+                    archive.CreateEntryFromFile(exePath, "C-Menu.exe", CompressionLevel.Optimal)
                     Dim entry = archive.CreateEntry("CMenu.db", CompressionLevel.Optimal)
                     Using input = New FileStream(tempDb, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
                         Using output = entry.Open()
@@ -458,13 +461,14 @@ Public Class FrmMenu
                 If Not Path.GetFullPath(publishedPath).Equals(Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase) Then
                     File.Copy(dialog.FileName, publishedPath, True)
                 End If
-                MessageBox.Show("Base sauvegardée en ZIP :" & Environment.NewLine & dialog.FileName &
+                MessageBox.Show("Programme C-Menu.exe et base CMenu.db sauvegardés en ZIP :" & Environment.NewLine & dialog.FileName &
                                 Environment.NewLine & Environment.NewLine & "Copie publiée :" & Environment.NewLine & publishedPath,
                                 "Sauvegarder")
             Catch ex As Exception
                 MessageBox.Show("Sauvegarde ou publication impossible : " & ex.Message, "Sauvegarder",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error)
             Finally
+                Cursor = Cursors.Default
                 Try
                     If File.Exists(tempDb) Then File.Delete(tempDb)
                 Catch
