@@ -8,6 +8,10 @@ Public Class FrmMenu
     Inherits Form
 
     Private ReadOnly repo As New MenuRepository()
+    Private themeColors As MenuColors = MenuColors.Load()
+    Private ReadOnly fieldLabels As New List(Of Label)()
+    Private toolbarPanel As FlowLayoutPanel
+    Private editorPanel As TableLayoutPanel
     Private ReadOnly fields As New Dictionary(Of String, Control)()
     Private ReadOnly comboKeys As New HashSet(Of String) From {"Frm_Menu", "Menu", "SousMenu", "Info01", "Info02", "Application", "Action"}
     Private ReadOnly grid As New DataGridView()
@@ -28,6 +32,7 @@ Public Class FrmMenu
         Font = New Font("Segoe UI", 10.0F)
         BackColor = Color.FromArgb(241, 247, 237)
         BuildUI()
+        ApplyColors()
         ClearForm()
         ReloadGrid()
     End Sub
@@ -46,29 +51,29 @@ Public Class FrmMenu
     End Function
 
     Private Sub BuildUI()
-        Dim toolbar As New FlowLayoutPanel With {
+        toolbarPanel = New FlowLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 58, .Padding = New Padding(16, 10, 0, 8),
             .BackColor = Color.FromArgb(226, 234, 240)
         }
-        toolbar.Controls.Add(ButtonFor("Nouveau", AddressOf NewClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Nouveau", AddressOf NewClicked))
         toolbar.Controls.Add(ButtonFor("Enregistrer", AddressOf SaveClicked))
         toolbar.Controls.Add(ButtonFor("Modifier", AddressOf UpdateClicked))
         toolbar.Controls.Add(ButtonFor("Supprimer", AddressOf DeleteClicked))
         toolbar.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
         toolbar.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
 
-        Dim editor As New TableLayoutPanel With {
-            .Dock = DockStyle.Top, .Height = 224, .ColumnCount = 6, .RowCount = 3,
+        editorPanel = New TableLayoutPanel With {
+            .Dock = DockStyle.Top, .Height = 162, .ColumnCount = 6, .RowCount = 3,
             .BackColor = Color.FromArgb(29, 171, 79),
-            .Padding = New Padding(14, 12, 14, 12)
+            .Padding = New Padding(14, 4, 14, 4)
         }
         For i = 1 To 6
-            editor.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F / 6))
+            editorPanel.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F / 6))
         Next
-        editor.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
+        editorPanel.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
         editor.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
         editor.RowStyles.Add(New RowStyle(SizeType.Percent, 34.0F))
-        AddField(editor, "N° Saisie", idBox, 0, 0, 1, True)
+        AddField(editorPanel, "N° Saisie", idBox, 0, 0, 1, True)
         AddField(editor, "Saisie Le", dateCreated, 1, 0, 1, True)
         AddField(editor, "Modifier Le", dateModified, 2, 0, 1, True)
         AddField(editor, "N° Menu", "NumMenu", 3, 0)
@@ -157,8 +162,8 @@ Public Class FrmMenu
         status.Items.Add(New ToolStripStatusLabel(" | SQLite • Données locales"))
         Controls.Add(gridHost)
         Controls.Add(searchPanel)
-        Controls.Add(editor)
-        Controls.Add(toolbar)
+        Controls.Add(editorPanel)
+        Controls.Add(toolbarPanel)
         Controls.Add(status)
     End Sub
 
@@ -189,20 +194,48 @@ Public Class FrmMenu
     Private Sub AddField(layout As TableLayoutPanel, title As String, tb As Control, col As Integer, row As Integer, span As Integer, readOnlyField As Boolean)
         Dim panel As New TableLayoutPanel With {
             .Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 2,
-            .Margin = New Padding(5, 2, 5, 4)
+            .Margin = New Padding(5, 0, 5, 0)
         }
-        panel.RowStyles.Add(New RowStyle(SizeType.Absolute, 24))
+        panel.RowStyles.Add(New RowStyle(SizeType.Absolute, 19))
         panel.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
-        panel.Controls.Add(New Label With {
+        Dim fieldLabel As New Label With {
             .Text = title, .Dock = DockStyle.Fill,
             .ForeColor = Color.Black, .TextAlign = ContentAlignment.MiddleLeft
-        }, 0, 0)
+        }
+        fieldLabels.Add(fieldLabel)
+        panel.Controls.Add(fieldLabel, 0, 0)
         tb.Dock = DockStyle.Top
         If TypeOf tb Is TextBox Then DirectCast(tb, TextBox).ReadOnly = readOnlyField
         tb.BackColor = If(readOnlyField, Color.FromArgb(232, 237, 232), Color.White)
         panel.Controls.Add(tb, 0, 1)
         layout.Controls.Add(panel, col, row)
         If span > 1 Then layout.SetColumnSpan(panel, span)
+    End Sub
+
+    Private Sub ApplyColors()
+        toolbarPanel.BackColor = Color.FromArgb(themeColors.Toolbar)
+        editorPanel.BackColor = Color.FromArgb(themeColors.Entry)
+        For Each fieldLabel In fieldLabels
+            fieldLabel.ForeColor = Color.FromArgb(themeColors.Labels)
+        Next
+        grid.BackgroundColor = Color.FromArgb(themeColors.Table)
+        grid.DefaultCellStyle.BackColor = Color.FromArgb(themeColors.Table)
+        grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(themeColors.Table)
+        grid.Invalidate()
+    End Sub
+
+    Private Sub ColorsClicked(sender As Object, e As EventArgs)
+        Using dialog As New Frm_Couleurs(themeColors)
+            If dialog.ShowDialog(Me) = DialogResult.OK Then
+                themeColors = dialog.SelectedColors.Copy()
+                ApplyColors()
+                Try
+                    themeColors.Save()
+                Catch ex As Exception
+                    MessageBox.Show("Les couleurs sont appliquées mais n'ont pas pu être enregistrées : " & ex.Message, "Couleurs")
+                End Try
+            End If
+        End Using
     End Sub
 
     Private Sub ReloadGrid()
