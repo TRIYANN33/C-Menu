@@ -14,6 +14,14 @@ if not exist "%OUTPUT%\C-Menu_Publier.exe" (
   pause
   exit /b 1
 )
+echo Copie des sources necessaires au bouton Publier...
+if not exist "%OUTPUT%\Sources" mkdir "%OUTPUT%\Sources"
+robocopy "%~dp0" "%OUTPUT%\Sources" /E /XD .git .vs bin obj /XF *.db *.zip *.exe *.pdb /R:1 /W:1 >nul
+if errorlevel 8 (
+  echo ERREUR : copie des sources impossible.
+  pause
+  exit /b 1
+)
 echo.
 echo Executable autonome : "%OUTPUT%\C-Menu_Publier.exe"
 explorer /select,"%OUTPUT%\C-Menu_Publier.exe"
