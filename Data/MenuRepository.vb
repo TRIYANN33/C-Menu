@@ -49,8 +49,10 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Action, Chemin) VALUES ($created, NULL, $numMenu, $numSousMenu, $frmMenu, $menu, $sousMenu, $info01, $info02, $action, $chemin)"
-                cmd.Parameters.AddWithValue("$created", DateTime.Now.ToString("o"))
+                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Action, Chemin) VALUES ($created, $modified, $numMenu, $numSousMenu, $frmMenu, $menu, $sousMenu, $info01, $info02, $action, $chemin)"
+                Dim nowStamp = DateTime.Now.ToString("o")
+                cmd.Parameters.AddWithValue("$created", nowStamp)
+                cmd.Parameters.AddWithValue("$modified", nowStamp)
                 Bind(cmd, item)
                 cmd.ExecuteNonQuery()
             End Using
