@@ -305,7 +305,7 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private ReadOnly nextEventLabel As New Label With {
-        .ForeColor = Color.DeepSkyBlue,
+        .ForeColor = Color.Black,
         .AutoSize = False,
         .TextAlign = ContentAlignment.MiddleRight,
         .Padding = New Padding(8, 4, 12, 4),
