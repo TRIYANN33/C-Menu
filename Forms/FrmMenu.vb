@@ -41,8 +41,8 @@ Public Class FrmMenu
 
     Private Function ButtonFor(title As String, handler As EventHandler) As Button
         Dim b As New Button With {
-            .Text = title, .Size = New Size(103, 36),
-            .Margin = New Padding(0, 0, 6, 0),
+            .Text = title, .Size = New Size(88, 28),
+            .Margin = New Padding(0, 0, 4, 0),
             .BackColor = Color.FromArgb(223, 235, 253),
             .ForeColor = Color.FromArgb(25, 55, 83),
             .FlatStyle = FlatStyle.Flat, .Cursor = Cursors.Hand
@@ -54,7 +54,7 @@ Public Class FrmMenu
 
     Private Sub BuildUI()
         toolbarPanel = New FlowLayoutPanel With {
-            .Dock = DockStyle.Top, .Height = 58, .Padding = New Padding(12, 10, 0, 8),
+            .Dock = DockStyle.Top, .Height = 42, .Padding = New Padding(8, 6, 0, 5),
             .WrapContents = False, .AutoScroll = True,
             .BackColor = Color.FromArgb(226, 234, 240)
         }
