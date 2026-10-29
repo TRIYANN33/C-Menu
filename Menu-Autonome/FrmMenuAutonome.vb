@@ -244,7 +244,7 @@ Public Class FrmMenuAutonome
                 End Using
                 slideshowPanel = New Panel With {
                     .Size = New Size(pxWidth, pxHeight),
-                    .Dock = DockStyle.Right,
+                    .Dock = DockStyle.Left,
                     .BorderStyle = BorderStyle.FixedSingle,
                     .BackColor = Color.Black
                 }
