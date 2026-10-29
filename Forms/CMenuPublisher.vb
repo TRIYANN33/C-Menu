@@ -2,6 +2,8 @@ Imports System
 Imports System.Diagnostics
 Imports System.IO
 Imports System.IO.Compression
+Imports System.Collections.Generic
+Imports System.Linq
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
@@ -10,18 +12,45 @@ Public NotInheritable Class CMenuPublisher
     End Sub
 
     Public Shared Async Function PublishAsync() As Task(Of String)
-        Dim current As DirectoryInfo = New DirectoryInfo(AppContext.BaseDirectory)
         Dim projectPath As String = Nothing
-        While current IsNot Nothing
-            Dim candidate = Path.Combine(current.FullName, "C-Menu.vbproj")
-            If File.Exists(candidate) Then
-                projectPath = candidate
-                Exit While
-            End If
-            current = current.Parent
-        End While
+        Dim searchRoots As New List(Of String) From {
+            AppContext.BaseDirectory,
+            Environment.CurrentDirectory,
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "source", "repos")
+        }
+        For Each root In searchRoots
+            If Not Directory.Exists(root) Then Continue For
+            Dim current As DirectoryInfo = New DirectoryInfo(root)
+            While current IsNot Nothing
+                Dim candidate = Path.Combine(current.FullName, "C-Menu.vbproj")
+                If File.Exists(candidate) Then
+                    projectPath = candidate
+                    Exit While
+                End If
+                current = current.Parent
+            End While
+            If projectPath IsNot Nothing Then Exit For
+        Next
         If projectPath Is Nothing Then
-            Throw New FileNotFoundException("Projet C-Menu.vbproj introuvable. Lancez cette commande depuis C-Menu ouvert dans Visual Studio, avec les sources disponibles.")
+            Dim reposRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "source", "repos")
+            If Directory.Exists(reposRoot) Then
+                Try
+                    projectPath = Directory.EnumerateFiles(reposRoot, "C-Menu.vbproj", SearchOption.AllDirectories).FirstOrDefault()
+                Catch
+                End Try
+            End If
+        End If
+        If projectPath Is Nothing Then
+            Using picker As New OpenFileDialog With {
+                .Title = "Sélectionnez le projet C-Menu.vbproj pour publier",
+                .Filter = "Projet C-Menu (C-Menu.vbproj)|C-Menu.vbproj|Projets VB (*.vbproj)|*.vbproj",
+                .CheckFileExists = True
+            }
+                If picker.ShowDialog() <> DialogResult.OK Then
+                    Throw New FileNotFoundException("Publication annulée : sélectionnez le fichier C-Menu.vbproj du projet source.")
+                End If
+                projectPath = picker.FileName
+            End Using
         End If
 
         Dim destination = Path.Combine("C:\", "Menu", "C-Menu")
