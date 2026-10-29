@@ -49,6 +49,7 @@ Public Class Frm_Application
         menuBar.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow
 
         Controls.Add(menuBar)
+        Controls.Add(nextEventLabel)
         Controls.Add(header)
         MainMenuStrip = menuBar
 
@@ -59,6 +60,7 @@ Public Class Frm_Application
         End Sub
         AddHandler Shown, Sub(sender, e)
             LoadMenus()
+            RefreshNextEvent()
             UpdateHeader()
             clock.Start()
         End Sub
@@ -111,6 +113,7 @@ Public Class Frm_Application
                         Using dialog As New FrmAnniversaire()
                             dialog.ShowDialog(Me)
                         End Using
+                        RefreshNextEvent()
                     ElseIf IsSlideshow(selected.SousMenu, selected.Action) Then
                         StartSlideshow()
                     Else
@@ -144,6 +147,67 @@ Public Class Frm_Application
     Private originalWindowSize As Size
     Private Const SlideshowFolder As String = "C:\Menu\applications\Diaporama"
 
+    Private ReadOnly nextEventLabel As New Label With {
+        .Dock = DockStyle.Right,
+        .AutoSize = False,
+        .TextAlign = ContentAlignment.MiddleRight,
+        .Padding = New Padding(8, 4, 12, 4),
+        .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+        .Visible = False
+    }
+    Private Const AnniversaryDatabase As String = "C:\Menu\applications\Anniversaire\Anniversaires.db"
+
+    Private Sub RefreshNextEvent()
+        nextEventLabel.Visible = False
+        If Not File.Exists(AnniversaryDatabase) Then
+            AdjustMenuWidth()
+            Return
+        End If
+        Try
+            Dim nextDate As Date = Date.MaxValue
+            Dim nextText As String = Nothing
+            Using cn As New SqliteConnection("Data Source=" & AnniversaryDatabase & ";Mode=ReadOnly")
+                cn.Open()
+                Using cmd = cn.CreateCommand()
+                    cmd.CommandText = "SELECT Nom, Prenom, Naissance, Fete, ANoter FROM Evenements"
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim person = reader.GetString(1).Trim() & " " & reader.GetString(0).Trim()
+                            For i As Integer = 2 To 4
+                                If reader.IsDBNull(i) Then Continue For
+                                Dim stored As Date
+                                If Not Date.TryParseExact(reader.GetString(i), "yyyy-MM-dd",
+                                    CultureInfo.InvariantCulture, DateTimeStyles.None, stored) Then Continue For
+                                Dim year = Date.Today.Year
+                                Dim occurrence = New Date(year, stored.Month, Math.Min(stored.Day, Date.DaysInMonth(year, stored.Month)))
+                                If occurrence < Date.Today Then
+                                    year += 1
+                                    occurrence = New Date(year, stored.Month, Math.Min(stored.Day, Date.DaysInMonth(year, stored.Month)))
+                                End If
+                                If occurrence < nextDate Then
+                                    nextDate = occurrence
+                                    Dim kind = If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))
+                                    nextText = kind & " de " & person & " le " &
+                                        occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))
+                                End If
+                            Next
+                        End While
+                    End Using
+                End Using
+            End Using
+            If nextText IsNot Nothing Then
+                nextEventLabel.Text = nextText
+                nextEventLabel.Width = TextRenderer.MeasureText(nextText, nextEventLabel.Font).Width + 28
+                nextEventLabel.Visible = True
+                nextEventLabel.BringToFront()
+            End If
+        Catch ex As SqliteException
+            ' Base absente de table ou temporairement indisponible : ne pas bloquer le menu.
+        Catch ex As IOException
+        End Try
+        AdjustMenuWidth()
+    End Sub
+
     Private Sub AdjustMenuWidth()
         ' La largeur suit le libellé du formulaire ou la somme des menus visibles.
         Dim labelText As String = menuName
@@ -155,6 +219,7 @@ Public Class Frm_Application
         Next
         Dim contentWidth = Math.Max(labelWidth, menusWidth)
         If slideshowPanel IsNot Nothing Then contentWidth += slideshowPanel.Width + 12
+        If nextEventLabel.Visible Then contentWidth += nextEventLabel.Width + 12
         Dim frameWidth = Width - ClientSize.Width
         Dim targetWidth = contentWidth + frameWidth
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
