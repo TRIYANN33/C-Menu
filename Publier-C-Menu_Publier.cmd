@@ -16,12 +16,23 @@ if not exist "%OUTPUT%\C-Menu_Publier.exe" (
 )
 echo Copie des sources necessaires au bouton Publier...
 if not exist "%OUTPUT%\Sources" mkdir "%OUTPUT%\Sources"
-robocopy "%~dp0" "%OUTPUT%\Sources" /E /XD .git .vs bin obj /XF *.db *.zip *.exe *.pdb /R:1 /W:1 >nul
-if errorlevel 8 (
-  echo ERREUR : copie des sources impossible.
-  pause
-  exit /b 1
+if errorlevel 1 goto copy_error
+copy /Y "C-Menu.vbproj" "%OUTPUT%\Sources\C-Menu.vbproj"
+if errorlevel 1 goto copy_error
+copy /Y "Program.vb" "%OUTPUT%\Sources\Program.vb"
+if errorlevel 1 goto copy_error
+for %%D in (Forms Data Models Menu-Autonome) do (
+  if not exist "%%D" goto copy_error
+  xcopy "%%D\*" "%OUTPUT%\Sources\%%D\" /E /I /Y /Q
+  if errorlevel 1 goto copy_error
 )
+echo Sources copiees avec succes.
+goto copy_done
+:copy_error
+echo ERREUR : copie des sources impossible. Verifiez les messages ci-dessus.
+pause
+exit /b 1
+:copy_done
 echo.
 echo Executable autonome : "%OUTPUT%\C-Menu_Publier.exe"
 explorer /select,"%OUTPUT%\C-Menu_Publier.exe"
