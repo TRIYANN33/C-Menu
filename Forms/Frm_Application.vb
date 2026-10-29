@@ -80,17 +80,18 @@ Public Class Frm_Application
                 If String.IsNullOrWhiteSpace(item.SousMenu) Then
                     If Not String.IsNullOrWhiteSpace(item.Chemin) Then
                         Dim destination = item.Chemin
-                        AddHandler topItem.Click, Sub(sender, e) OpenDestination(destination)
+                        Dim actionName = item.Action
+                        AddHandler topItem.Click, Sub(sender, e) OpenDestination(destination, actionName)
                     End If
                     Continue For
                 End If
                 Dim child As New ToolStripMenuItem(item.SousMenu.Trim()) With {
                     .ToolTipText = If(item.Info01, ""),
-                    .Tag = item.Chemin
+                    .Tag = item
                 }
                 AddHandler child.Click, Sub(sender, e)
-                    Dim target = CStr(DirectCast(sender, ToolStripMenuItem).Tag)
-                    OpenDestination(target)
+                    Dim selected = DirectCast(DirectCast(sender, ToolStripMenuItem).Tag, MenuItem)
+                    OpenDestination(selected.Chemin, selected.Action)
                 End Sub
                 topItem.DropDownItems.Add(child)
             Next
@@ -108,7 +109,7 @@ Public Class Frm_Application
         Return Long.MaxValue
     End Function
 
-    Private Sub OpenDestination(target As String)
+    Private Sub OpenDestination(target As String, actionName As String)
         If String.IsNullOrWhiteSpace(target) Then
             MessageBox.Show("Aucun chemin n'est renseigné pour ce sous-menu.", "C-Menu",
                             MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -116,7 +117,8 @@ Public Class Frm_Application
         End If
         Try
             Dim destination = Environment.ExpandEnvironmentVariables(target.Trim())
-            If Directory.Exists(destination) Then
+            If String.Equals(If(actionName, "").Trim(), "DOSSIER-OUVRE", StringComparison.OrdinalIgnoreCase) OrElse Directory.Exists(destination) Then
+                If Not Directory.Exists(destination) Then Throw New DirectoryNotFoundException("Dossier introuvable : " & destination)
                 Dim opus = "C:\Program Files\GPSoftware\Directory Opus\x64\dopus.exe"
                 If File.Exists(opus) Then
                     Dim launch As New ProcessStartInfo(opus) With {.UseShellExecute = True}
