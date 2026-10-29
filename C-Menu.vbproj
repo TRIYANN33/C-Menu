@@ -6,7 +6,7 @@
     <RootNamespace>CMenu</RootNamespace>
     <StartupObject>CMenu.Program</StartupObject>
     <MyType>Empty</MyType>
-    <CMenuAssemblyName Condition="'$(CMenuAssemblyName)' == ''">MenuPublier</CMenuAssemblyName>
+    <CMenuAssemblyName Condition="'$(CMenuAssemblyName)' == ''">C-Menu_Publier</CMenuAssemblyName>
     <AssemblyName>$(CMenuAssemblyName)</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
