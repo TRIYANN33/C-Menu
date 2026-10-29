@@ -113,7 +113,7 @@ Public Class Frm_Application
                         Using dialog As New FrmAnniversaire()
                             dialog.ShowDialog(Me)
                         End Using
-                        RefreshNextEvent()
+
                     ElseIf IsSlideshow(selected.SousMenu, selected.Action) Then
                         StartSlideshow()
                     Else
