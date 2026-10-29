@@ -68,6 +68,8 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Créer Menu", AddressOf OpenMenuClicked))
 #If Not DISTRIBUTED Then
         toolbarPanel.Controls.Add(ButtonFor("Publier", AddressOf PublishCMenuClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Sauvegarder", AddressOf BackupClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Restaurer", AddressOf RestoreClicked))
 #End If
 
         editorPanel = New TableLayoutPanel With {
@@ -376,6 +378,48 @@ Public Class FrmMenu
     End Sub
 
 #If Not DISTRIBUTED Then
+    Private Sub BackupClicked(sender As Object, e As EventArgs)
+        Using dialog As New SaveFileDialog With {
+            .Title = "Sauvegarder la base de MenuPublier",
+            .Filter = "Base SQLite (*.db)|*.db",
+            .FileName = "MenuPublier_" & DateTime.Now.ToString("yyyyMMdd_HHmmss") & ".db"
+        }
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            Try
+                PublisherBackup.SaveTo(dialog.FileName)
+                MessageBox.Show("Sauvegarde créée :" & Environment.NewLine & dialog.FileName, "Sauvegarder")
+            Catch ex As Exception
+                MessageBox.Show("Sauvegarde impossible : " & ex.Message, "Sauvegarder",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Using
+    End Sub
+
+    Private Sub RestoreClicked(sender As Object, e As EventArgs)
+        Using dialog As New OpenFileDialog With {
+            .Title = "Restaurer la base de MenuPublier",
+            .Filter = "Base SQLite (*.db)|*.db",
+            .CheckFileExists = True
+        }
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            If MessageBox.Show("Remplacer toutes les données actuelles par cette sauvegarde ?" &
+                               Environment.NewLine & dialog.FileName, "Confirmer la restauration",
+                               MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+            Try
+                PublisherBackup.RestoreFrom(dialog.FileName)
+                activeFilters.Clear()
+                sortFields.Clear()
+                searchBox.Clear()
+                ClearForm()
+                ReloadGrid()
+                MessageBox.Show("Base restaurée avec succès.", "Restaurer")
+            Catch ex As Exception
+                MessageBox.Show("Restauration impossible : " & ex.Message, "Restaurer",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Using
+    End Sub
+
     Private Async Sub PublishCMenuClicked(sender As Object, e As EventArgs)
         Try
             Cursor = Cursors.WaitCursor
