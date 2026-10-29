@@ -2,12 +2,14 @@ Imports System.Drawing
 Imports System.Windows.Forms
 Imports System.ComponentModel
 Imports System.Collections.Generic
+Imports System.Linq
 
 Public Class FrmMenu
     Inherits Form
 
     Private ReadOnly repo As New MenuRepository()
-    Private ReadOnly fields As New Dictionary(Of String, TextBox)()
+    Private ReadOnly fields As New Dictionary(Of String, Control)()
+    Private ReadOnly comboKeys As New HashSet(Of String) From {"Frm_Menu", "Menu", "SousMenu", "Info01", "Info02", "Action"}
     Private ReadOnly grid As New DataGridView()
     Private ReadOnly idBox As New TextBox()
     Private ReadOnly dateCreated As New TextBox()
@@ -158,12 +160,22 @@ Public Class FrmMenu
     End Sub
 
     Private Sub AddField(layout As TableLayoutPanel, title As String, key As String, col As Integer, row As Integer, Optional span As Integer = 1)
-        Dim tb As New TextBox()
-        fields.Add(key, tb)
-        AddField(layout, title, tb, col, row, span, False)
+        Dim field As Control
+        If comboKeys.Contains(key) Then
+            field = New ComboBox With {
+                .DropDownStyle = ComboBoxStyle.DropDown,
+                .AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                .AutoCompleteSource = AutoCompleteSource.ListItems,
+                .IntegralHeight = False, .DropDownHeight = 240
+            }
+        Else
+            field = New TextBox()
+        End If
+        fields.Add(key, field)
+        AddField(layout, title, field, col, row, span, False)
     End Sub
 
-    Private Sub AddField(layout As TableLayoutPanel, title As String, tb As TextBox, col As Integer, row As Integer, span As Integer, readOnlyField As Boolean)
+    Private Sub AddField(layout As TableLayoutPanel, title As String, tb As Control, col As Integer, row As Integer, span As Integer, readOnlyField As Boolean)
         Dim panel As New TableLayoutPanel With {
             .Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 2,
             .Margin = New Padding(5, 2, 5, 4)
@@ -175,7 +187,7 @@ Public Class FrmMenu
             .ForeColor = Color.Black, .TextAlign = ContentAlignment.MiddleLeft
         }, 0, 0)
         tb.Dock = DockStyle.Top
-        tb.ReadOnly = readOnlyField
+        If TypeOf tb Is TextBox Then DirectCast(tb, TextBox).ReadOnly = readOnlyField
         tb.BackColor = If(readOnlyField, Color.FromArgb(232, 237, 232), Color.White)
         panel.Controls.Add(tb, 0, 1)
         layout.Controls.Add(panel, col, row)
@@ -186,9 +198,35 @@ Public Class FrmMenu
         RemoveHandler grid.SelectionChanged, AddressOf GridSelectionChanged
         Dim data = repo.GetAll(searchBox.Text.Trim(), sortAZ)
         grid.DataSource = New BindingList(Of MenuItem)(data)
+        RefreshCombos(data)
         countLabel.Text = data.Count.ToString() & " enregistrement(s)"
         grid.ClearSelection()
         AddHandler grid.SelectionChanged, AddressOf GridSelectionChanged
+    End Sub
+
+    Private Sub RefreshCombos(data As List(Of MenuItem))
+        For Each key In comboKeys
+            Dim combo = DirectCast(fields(key), ComboBox)
+            Dim previous = combo.Text
+            Dim values As New SortedSet(Of String)(StringComparer.CurrentCultureIgnoreCase)
+            For Each item In data
+                Dim value As String = ""
+                Select Case key
+                    Case "Frm_Menu" : value = item.Frm_Menu
+                    Case "Menu" : value = item.Menu
+                    Case "SousMenu" : value = item.SousMenu
+                    Case "Info01" : value = item.Info01
+                    Case "Info02" : value = item.Info02
+                    Case "Action" : value = item.Action
+                End Select
+                If Not String.IsNullOrWhiteSpace(value) Then values.Add(value.Trim())
+            Next
+            combo.BeginUpdate()
+            combo.Items.Clear()
+            combo.Items.AddRange(values.Cast(Of Object)().ToArray())
+            combo.EndUpdate()
+            combo.Text = previous
+        Next
     End Sub
 
     Private Sub ClearForm()
@@ -197,7 +235,7 @@ Public Class FrmMenu
         dateCreated.Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
         dateModified.Clear()
         For Each tb In fields.Values
-            tb.Clear()
+            tb.Text = ""
         Next
     End Sub
 
