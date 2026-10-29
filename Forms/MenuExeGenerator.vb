@@ -5,6 +5,7 @@ Imports System.Linq
 Imports System.Reflection
 Imports System.Text
 Imports System.Threading.Tasks
+Imports Microsoft.Data.Sqlite
 
 Public NotInheritable Class MenuExeGenerator
     Private Sub New()
@@ -57,6 +58,7 @@ Public NotInheritable Class MenuExeGenerator
         }
         For Each arg In {"publish", projectPath, "-c", "Release", "-r", "win-x64",
                          "--self-contained", "true", "-p:PublishSingleFile=true",
+                         "-p:IncludeNativeLibrariesForSelfExtract=true",
                          "-o", publishFolder}
             start.ArgumentList.Add(arg)
         Next
@@ -71,6 +73,20 @@ Public NotInheritable Class MenuExeGenerator
         End Using
         Dim exePath = Path.Combine(publishFolder, safe & ".exe")
         If Not File.Exists(exePath) Then Throw New FileNotFoundException("L'exécutable n'a pas été créé.", exePath)
+        Dim originalDb = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "CMenu.db")
+        If Not File.Exists(originalDb) Then Throw New FileNotFoundException("Base SQLite source introuvable.", originalDb)
+        Dim targetDb = Path.Combine(publishFolder, "CMenu.db")
+        Using source As New SqliteConnection(New SqliteConnectionStringBuilder With {
+            .DataSource = originalDb, .Mode = SqliteOpenMode.ReadOnly
+        }.ToString())
+            Using target As New SqliteConnection(New SqliteConnectionStringBuilder With {
+                .DataSource = targetDb
+            }.ToString())
+                source.Open()
+                target.Open()
+                source.BackupDatabase(target)
+            End Using
+        End Using
         Return exePath
     End Function
 
