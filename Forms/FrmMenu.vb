@@ -47,6 +47,7 @@ Public Class FrmMenu
             .ForeColor = Color.FromArgb(25, 55, 83),
             .FlatStyle = FlatStyle.Flat, .Cursor = Cursors.Hand
         }
+        If title = "Sauvegarder" Then b.Width = 112
         b.FlatAppearance.BorderColor = Color.FromArgb(167, 193, 225)
         AddHandler b.Click, handler
         Return b
