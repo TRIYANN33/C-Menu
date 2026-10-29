@@ -7,12 +7,15 @@ Public Class MenuRepository
     Private ReadOnly connectionString As String
 
     Public Sub New()
-        Dim folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                                  If(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar).Equals(
-                                      Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Menu", "C-Menu"), StringComparison.OrdinalIgnoreCase),
-                                     "C-Menu-Distribue", "C-Menu"))
+#If DISTRIBUTED Then
+        Dim folder = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Menu")
+        Dim databasePath = Path.Combine(folder, "C_Menu.db")
+#Else
+        Dim folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu")
+        Dim databasePath = Path.Combine(folder, "CMenu.db")
+#End If
         Directory.CreateDirectory(folder)
-        connectionString = New SqliteConnectionStringBuilder With {.DataSource = Path.Combine(folder, "CMenu.db")}.ToString()
+        connectionString = New SqliteConnectionStringBuilder With {.DataSource = databasePath}.ToString()
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
