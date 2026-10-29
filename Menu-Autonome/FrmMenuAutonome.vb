@@ -284,6 +284,10 @@ Public Class FrmMenuAutonome
                                 If occurrence < nextDate Then
                                     nextDate = occurrence
                                     Dim kind = If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))
+                                    If i = 2 Then
+                                        Dim age = occurrence.Year - stored.Year
+                                        kind = "Anniversaire des " & age.ToString() & " ans"
+                                    End If
                                     nextText = kind & " de " & person & " le " &
                                         occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))
                                 End If
