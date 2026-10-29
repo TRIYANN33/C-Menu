@@ -63,7 +63,7 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
-        toolbarPanel.Controls.Add(ButtonFor("Ouvrir menu", AddressOf OpenMenuClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Créer Menu", AddressOf OpenMenuClicked))
 
         editorPanel = New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 162, .ColumnCount = 6, .RowCount = 3,
