@@ -76,8 +76,8 @@ Public Class FrmMenu
                 pixelsPerCmX = graphics.DpiX / 2.54F
                 pixelsPerCmY = graphics.DpiY / 2.54F
             End Using
-            Dim targetLeft = workArea.Left + CInt(Math.Round(10 * pixelsPerCmX))
-            Dim targetTop = workArea.Top + CInt(Math.Round(1 * pixelsPerCmY))
+            Dim targetLeft = workArea.Left + CInt(Math.Round(5 * pixelsPerCmX))
+            Dim targetTop = workArea.Top + CInt(Math.Round(0.5 * pixelsPerCmY))
             targetLeft = Math.Min(targetLeft, workArea.Right - targetWidth)
             targetTop = Math.Min(targetTop, workArea.Bottom - targetHeight)
             Bounds = New Rectangle(targetLeft, targetTop, targetWidth, targetHeight)
