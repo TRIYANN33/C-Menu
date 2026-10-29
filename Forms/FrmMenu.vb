@@ -129,6 +129,17 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Restaurer", AddressOf RestoreClicked))
 #End If
 
+        ' Adapter la largeur de la fenêtre à la somme des boutons, sans barre de défilement.
+        Dim toolbarWidth = toolbarPanel.Padding.Left + toolbarPanel.Padding.Right
+        For Each control As Control In toolbarPanel.Controls
+            toolbarWidth += control.Width + control.Margin.Left + control.Margin.Right
+        Next
+        Dim requiredFormWidth = toolbarWidth + (Width - ClientSize.Width) + 12
+        If Width < requiredFormWidth Then Width = requiredFormWidth
+        If MinimumSize.Width < requiredFormWidth Then
+            MinimumSize = New Size(requiredFormWidth, MinimumSize.Height)
+        End If
+
         editorPanel = New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 162, .ColumnCount = 6, .RowCount = 3,
             .BackColor = Color.FromArgb(29, 171, 79),
