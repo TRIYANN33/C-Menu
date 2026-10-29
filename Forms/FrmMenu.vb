@@ -3,6 +3,7 @@ Imports System.Windows.Forms
 Imports System.ComponentModel
 Imports System.Collections.Generic
 Imports System.Linq
+Imports System.Diagnostics
 
 Public Class FrmMenu
     Inherits Form
@@ -370,7 +371,7 @@ Public Class FrmMenu
         End Using
     End Sub
 
-    Private Sub OpenMenuClicked(sender As Object, e As EventArgs)
+    Private Async Sub OpenMenuClicked(sender As Object, e As EventArgs)
         If selectedId = 0 Then
             MessageBox.Show("Sélectionnez un enregistrement dans le tableau.", "Ouvrir menu")
             Return
@@ -381,9 +382,17 @@ Public Class FrmMenu
             MessageBox.Show("L'enregistrement doit contenir une valeur Frm_Menu.", "Ouvrir menu")
             Return
         End If
-        Using frm As New Frm_Application(selected.Frm_Menu)
-            frm.ShowDialog(Me)
-        End Using
+        Try
+            Cursor = Cursors.WaitCursor
+            Dim exePath = Await MenuExeGenerator.CreateAsync(selected.Frm_Menu)
+            Cursor = Cursors.Default
+            MessageBox.Show("Formulaire exécutable créé :" & Environment.NewLine & exePath, "Créer Menu")
+            Process.Start(New ProcessStartInfo("explorer.exe", "/select,""" & exePath & """") With {.UseShellExecute = True})
+        Catch ex As Exception
+            Cursor = Cursors.Default
+            MessageBox.Show("Échec de création de l'exécutable :" & Environment.NewLine & ex.Message,
+                            "Créer Menu", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub SortClicked(sender As Object, e As EventArgs)
