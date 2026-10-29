@@ -52,6 +52,15 @@ Public Class Frm_Application
         Controls.Add(nextEventLabel)
         Controls.Add(appointmentLabel)
         Controls.Add(header)
+        KeyPreview = True
+        AddHandler KeyDown, Sub(sender, e)
+            If e.KeyCode = Keys.F5 Then
+                e.Handled = True
+                e.SuppressKeyPress = True
+                RefreshNextEvent()
+                RefreshAppointmentsDisplay()
+            End If
+        End Sub
         MainMenuStrip = menuBar
 
         AddHandler Resize, Sub(sender, e)
@@ -160,7 +169,7 @@ Public Class Frm_Application
 
     Private ReadOnly appointmentLabel As New Label With {
         .AutoSize = False,
-        .TextAlign = ContentAlignment.TopRight,
+        .TextAlign = ContentAlignment.TopLeft,
         .Font = New Font("Segoe UI", 9, FontStyle.Bold),
         .Visible = False
     }
@@ -206,6 +215,16 @@ Public Class Frm_Application
         AdjustMenuWidth()
     End Sub
 
+    Private Sub PositionSlideshow()
+        If slideshowPanel Is Nothing Then Return
+        Dim eventWidth = Math.Max(If(nextEventLabel.Visible, nextEventLabel.Width, 0),
+                                  If(appointmentLabel.Visible, appointmentLabel.Width, 0))
+        slideshowPanel.Dock = DockStyle.None
+        slideshowPanel.Location = New Point(If(eventWidth > 0, eventWidth + 24, 0), menuBar.Bottom)
+        slideshowPanel.Top = Math.Max(menuBar.Bottom, header.Bottom)
+        slideshowPanel.BringToFront()
+    End Sub
+
     Private Sub PositionAppointments()
         If Not appointmentLabel.Visible Then Return
         Dim topOfBody = menuBar.Bottom
@@ -216,7 +235,7 @@ Public Class Frm_Application
         End Using
         Dim topPosition = topOfBody + offsetPixels
         If nextEventLabel.Visible Then topPosition = Math.Max(topPosition, nextEventLabel.Bottom + 8)
-        appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width - 12), topPosition)
+        appointmentLabel.Location = New Point(12, topPosition)
         appointmentLabel.BringToFront()
         Dim neededHeight = appointmentLabel.Bottom + 12 + (Height - ClientSize.Height)
         If Height < neededHeight Then Height = neededHeight
@@ -225,8 +244,8 @@ Public Class Frm_Application
     Private ReadOnly nextEventLabel As New Label With {
         .ForeColor = Color.Black,
         .AutoSize = False,
-        .TextAlign = ContentAlignment.MiddleRight,
-        .Padding = New Padding(8, 4, 12, 4),
+        .TextAlign = ContentAlignment.MiddleLeft,
+        .Padding = New Padding(4, 4, 8, 4),
         .Font = New Font("Segoe UI", 9, FontStyle.Bold),
         .Visible = False
     }
@@ -238,7 +257,7 @@ Public Class Frm_Application
         End Using
         Dim topOfBody = menuBar.Bottom
         topOfBody = Math.Max(topOfBody, header.Bottom)
-        nextEventLabel.Location = New Point(Math.Max(0, ClientSize.Width - nextEventLabel.Width - 12),
+        nextEventLabel.Location = New Point(12,
                                             topOfBody + offsetPixels)
         nextEventLabel.Height = Math.Max(28, nextEventLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None).Length * (nextEventLabel.Font.Height + 3) + 10)
         nextEventLabel.BringToFront()
@@ -325,7 +344,8 @@ Public Class Frm_Application
         Dim contentWidth = Math.Max(labelWidth, menusWidth)
         If slideshowPanel IsNot Nothing Then contentWidth += slideshowPanel.Width + 12
         If nextEventLabel.Visible Then contentWidth += nextEventLabel.Width + 12
-        If appointmentLabel.Visible Then contentWidth = Math.Max(contentWidth, appointmentLabel.Width + 24)
+        Dim eventWidth = Math.Max(If(nextEventLabel.Visible, nextEventLabel.Width, 0), If(appointmentLabel.Visible, appointmentLabel.Width, 0))
+        If eventWidth > 0 Then contentWidth = Math.Max(contentWidth, eventWidth + 24 + If(slideshowPanel Is Nothing, 0, slideshowPanel.Width + 12))
         Dim frameWidth = Width - ClientSize.Width
         Dim targetWidth = contentWidth + frameWidth
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
@@ -334,6 +354,7 @@ Public Class Frm_Application
         Width = targetWidth
         PositionNextEvent()
         PositionAppointments()
+        PositionSlideshow()
     End Sub
 
     Private Sub StartSlideshow()
@@ -372,6 +393,7 @@ Public Class Frm_Application
                 Controls.Add(slideshowPanel)
                 slideshowPanel.BringToFront()
                 AdjustMenuWidth()
+                PositionSlideshow()
                 Height = Math.Max(Height, pxHeight + 70)
                 AddHandler slideshowTimer.Tick, Sub(sender, e) NextSlideshowImage()
             End If
