@@ -60,15 +60,29 @@ Public NotInheritable Class CMenuPublisher
             Dim publishedExe = Path.Combine(destination, "C-Menu.exe")
             Try
                 Dim shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "C-Menu.lnk")
-                Dim shellType = Type.GetTypeFromProgID("WScript.Shell")
-                If shellType Is Nothing Then Throw New InvalidOperationException("Windows Script Host indisponible.")
-                Dim shell As Object = Activator.CreateInstance(shellType)
-                Dim shortcut As Object = Microsoft.VisualBasic.Interaction.CallByName(
-                    shell, "CreateShortcut", Microsoft.VisualBasic.CallType.Method, shortcutPath)
-                Microsoft.VisualBasic.Interaction.CallByName(shortcut, "TargetPath", Microsoft.VisualBasic.CallType.Let, publishedExe)
-                Microsoft.VisualBasic.Interaction.CallByName(shortcut, "WorkingDirectory", Microsoft.VisualBasic.CallType.Let, destination)
-                Microsoft.VisualBasic.Interaction.CallByName(shortcut, "IconLocation", Microsoft.VisualBasic.CallType.Let, publishedExe & ",0")
-                Microsoft.VisualBasic.Interaction.CallByName(shortcut, "Save", Microsoft.VisualBasic.CallType.Method)
+                Dim script = "$ErrorActionPreference = 'Stop'; " &
+                    "$w = New-Object -ComObject WScript.Shell; " &
+                    "$s = $w.CreateShortcut('" & shortcutPath.Replace("'", "''") & "'); " &
+                    "$s.TargetPath = '" & publishedExe.Replace("'", "''") & "'; " &
+                    "$s.WorkingDirectory = '" & destination.Replace("'", "''") & "'; " &
+                    "$s.IconLocation = '" & publishedExe.Replace("'", "''") & ",0'; " &
+                    "$s.Save()"
+                Dim shortcutStart As New ProcessStartInfo("powershell.exe") With {
+                    .UseShellExecute = False,
+                    .CreateNoWindow = True,
+                    .RedirectStandardError = True
+                }
+                shortcutStart.ArgumentList.Add("-NoProfile")
+                shortcutStart.ArgumentList.Add("-NonInteractive")
+                shortcutStart.ArgumentList.Add("-Command")
+                shortcutStart.ArgumentList.Add(script)
+                Using shortcutProcess = Process.Start(shortcutStart)
+                    If shortcutProcess Is Nothing Then Throw New InvalidOperationException("PowerShell ne démarre pas.")
+                    Dim shortcutErrorText = Await shortcutProcess.StandardError.ReadToEndAsync()
+                    Await shortcutProcess.WaitForExitAsync()
+                    If shortcutProcess.ExitCode <> 0 Then Throw New InvalidOperationException(shortcutErrorText)
+                End Using
+                If Not File.Exists(shortcutPath) Then Throw New IOException("Le raccourci n'a pas été enregistré sur le Bureau.")
             Catch shortcutError As Exception
                 MessageBox.Show("C-Menu.exe a bien été créé, mais le raccourci n'a pas pu être créé :" &
                                 Environment.NewLine & shortcutError.Message, "Raccourci C-Menu",
