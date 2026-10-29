@@ -102,6 +102,7 @@ Public Class FrmMenu
             .FlatStyle = FlatStyle.Flat, .Cursor = Cursors.Hand
         }
         If title = "Sauvegarder" Then b.Width = 112
+        If title = "Créer Menu" Then b.Width = 112
         b.FlatAppearance.BorderColor = Color.FromArgb(167, 193, 225)
         AddHandler b.Click, handler
         Return b
@@ -121,7 +122,7 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
-        toolbarPanel.Controls.Add(ButtonFor("Créer Menus", AddressOf OpenMenuClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Créer Menu", AddressOf OpenMenuClicked))
 #If Not DISTRIBUTED Then
         toolbarPanel.Controls.Add(ButtonFor("Publier", AddressOf PublishCMenuClicked))
         toolbarPanel.Controls.Add(ButtonFor("Sauvegarder", AddressOf BackupClicked))
