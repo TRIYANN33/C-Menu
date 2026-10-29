@@ -12,7 +12,6 @@ Public Class FrmMenuAutonome
     Inherits Form
 
     Private ReadOnly menuBar As New MenuStrip()
-    Private ReadOnly titleBanner As New Label()
     Private ReadOnly settingsPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "Theme_" & GeneratedConfig.SafeName & ".txt")
     Private titleColor As Color = Color.FromArgb(127, 255, 127)
     Private barColor As Color = Color.FromArgb(62, 130, 137)
@@ -28,12 +27,6 @@ Public Class FrmMenuAutonome
         Font = New Font("Segoe UI", 10)
         BackColor = bodyColor
         LoadColors()
-        titleBanner.Dock = DockStyle.Top
-        titleBanner.Height = 60
-        titleBanner.TextAlign = ContentAlignment.MiddleLeft
-        titleBanner.Padding = New Padding(20, 0, 0, 0)
-        titleBanner.Font = New Font("Segoe UI", 12, FontStyle.Bold)
-        titleBanner.BackColor = titleColor
 
         menuBar.Dock = DockStyle.Top
         menuBar.AutoSize = True
@@ -41,7 +34,6 @@ Public Class FrmMenuAutonome
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
         menuBar.Padding = New Padding(10, 6, 10, 6)
         Controls.Add(menuBar)
-        Controls.Add(titleBanner)
         ApplyColors()
         MainMenuStrip = menuBar
 
@@ -57,9 +49,6 @@ Public Class FrmMenuAutonome
     Private Sub RefreshClock()
         Dim nowValue = DateTime.Now
         Text = "C-Menu — " & GeneratedConfig.FormName
-        titleBanner.Text = GeneratedConfig.FormName & " — Nous sommes le " &
-            nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
-            " à " & nowValue.ToString("HH:mm:ss")
     End Sub
 
     Private Sub LoadFromDatabase()
@@ -186,7 +175,6 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private Sub ApplyColors()
-        titleBanner.BackColor = titleColor
         menuBar.BackColor = barColor
         BackColor = bodyColor
     End Sub
