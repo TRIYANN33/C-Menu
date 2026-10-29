@@ -39,8 +39,8 @@ Public Class FrmMenu
 
     Private Function ButtonFor(title As String, handler As EventHandler) As Button
         Dim b As New Button With {
-            .Text = title, .Size = New Size(112, 36),
-            .Margin = New Padding(0, 0, 8, 0),
+            .Text = title, .Size = New Size(103, 36),
+            .Margin = New Padding(0, 0, 6, 0),
             .BackColor = Color.FromArgb(223, 235, 253),
             .ForeColor = Color.FromArgb(25, 55, 83),
             .FlatStyle = FlatStyle.Flat, .Cursor = Cursors.Hand
@@ -63,6 +63,7 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Ouvrir menu", AddressOf OpenMenuClicked))
 
         editorPanel = New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 162, .ColumnCount = 6, .RowCount = 3,
@@ -366,6 +367,22 @@ Public Class FrmMenu
                 ClearForm()
                 ReloadGrid()
             End If
+        End Using
+    End Sub
+
+    Private Sub OpenMenuClicked(sender As Object, e As EventArgs)
+        If selectedId = 0 Then
+            MessageBox.Show("Sélectionnez un enregistrement dans le tableau.", "Ouvrir menu")
+            Return
+        End If
+        Dim selected = TryCast(grid.SelectedRows.Cast(Of DataGridViewRow)().
+            Select(Function(row) row.DataBoundItem).FirstOrDefault(), MenuItem)
+        If selected Is Nothing OrElse String.IsNullOrWhiteSpace(selected.Frm_Menu) Then
+            MessageBox.Show("L'enregistrement doit contenir une valeur Frm_Menu.", "Ouvrir menu")
+            Return
+        End If
+        Using frm As New Frm_Application(selected.Frm_Menu)
+            frm.ShowDialog(Me)
         End Using
     End Sub
 
