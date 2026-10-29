@@ -197,7 +197,14 @@ Public Class FrmMenuAutonome
         End If
         Try
             Dim destination = Environment.ExpandEnvironmentVariables(pathValue.Trim())
-            Process.Start(New ProcessStartInfo(destination) With {.UseShellExecute = True})
+            If Directory.Exists(destination) Then
+                Process.Start(New ProcessStartInfo("explorer.exe") With {
+                    .UseShellExecute = True,
+                    .ArgumentList = {destination}
+                })
+            Else
+                Process.Start(New ProcessStartInfo(destination) With {.UseShellExecute = True})
+            End If
         Catch ex As Exception
             MessageBox.Show(Me, "Impossible d'ouvrir : " & pathValue &
                             Environment.NewLine & ex.Message, "Menu autonome",
