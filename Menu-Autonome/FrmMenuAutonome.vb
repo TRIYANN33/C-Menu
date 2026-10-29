@@ -48,7 +48,9 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshClock()
         Dim nowValue = DateTime.Now
-        Text = "C-Menu — " & GeneratedConfig.FormName
+        Text = "Menu--" & GeneratedConfig.FormName & " — Nous sommes le " &
+            nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
+            " à " & nowValue.ToString("HH:mm:ss")
     End Sub
 
     Private Sub LoadFromDatabase()
