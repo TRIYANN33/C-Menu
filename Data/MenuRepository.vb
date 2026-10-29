@@ -14,6 +14,10 @@ Public Class MenuRepository
             Using cmd = cn.CreateCommand()
                 cmd.CommandText = "CREATE TABLE IF NOT EXISTS Menus (Id INTEGER PRIMARY KEY AUTOINCREMENT, SaisieLe TEXT NOT NULL, ModifierLe TEXT, NumMenu TEXT NOT NULL, NumSousMenu TEXT NOT NULL, Menu TEXT NOT NULL, SousMenu TEXT NOT NULL, Info01 TEXT NOT NULL, Info02 TEXT NOT NULL, Action TEXT NOT NULL, Chemin TEXT NOT NULL)"
                 cmd.ExecuteNonQuery()
+                cmd.CommandText = "CREATE INDEX IF NOT EXISTS IX_Menus_NumMenu ON Menus(NumMenu, NumSousMenu)"
+                cmd.ExecuteNonQuery()
+                cmd.CommandText = "CREATE INDEX IF NOT EXISTS IX_Menus_Menu ON Menus(Menu, SousMenu)"
+                cmd.ExecuteNonQuery()
             End Using
         End Using
     End Sub
