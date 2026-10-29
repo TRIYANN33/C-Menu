@@ -9,110 +9,183 @@ Public Class FrmMenu
     Private ReadOnly repo As New MenuRepository()
     Private ReadOnly fields As New Dictionary(Of String, TextBox)()
     Private ReadOnly grid As New DataGridView()
+    Private ReadOnly idBox As New TextBox()
     Private ReadOnly dateCreated As New TextBox()
     Private ReadOnly dateModified As New TextBox()
-    Private ReadOnly idBox As New TextBox()
-    Private selectedId As Integer = 0
-    Private sortAZ As Boolean = False
-    Private filterText As String = ""
+    Private ReadOnly searchBox As New TextBox()
+    Private ReadOnly countLabel As New ToolStripStatusLabel()
+    Private selectedId As Integer
+    Private sortAZ As Boolean
 
     Public Sub New()
-        Text = "C-Menu — Gestion des menus"
-        Size = New Size(1120, 780)
-        MinimumSize = New Size(940, 600)
+        Text = "C-Menu | Gestion des menus"
+        Size = New Size(1160, 770)
+        MinimumSize = New Size(960, 620)
         StartPosition = FormStartPosition.CenterScreen
-        Font = New Font("Segoe UI", 10)
-        BackColor = Color.FromArgb(166, 218, 73)
+        Font = New Font("Segoe UI", 10.0F)
+        BackColor = Color.FromArgb(241, 247, 237)
         BuildUI()
+        ClearForm()
         ReloadGrid()
     End Sub
 
-    Private Function MakeButton(title As String, handler As EventHandler) As Button
-        Dim b As New Button With {.Text = title, .Width = 126, .Height = 33, .Margin = New Padding(4), .BackColor = Color.FromArgb(202, 220, 250), .FlatStyle = FlatStyle.Flat}
+    Private Function ButtonFor(title As String, handler As EventHandler) As Button
+        Dim b As New Button With {
+            .Text = title, .Size = New Size(130, 36),
+            .Margin = New Padding(0, 0, 10, 0),
+            .BackColor = Color.FromArgb(223, 235, 253),
+            .ForeColor = Color.FromArgb(25, 55, 83),
+            .FlatStyle = FlatStyle.Flat, .Cursor = Cursors.Hand
+        }
+        b.FlatAppearance.BorderColor = Color.FromArgb(167, 193, 225)
         AddHandler b.Click, handler
         Return b
     End Function
 
     Private Sub BuildUI()
-        Dim bar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 48, .Padding = New Padding(18, 6, 0, 0), .BackColor = Color.FromArgb(216, 223, 233)}
-        bar.Controls.Add(MakeButton("Enregistrer", AddressOf SaveClicked))
-        bar.Controls.Add(MakeButton("Modifier", AddressOf UpdateClicked))
-        bar.Controls.Add(MakeButton("Supprimer", AddressOf DeleteClicked))
-        bar.Controls.Add(MakeButton("Filtrer", AddressOf FilterClicked))
-        bar.Controls.Add(MakeButton("A-Z", AddressOf SortClicked))
+        Dim toolbar As New FlowLayoutPanel With {
+            .Dock = DockStyle.Top, .Height = 58, .Padding = New Padding(16, 10, 0, 8),
+            .BackColor = Color.FromArgb(226, 234, 240)
+        }
+        toolbar.Controls.Add(ButtonFor("Enregistrer", AddressOf SaveClicked))
+        toolbar.Controls.Add(ButtonFor("Modifier", AddressOf UpdateClicked))
+        toolbar.Controls.Add(ButtonFor("Supprimer", AddressOf DeleteClicked))
+        toolbar.Controls.Add(ButtonFor("Filtrer", AddressOf FilterClicked))
+        toolbar.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
 
-        Dim entry As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 220, .BackColor = Color.FromArgb(28, 172, 74), .Padding = New Padding(18, 10, 18, 12), .ColumnCount = 6, .RowCount = 4}
-        For i As Integer = 0 To 5
-            entry.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F / 6))
+        Dim editor As New TableLayoutPanel With {
+            .Dock = DockStyle.Top, .Height = 224, .ColumnCount = 6, .RowCount = 3,
+            .BackColor = Color.FromArgb(29, 171, 79),
+            .Padding = New Padding(14, 12, 14, 12)
+        }
+        For i = 1 To 6
+            editor.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F / 6))
         Next
-        For i As Integer = 0 To 3
-            entry.RowStyles.Add(New RowStyle(SizeType.Percent, 25))
-        Next
-        AddField(entry, "N° Saisie", idBox, 0, 0, True)
-        AddField(entry, "Saisie Le", dateCreated, 1, 0, True)
-        AddField(entry, "Modifier Le", dateModified, 2, 0, True)
-        AddField(entry, "N° Menu", "NumMenu", 0, 1)
-        AddField(entry, "N° Sous-Menu", "NumSousMenu", 1, 1)
-        AddField(entry, "Menu", "Menu", 2, 1)
-        AddField(entry, "Sous-Menu", "SousMenu", 3, 1)
-        AddField(entry, "Info_01", "Info01", 4, 1)
-        AddField(entry, "Info_02", "Info02", 5, 1)
-        AddField(entry, "Action", "Action", 0, 2, 2)
-        AddField(entry, "Chemin", "Chemin", 2, 2, 4)
+        editor.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
+        editor.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
+        editor.RowStyles.Add(New RowStyle(SizeType.Percent, 34.0F))
+        AddField(editor, "N° Saisie", idBox, 0, 0, 1, True)
+        AddField(editor, "Saisie Le", dateCreated, 1, 0, 1, True)
+        AddField(editor, "Modifier Le", dateModified, 2, 0, 1, True)
+        AddField(editor, "N° Menu", "NumMenu", 3, 0)
+        AddField(editor, "N° Sous-Menu", "NumSousMenu", 4, 0)
+        AddField(editor, "Menu", "Menu", 0, 1, 2)
+        AddField(editor, "Sous-Menu", "SousMenu", 2, 1, 2)
+        AddField(editor, "Info_01", "Info01", 4, 1)
+        AddField(editor, "Info_02", "Info02", 5, 1)
+        AddField(editor, "Action", "Action", 0, 2, 2)
+        AddField(editor, "Chemin", "Chemin", 2, 2, 4)
+
+        Dim searchPanel As New TableLayoutPanel With {
+            .Dock = DockStyle.Top, .Height = 60, .ColumnCount = 2,
+            .Padding = New Padding(16, 10, 16, 8),
+            .BackColor = Color.FromArgb(241, 247, 237)
+        }
+        searchPanel.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 135))
+        searchPanel.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+        Dim searchLabel As New Label With {
+            .Text = "Recherche :", .Dock = DockStyle.Fill,
+            .TextAlign = ContentAlignment.MiddleLeft, .Font = New Font(Font, FontStyle.Bold)
+        }
+        searchBox.Dock = DockStyle.Fill
+        searchBox.PlaceholderText = "Menu, sous-menu ou numéro... (Filtrer pour appliquer)"
+        AddHandler searchBox.KeyDown, Sub(sender, e)
+                                          If e.KeyCode = Keys.Enter Then
+                                              e.SuppressKeyPress = True
+                                              FilterClicked(sender, EventArgs.Empty)
+                                          End If
+                                      End Sub
+        searchPanel.Controls.Add(searchLabel, 0, 0)
+        searchPanel.Controls.Add(searchBox, 1, 0)
 
         grid.Dock = DockStyle.Fill
-        grid.BackgroundColor = Color.FromArgb(166, 218, 73)
-        grid.BorderStyle = BorderStyle.None
         grid.ReadOnly = True
         grid.AllowUserToAddRows = False
         grid.AllowUserToDeleteRows = False
+        grid.AllowUserToResizeRows = False
         grid.MultiSelect = False
-        grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect
-        grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
         grid.RowHeadersVisible = False
-        grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(55, 132, 151)
-        grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
+        grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+        grid.AutoGenerateColumns = False
+        grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+        grid.BackgroundColor = Color.White
+        grid.BorderStyle = BorderStyle.FixedSingle
         grid.EnableHeadersVisualStyles = False
-        grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(230, 245, 200)
-        grid.RowTemplate.Height = 32
+        grid.ColumnHeadersHeight = 42
+        grid.RowTemplate.Height = 34
+        grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(51, 119, 140)
+        grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
+        grid.ColumnHeadersDefaultCellStyle.Font = New Font(Font, FontStyle.Bold)
+        grid.DefaultCellStyle.BackColor = Color.White
+        grid.DefaultCellStyle.ForeColor = Color.FromArgb(35, 48, 57)
+        grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(66, 150, 178)
+        grid.DefaultCellStyle.SelectionForeColor = Color.White
+        grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(225, 244, 216)
+        grid.GridColor = Color.FromArgb(207, 222, 202)
+        For Each spec In New (String, String, Integer)() {
+            ("Id", "N° Saisie", 65), ("NumMenu", "N° Menu", 75),
+            ("NumSousMenu", "N° Sous-Menu", 90), ("Menu", "Menu", 130),
+            ("SousMenu", "Sous-Menu", 130), ("Info01", "Info_01", 90),
+            ("Info02", "Info_02", 90), ("Action", "Action", 130),
+            ("Chemin", "Chemin", 170), ("SaisieLe", "Saisie Le", 115),
+            ("ModifierLe", "Modifier Le", 115)}
+            Dim column As New DataGridViewTextBoxColumn With {
+                .DataPropertyName = spec.Item1, .Name = spec.Item1,
+                .HeaderText = spec.Item2, .MinimumWidth = spec.Item3,
+                .FillWeight = CSng(spec.Item3)
+            }
+            If spec.Item1 = "SaisieLe" OrElse spec.Item1 = "ModifierLe" Then
+                column.DefaultCellStyle.Format = "dd/MM/yyyy HH:mm"
+            End If
+            grid.Columns.Add(column)
+        Next
         AddHandler grid.SelectionChanged, AddressOf GridSelectionChanged
 
-        Dim bottom As New StatusStrip()
-        bottom.Items.Add(New ToolStripStatusLabel("C-Menu | SQLite | Sélectionnez une ligne pour modifier"))
-        Controls.Add(grid)
-        Controls.Add(entry)
-        Controls.Add(bar)
-        Controls.Add(bottom)
-        ClearForm()
+        Dim gridHost As New Panel With {
+            .Dock = DockStyle.Fill, .Padding = New Padding(16, 0, 16, 10),
+            .BackColor = Color.FromArgb(241, 247, 237)
+        }
+        gridHost.Controls.Add(grid)
+        Dim status As New StatusStrip()
+        status.Items.Add(countLabel)
+        status.Items.Add(New ToolStripStatusLabel(" | SQLite • Données locales"))
+        Controls.Add(gridHost)
+        Controls.Add(searchPanel)
+        Controls.Add(editor)
+        Controls.Add(toolbar)
+        Controls.Add(status)
     End Sub
 
-    Private Sub AddField(layout As TableLayoutPanel, caption As String, key As String, col As Integer, row As Integer, Optional span As Integer = 1)
-        Dim box As New TextBox With {.Dock = DockStyle.Top}
-        fields.Add(key, box)
-        AddField(layout, caption, box, col, row, False, span)
+    Private Sub AddField(layout As TableLayoutPanel, title As String, key As String, col As Integer, row As Integer, Optional span As Integer = 1)
+        Dim tb As New TextBox()
+        fields.Add(key, tb)
+        AddField(layout, title, tb, col, row, span, False)
     End Sub
 
-    Private Sub AddField(layout As TableLayoutPanel, caption As String, box As TextBox, col As Integer, row As Integer, readOnlyField As Boolean, Optional span As Integer = 1)
-        box.ReadOnly = readOnlyField
-        Dim panel As New Panel With {.Dock = DockStyle.Fill, .Margin = New Padding(4)}
-        Dim label As New Label With {.Text = caption, .Dock = DockStyle.Top, .Height = 22, .ForeColor = Color.Black}
-        panel.Controls.Add(box)
-        panel.Controls.Add(label)
-        box.Top = 23
-        box.Dock = DockStyle.None
-        box.Location = New Point(0, 24)
-        box.Width = 150
-        AddHandler panel.Resize, Sub(sender, e) box.Width = Math.Max(40, panel.ClientSize.Width - 2)
+    Private Sub AddField(layout As TableLayoutPanel, title As String, tb As TextBox, col As Integer, row As Integer, span As Integer, readOnlyField As Boolean)
+        Dim panel As New TableLayoutPanel With {
+            .Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 2,
+            .Margin = New Padding(5, 2, 5, 4)
+        }
+        panel.RowStyles.Add(New RowStyle(SizeType.Absolute, 24))
+        panel.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
+        panel.Controls.Add(New Label With {
+            .Text = title, .Dock = DockStyle.Fill,
+            .ForeColor = Color.Black, .TextAlign = ContentAlignment.MiddleLeft
+        }, 0, 0)
+        tb.Dock = DockStyle.Top
+        tb.ReadOnly = readOnlyField
+        tb.BackColor = If(readOnlyField, Color.FromArgb(232, 237, 232), Color.White)
+        panel.Controls.Add(tb, 0, 1)
         layout.Controls.Add(panel, col, row)
         If span > 1 Then layout.SetColumnSpan(panel, span)
     End Sub
 
     Private Sub ReloadGrid()
         RemoveHandler grid.SelectionChanged, AddressOf GridSelectionChanged
-        grid.DataSource = New BindingList(Of MenuItem)(repo.GetAll(filterText, sortAZ))
-        For Each pair In New Dictionary(Of String, String) From {{"Id", "N° Saisie"}, {"SaisieLe", "Saisie Le"}, {"ModifierLe", "Modifier Le"}, {"NumMenu", "N° Menu"}, {"NumSousMenu", "N° Sous-Menu"}, {"Menu", "Menu"}, {"SousMenu", "Sous-Menu"}, {"Info01", "Info_01"}, {"Info02", "Info_02"}, {"Action", "Action"}, {"Chemin", "Chemin"}}
-            If grid.Columns.Contains(pair.Key) Then grid.Columns(pair.Key).HeaderText = pair.Value
-        Next
+        Dim data = repo.GetAll(searchBox.Text.Trim(), sortAZ)
+        grid.DataSource = New BindingList(Of MenuItem)(data)
+        countLabel.Text = data.Count.ToString() & " enregistrement(s)"
         grid.ClearSelection()
         AddHandler grid.SelectionChanged, AddressOf GridSelectionChanged
     End Sub
@@ -122,18 +195,27 @@ Public Class FrmMenu
         idBox.Clear()
         dateCreated.Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
         dateModified.Clear()
-        For Each box In fields.Values
-            box.Clear()
+        For Each tb In fields.Values
+            tb.Clear()
         Next
     End Sub
 
     Private Function CurrentItem() As MenuItem
-        Return New MenuItem With {.Id = selectedId, .NumMenu = fields("NumMenu").Text.Trim(), .NumSousMenu = fields("NumSousMenu").Text.Trim(), .Menu = fields("Menu").Text.Trim(), .SousMenu = fields("SousMenu").Text.Trim(), .Info01 = fields("Info01").Text.Trim(), .Info02 = fields("Info02").Text.Trim(), .Action = fields("Action").Text.Trim(), .Chemin = fields("Chemin").Text.Trim()}
+        Return New MenuItem With {
+            .Id = selectedId, .NumMenu = fields("NumMenu").Text.Trim(),
+            .NumSousMenu = fields("NumSousMenu").Text.Trim(),
+            .Menu = fields("Menu").Text.Trim(),
+            .SousMenu = fields("SousMenu").Text.Trim(),
+            .Info01 = fields("Info01").Text.Trim(),
+            .Info02 = fields("Info02").Text.Trim(),
+            .Action = fields("Action").Text.Trim(),
+            .Chemin = fields("Chemin").Text.Trim()
+        }
     End Function
 
-    Private Function ValidateItem(item As MenuItem) As Boolean
-        If String.IsNullOrWhiteSpace(item.NumMenu) OrElse String.IsNullOrWhiteSpace(item.Menu) Then
-            MessageBox.Show("N° Menu et Menu sont obligatoires.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    Private Function IsValid(item As MenuItem) As Boolean
+        If item.NumMenu = "" OrElse item.Menu = "" Then
+            MessageBox.Show("Les champs N° Menu et Menu sont obligatoires.", "Validation")
             Return False
         End If
         Return True
@@ -141,7 +223,7 @@ Public Class FrmMenu
 
     Private Sub SaveClicked(sender As Object, e As EventArgs)
         Dim item = CurrentItem()
-        If Not ValidateItem(item) Then Return
+        If Not IsValid(item) Then Return
         repo.Insert(item)
         ClearForm()
         ReloadGrid()
@@ -149,11 +231,11 @@ Public Class FrmMenu
 
     Private Sub UpdateClicked(sender As Object, e As EventArgs)
         If selectedId = 0 Then
-            MessageBox.Show("Sélectionnez une ligne du tableau.")
+            MessageBox.Show("Sélectionnez d'abord un enregistrement.")
             Return
         End If
         Dim item = CurrentItem()
-        If Not ValidateItem(item) Then Return
+        If Not IsValid(item) Then Return
         repo.Update(item)
         ClearForm()
         ReloadGrid()
@@ -161,10 +243,11 @@ Public Class FrmMenu
 
     Private Sub DeleteClicked(sender As Object, e As EventArgs)
         If selectedId = 0 Then
-            MessageBox.Show("Sélectionnez une ligne du tableau.")
+            MessageBox.Show("Sélectionnez d'abord un enregistrement.")
             Return
         End If
-        If MessageBox.Show("Supprimer cet enregistrement ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+        If MessageBox.Show("Supprimer cet enregistrement ?", "Confirmation",
+                           MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
             repo.Delete(selectedId)
             ClearForm()
             ReloadGrid()
@@ -172,8 +255,6 @@ Public Class FrmMenu
     End Sub
 
     Private Sub FilterClicked(sender As Object, e As EventArgs)
-        Dim search = Microsoft.VisualBasic.Interaction.InputBox("Rechercher un menu ou sous-menu (vide = tous) :", "Filtrer", filterText)
-        filterText = search.Trim()
         ClearForm()
         ReloadGrid()
     End Sub
@@ -191,7 +272,8 @@ Public Class FrmMenu
         selectedId = item.Id
         idBox.Text = item.Id.ToString()
         dateCreated.Text = item.SaisieLe.ToString("dd/MM/yyyy HH:mm")
-        dateModified.Text = If(item.ModifierLe.HasValue, item.ModifierLe.Value.ToString("dd/MM/yyyy HH:mm"), "")
+        dateModified.Text = If(item.ModifierLe.HasValue,
+                               item.ModifierLe.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"), "")
         fields("NumMenu").Text = item.NumMenu
         fields("NumSousMenu").Text = item.NumSousMenu
         fields("Menu").Text = item.Menu
