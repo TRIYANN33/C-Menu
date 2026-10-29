@@ -1,6 +1,7 @@
 Imports Microsoft.Data.Sqlite
 Imports System.IO
 Imports System.Collections.Generic
+Imports System.Linq
 
 Public Class MenuRepository
     Private ReadOnly connectionString As String
@@ -83,12 +84,26 @@ Public Class MenuRepository
         End Using
     End Sub
 
-    Public Function GetAll(Optional search As String = "", Optional alphabetical As Boolean = False) As List(Of MenuItem)
+    Public Function GetAll(Optional search As String = "", Optional sortFields As List(Of (Field As String, Descending As Boolean)) = Nothing) As List(Of MenuItem)
         Dim results As New List(Of MenuItem)()
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Id,SaisieLe,ModifierLe,NumMenu,NumSousMenu,Frm_Menu,Menu,SousMenu,Info01,Info02,Action,Chemin FROM Menus WHERE $search='' OR NumMenu LIKE $pattern OR NumSousMenu LIKE $pattern OR Frm_Menu LIKE $pattern OR Menu LIKE $pattern OR SousMenu LIKE $pattern ORDER BY " & If(alphabetical, "Menu COLLATE NOCASE, SousMenu COLLATE NOCASE", "Id DESC")
+                Dim allowed As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
+                    "Id", "NumMenu", "NumSousMenu", "Frm_Menu", "Menu", "SousMenu",
+                    "Info01", "Info02", "Action", "Chemin", "SaisieLe", "ModifierLe"
+                }
+                Dim orderParts As New List(Of String)()
+                If sortFields IsNot Nothing Then
+                    For Each spec In sortFields.Take(3)
+                        If Not allowed.Contains(spec.Field) Then Throw New ArgumentException("Champ de tri invalide.")
+                        Dim col = """" & spec.Field.Replace("""", """""") & """"
+                        Dim collate = If(spec.Field = "Id" OrElse spec.Field = "SaisieLe" OrElse spec.Field = "ModifierLe", "", " COLLATE NOCASE")
+                        orderParts.Add(col & collate & If(spec.Descending, " DESC", " ASC"))
+                    Next
+                End If
+                orderParts.Add("Id DESC")
+                cmd.CommandText = "SELECT Id,SaisieLe,ModifierLe,NumMenu,NumSousMenu,Frm_Menu,Menu,SousMenu,Info01,Info02,Action,Chemin FROM Menus WHERE $search='' OR NumMenu LIKE $pattern OR NumSousMenu LIKE $pattern OR Frm_Menu LIKE $pattern OR Menu LIKE $pattern OR SousMenu LIKE $pattern ORDER BY " & String.Join(", ", orderParts)
                 cmd.Parameters.AddWithValue("$search", search)
                 cmd.Parameters.AddWithValue("$pattern", "%" & search & "%")
                 Using reader = cmd.ExecuteReader()
