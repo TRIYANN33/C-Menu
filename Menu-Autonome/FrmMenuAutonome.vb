@@ -30,7 +30,7 @@ Public Class FrmMenuAutonome
             height4cm = CInt(Math.Round(screenGraphics.DpiY * 4.0 / 2.54))
         End Using
         Size = New Size(1050, height4cm)
-        MinimumSize = New Size(650, height4cm)
+        MinimumSize = New Size(180, height4cm)
         Font = New Font("Segoe UI", 10)
         BackColor = bodyColor
         LoadColors()
@@ -147,6 +147,7 @@ Public Class FrmMenuAutonome
                 End If
                 menuBar.Items.Add(top)
             Next
+            AdjustMenuWidth()
             If menuBar.Items.Count = 0 Then
                 ShowProblem("Aucun menu disponible pour " & GeneratedConfig.FormName & ".")
             End If
@@ -222,6 +223,25 @@ Public Class FrmMenuAutonome
     Private originalWindowSize As Size
     Private Const SlideshowFolder As String = "C:\Menu\applications\Diaporama"
 
+    Private Sub AdjustMenuWidth()
+        ' La largeur suit le libellé du formulaire ou la somme des menus visibles.
+        Dim labelText As String = "Menu--" & GeneratedConfig.FormName
+        Dim labelFont As Font = Font
+        Dim labelWidth = TextRenderer.MeasureText(labelText, labelFont).Width + 40
+        Dim menusWidth As Integer = menuBar.Padding.Horizontal + 16
+        For Each entry As ToolStripItem In menuBar.Items
+            menusWidth += TextRenderer.MeasureText(entry.Text, menuBar.Font).Width + 30
+        Next
+        Dim contentWidth = Math.Max(labelWidth, menusWidth)
+        If slideshowPanel IsNot Nothing Then contentWidth += slideshowPanel.Width + 12
+        Dim frameWidth = Width - ClientSize.Width
+        Dim targetWidth = contentWidth + frameWidth
+        Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
+        targetWidth = Math.Min(targetWidth, availableWidth)
+        MinimumSize = New Size(Math.Min(targetWidth, availableWidth), MinimumSize.Height)
+        Width = targetWidth
+    End Sub
+
     Private Sub StartSlideshow()
         Try
             Directory.CreateDirectory(SlideshowFolder)
@@ -257,7 +277,8 @@ Public Class FrmMenuAutonome
                 slideshowPanel.Controls.Add(slideshowPicture)
                 Controls.Add(slideshowPanel)
                 slideshowPanel.BringToFront()
-                Size = New Size(Width + pxWidth + 12, Math.Max(Height, pxHeight + 70))
+                AdjustMenuWidth()
+                Height = Math.Max(Height, pxHeight + 70)
                 AddHandler slideshowTimer.Tick, Sub(sender, e) NextSlideshowImage()
             End If
             slideshowFiles = Directory.GetFiles(SlideshowFolder).
