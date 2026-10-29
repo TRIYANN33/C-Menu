@@ -8,6 +8,9 @@
     <MyType>Empty</MyType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Menu-Autonome/**/*.vb" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.36" />
   </ItemGroup>
 </Project>
