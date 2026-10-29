@@ -49,6 +49,7 @@ Public Class FrmMenu
             .Dock = DockStyle.Top, .Height = 58, .Padding = New Padding(16, 10, 0, 8),
             .BackColor = Color.FromArgb(226, 234, 240)
         }
+        toolbar.Controls.Add(ButtonFor("Nouveau", AddressOf NewClicked))
         toolbar.Controls.Add(ButtonFor("Enregistrer", AddressOf SaveClicked))
         toolbar.Controls.Add(ButtonFor("Modifier", AddressOf UpdateClicked))
         toolbar.Controls.Add(ButtonFor("Supprimer", AddressOf DeleteClicked))
@@ -263,6 +264,12 @@ Public Class FrmMenu
         End If
         Return True
     End Function
+
+    Private Sub NewClicked(sender As Object, e As EventArgs)
+        grid.ClearSelection()
+        ClearForm()
+        fields("NumMenu").Focus()
+    End Sub
 
     Private Sub SaveClicked(sender As Object, e As EventArgs)
         Dim item = CurrentItem()
