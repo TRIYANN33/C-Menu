@@ -225,6 +225,12 @@ Public Class FrmMenuAutonome
             infoWindow.Controls.Add(infoText)
         End If
         infoText.Text = If(info1, "") & Environment.NewLine & If(info2, "")
+        Try
+            Clipboard.SetText(infoText.Text)
+        Catch ex As Exception
+            MessageBox.Show(Me, "Impossible de copier les informations dans le presse-papiers : " & ex.Message,
+                            "Presse-papiers", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
         If Not infoWindow.Visible Then infoWindow.Show(Me)
         infoWindow.BringToFront()
     End Sub
