@@ -69,9 +69,18 @@ Public Class FrmMenu
             MinimumSize = Size.Empty
             Dim targetWidth = Math.Max(180, CInt(Math.Round(normalBounds.Width * 0.1)))
             Dim targetHeight = Math.Max(100, CInt(Math.Round(normalBounds.Height * 0.1)))
-            Bounds = New Rectangle(normalBounds.Left + (normalBounds.Width - targetWidth) \ 2,
-                                   normalBounds.Top + (normalBounds.Height - targetHeight) \ 2,
-                                   targetWidth, targetHeight)
+            Dim workArea = Screen.FromRectangle(normalBounds).WorkingArea
+            Dim pixelsPerCmX As Single
+            Dim pixelsPerCmY As Single
+            Using graphics = CreateGraphics()
+                pixelsPerCmX = graphics.DpiX / 2.54F
+                pixelsPerCmY = graphics.DpiY / 2.54F
+            End Using
+            Dim targetLeft = workArea.Left + CInt(Math.Round(10 * pixelsPerCmX))
+            Dim targetTop = workArea.Top + CInt(Math.Round(1 * pixelsPerCmY))
+            targetLeft = Math.Min(targetLeft, workArea.Right - targetWidth)
+            targetTop = Math.Min(targetTop, workArea.Bottom - targetHeight)
+            Bounds = New Rectangle(targetLeft, targetTop, targetWidth, targetHeight)
             miniMode = True
         Else
             MinimumSize = New Size(640, 440)
