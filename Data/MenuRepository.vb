@@ -14,6 +14,17 @@ Public Class MenuRepository
             Using cmd = cn.CreateCommand()
                 cmd.CommandText = "CREATE TABLE IF NOT EXISTS Menus (Id INTEGER PRIMARY KEY AUTOINCREMENT, SaisieLe TEXT NOT NULL, ModifierLe TEXT, NumMenu TEXT NOT NULL, NumSousMenu TEXT NOT NULL, Menu TEXT NOT NULL, SousMenu TEXT NOT NULL, Info01 TEXT NOT NULL, Info02 TEXT NOT NULL, Action TEXT NOT NULL, Chemin TEXT NOT NULL)"
                 cmd.ExecuteNonQuery()
+                cmd.CommandText = "PRAGMA table_info(Menus)"
+                Dim exists As Boolean = False
+                Using reader = cmd.ExecuteReader()
+                    While reader.Read()
+                        If reader.GetString(1) = "Frm_Menu" Then exists = True
+                    End While
+                End Using
+                If Not exists Then
+                    cmd.CommandText = "ALTER TABLE Menus ADD COLUMN Frm_Menu TEXT NOT NULL DEFAULT ''"
+                    cmd.ExecuteNonQuery()
+                End If
                 cmd.CommandText = "CREATE INDEX IF NOT EXISTS IX_Menus_NumMenu ON Menus(NumMenu, NumSousMenu)"
                 cmd.ExecuteNonQuery()
                 cmd.CommandText = "CREATE INDEX IF NOT EXISTS IX_Menus_Menu ON Menus(Menu, SousMenu)"
@@ -25,6 +36,7 @@ Public Class MenuRepository
     Private Shared Sub Bind(cmd As SqliteCommand, item As MenuItem)
         cmd.Parameters.AddWithValue("$numMenu", item.NumMenu)
         cmd.Parameters.AddWithValue("$numSousMenu", item.NumSousMenu)
+        cmd.Parameters.AddWithValue("$frmMenu", item.Frm_Menu)
         cmd.Parameters.AddWithValue("$menu", item.Menu)
         cmd.Parameters.AddWithValue("$sousMenu", item.SousMenu)
         cmd.Parameters.AddWithValue("$info01", item.Info01)
@@ -37,7 +49,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Menu, SousMenu, Info01, Info02, Action, Chemin) VALUES ($created, NULL, $numMenu, $numSousMenu, $menu, $sousMenu, $info01, $info02, $action, $chemin)"
+                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Action, Chemin) VALUES ($created, NULL, $numMenu, $numSousMenu, $frmMenu, $menu, $sousMenu, $info01, $info02, $action, $chemin)"
                 cmd.Parameters.AddWithValue("$created", DateTime.Now.ToString("o"))
                 Bind(cmd, item)
                 cmd.ExecuteNonQuery()
@@ -49,7 +61,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Action=$action, Chemin=$chemin WHERE Id=$id"
+                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Frm_Menu=$frmMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Action=$action, Chemin=$chemin WHERE Id=$id"
                 cmd.Parameters.AddWithValue("$modified", DateTime.Now.ToString("o"))
                 cmd.Parameters.AddWithValue("$id", item.Id)
                 Bind(cmd, item)
@@ -74,7 +86,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Id,SaisieLe,ModifierLe,NumMenu,NumSousMenu,Menu,SousMenu,Info01,Info02,Action,Chemin FROM Menus WHERE $search='' OR NumMenu LIKE $pattern OR NumSousMenu LIKE $pattern OR Menu LIKE $pattern OR SousMenu LIKE $pattern ORDER BY " & If(alphabetical, "Menu COLLATE NOCASE, SousMenu COLLATE NOCASE", "Id DESC")
+                cmd.CommandText = "SELECT Id,SaisieLe,ModifierLe,NumMenu,NumSousMenu,Frm_Menu,Menu,SousMenu,Info01,Info02,Action,Chemin FROM Menus WHERE $search='' OR NumMenu LIKE $pattern OR NumSousMenu LIKE $pattern OR Frm_Menu LIKE $pattern OR Menu LIKE $pattern OR SousMenu LIKE $pattern ORDER BY " & If(alphabetical, "Menu COLLATE NOCASE, SousMenu COLLATE NOCASE", "Id DESC")
                 cmd.Parameters.AddWithValue("$search", search)
                 cmd.Parameters.AddWithValue("$pattern", "%" & search & "%")
                 Using reader = cmd.ExecuteReader()
@@ -86,9 +98,9 @@ Public Class MenuRepository
                             .SaisieLe = DateTime.Parse(reader.GetString(1), Globalization.CultureInfo.InvariantCulture, Globalization.DateTimeStyles.RoundtripKind),
                             .ModifierLe = modified,
                             .NumMenu = reader.GetString(3), .NumSousMenu = reader.GetString(4),
-                            .Menu = reader.GetString(5), .SousMenu = reader.GetString(6),
-                            .Info01 = reader.GetString(7), .Info02 = reader.GetString(8),
-                            .Action = reader.GetString(9), .Chemin = reader.GetString(10)})
+                            .Frm_Menu = reader.GetString(5), .Menu = reader.GetString(6), .SousMenu = reader.GetString(7),
+                            .Info01 = reader.GetString(8), .Info02 = reader.GetString(9),
+                            .Action = reader.GetString(10), .Chemin = reader.GetString(11)})
                     End While
                 End Using
             End Using
