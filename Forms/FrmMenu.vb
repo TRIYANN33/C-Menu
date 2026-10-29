@@ -416,7 +416,19 @@ Public Class FrmMenu
     Private Sub SaveClicked(sender As Object, e As EventArgs)
         Dim item = CurrentItem()
         If Not IsValid(item) Then Return
-        repo.Insert(item)
+        If item.Id = 0 Then
+            ' Retrouver une ligne existante par son identité de menu, sans tenir compte du filtre affiché.
+            Dim existing = repo.GetAll().FirstOrDefault(Function(entry) _
+                String.Equals(entry.Frm_Menu, item.Frm_Menu, StringComparison.OrdinalIgnoreCase) AndAlso
+                String.Equals(entry.NumMenu, item.NumMenu, StringComparison.OrdinalIgnoreCase) AndAlso
+                String.Equals(entry.NumSousMenu, item.NumSousMenu, StringComparison.OrdinalIgnoreCase))
+            If existing IsNot Nothing Then item.Id = existing.Id
+        End If
+        If item.Id <> 0 Then
+            repo.Update(item)
+        Else
+            repo.Insert(item)
+        End If
         ClearForm()
         ReloadGrid()
     End Sub
