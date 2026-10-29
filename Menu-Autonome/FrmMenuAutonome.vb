@@ -208,10 +208,9 @@ Public Class FrmMenuAutonome
                     launch.ArgumentList.Add(destination)
                     Process.Start(launch)
                 Else
-                    Process.Start(New ProcessStartInfo("explorer.exe") With {
-                        .UseShellExecute = True,
-                        .ArgumentList = {destination}
-                    })
+                    Dim explorerLaunch As New ProcessStartInfo("explorer.exe") With {.UseShellExecute = True}
+                    explorerLaunch.ArgumentList.Add(destination)
+                    Process.Start(explorerLaunch)
                 End If
             Else
                 Process.Start(New ProcessStartInfo(destination) With {.UseShellExecute = True})
