@@ -224,6 +224,16 @@ Public Class FrmMenuAutonome
     Private Sub StartSlideshow()
         Try
             Directory.CreateDirectory(SlideshowFolder)
+            Dim opus = "C:\Program Files\GPSoftware\Directory Opus\x64\dopus.exe"
+            If File.Exists(opus) Then
+                Dim launch As New ProcessStartInfo(opus) With {.UseShellExecute = True}
+                launch.ArgumentList.Add(SlideshowFolder)
+                Process.Start(launch)
+            Else
+                Dim launch As New ProcessStartInfo("explorer.exe") With {.UseShellExecute = True}
+                launch.ArgumentList.Add(SlideshowFolder)
+                Process.Start(launch)
+            End If
             If slideshowPanel Is Nothing Then
                 originalWindowSize = Size
                 Dim pxWidth As Integer
