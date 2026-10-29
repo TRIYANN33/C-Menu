@@ -18,9 +18,7 @@ Public Class FrmMenuAutonome
     Private barColor As Color = Color.FromArgb(62, 130, 137)
     Private bodyColor As Color = Color.FromArgb(255, 128, 0)
     Private ReadOnly clock As New Timer With {.Interval = 1000}
-    Private ReadOnly databasePath As String = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "C-Menu", "CMenu.db")
+    Private ReadOnly databasePath As String = Path.Combine(AppContext.BaseDirectory, "CMenu.db")
 
     Public Sub New()
         Text = "C-Menu — " & GeneratedConfig.FormName
@@ -68,7 +66,7 @@ Public Class FrmMenuAutonome
         menuBar.Items.Clear()
         If Not File.Exists(databasePath) Then
             ShowProblem("Base SQLite introuvable : " & databasePath &
-                        Environment.NewLine & "Démarrez d'abord C-Menu pour créer la base.")
+                        Environment.NewLine & "Copiez CMenu.db à côté de l’exécutable.")
             Return
         End If
         Try
