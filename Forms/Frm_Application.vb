@@ -117,7 +117,7 @@ Public Class Frm_Application
         Return Long.MaxValue
     End Function
 
-    Private Sub ShowInfo(info1 As String, info2 As String)
+    Private Async Sub ShowInfo(info1 As String, info2 As String)
         If infoWindow Is Nothing OrElse infoWindow.IsDisposed Then
             Dim dpiX As Single
             Dim dpiY As Single
@@ -143,6 +143,9 @@ Public Class Frm_Application
             ' Deux copies distinctes pour l'historique Windows (Win+V).
             ' Une seule valeur peut rester active pour Ctrl+V : Info02 est la dernière.
             If Not String.IsNullOrWhiteSpace(info1) Then Clipboard.SetText(info1)
+            If Not String.IsNullOrWhiteSpace(info1) AndAlso Not String.IsNullOrWhiteSpace(info2) Then
+                Await System.Threading.Tasks.Task.Delay(1000)
+            End If
             If Not String.IsNullOrWhiteSpace(info2) Then Clipboard.SetText(info2)
         Catch ex As Exception
             MessageBox.Show(Me, "Impossible de copier les informations dans le presse-papiers : " & ex.Message,
