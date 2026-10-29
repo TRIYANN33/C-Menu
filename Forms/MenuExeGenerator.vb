@@ -29,7 +29,7 @@ Public NotInheritable Class MenuExeGenerator
         If safe.Length > 60 Then safe = safe.Substring(0, 60)
         Dim outputRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "C-Menu", "Formulaires", safe)
         Dim sourceFolder = Path.Combine(outputRoot, "Sources")
-        Dim publishFolder = Path.Combine(outputRoot, "Executable")
+        Dim publishFolder = Path.Combine("C:\\", "Menu", "applications", safe)
         Directory.CreateDirectory(sourceFolder)
         Directory.CreateDirectory(publishFolder)
 
