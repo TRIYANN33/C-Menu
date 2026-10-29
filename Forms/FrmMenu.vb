@@ -199,9 +199,9 @@ Public Class FrmMenu
         For Each spec In New (String, String, Integer)() {
             ("Id", "N° Saisie", 65), ("NumMenu", "N° Menu", 75),
             ("NumSousMenu", "N° Sous-Menu", 90), ("Frm_Menu", "Frm_Menu", 120), ("Menu", "Menu", 130),
-            ("SousMenu", "Sous-Menu", 130), ("Info01", "Info_01", 90),
-            ("Info02", "Info_02", 90), ("Application", "Application", 120), ("Action", "Action", 130),
-            ("Chemin", "Chemin", 170), ("SaisieLe", "Saisie Le", 115),
+            ("SousMenu", "Sous-Menu", 90), ("Info01", "Info_01", 90),
+            ("Info02", "Info_02", 90), ("Application", "Application", 90), ("Action", "Action", 90),
+            ("Chemin", "Chemin", 270), ("SaisieLe", "Saisie Le", 115),
             ("ModifierLe", "Modifier Le", 115)}
             Dim column As New DataGridViewTextBoxColumn With {
                 .DataPropertyName = spec.Item1, .Name = spec.Item1,
