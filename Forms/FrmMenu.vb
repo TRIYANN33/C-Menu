@@ -406,10 +406,9 @@ Public Class FrmMenu
             Cursor = Cursors.WaitCursor
             Dim exePath = Await MenuExeGenerator.CreateAsync(selected.Frm_Menu)
             Cursor = Cursors.Default
-            Process.Start(New ProcessStartInfo("explorer.exe") With {
-                .UseShellExecute = True,
-                .ArgumentList = {Path.GetDirectoryName(exePath)}
-            })
+            Dim explorerStart As New ProcessStartInfo("explorer.exe") With {.UseShellExecute = True}
+            explorerStart.ArgumentList.Add(Path.GetDirectoryName(exePath))
+            Process.Start(explorerStart)
         Catch ex As Exception
             Cursor = Cursors.Default
             MessageBox.Show("Échec de création de l'exécutable :" & Environment.NewLine & ex.Message,
