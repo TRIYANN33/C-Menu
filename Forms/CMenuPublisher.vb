@@ -2,6 +2,7 @@ Imports System
 Imports System.Diagnostics
 Imports System.IO
 Imports System.Threading.Tasks
+Imports System.Windows.Forms
 
 Public NotInheritable Class CMenuPublisher
     Private Sub New()
@@ -57,16 +58,22 @@ Public NotInheritable Class CMenuPublisher
                 File.Copy(filePath, target, True)
             Next
             Dim publishedExe = Path.Combine(destination, "C-Menu.exe")
-            Dim shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "C-Menu.lnk")
-            Dim shellType = Type.GetTypeFromProgID("WScript.Shell")
-            If shellType IsNot Nothing Then
-                Dim shell = Activator.CreateInstance(shellType)
-                Dim shortcut = shell.CreateShortcut(shortcutPath)
-                shortcut.TargetPath = publishedExe
-                shortcut.WorkingDirectory = destination
-                shortcut.IconLocation = publishedExe & ",0"
-                shortcut.Save()
-            End If
+            Try
+                Dim shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "C-Menu.lnk")
+                Dim shellType = Type.GetTypeFromProgID("WScript.Shell")
+                If shellType Is Nothing Then Throw New InvalidOperationException("Windows Script Host indisponible.")
+                Dim shell As Object = Activator.CreateInstance(shellType)
+                Dim shortcut As Object = Microsoft.VisualBasic.Interaction.CallByName(
+                    shell, "CreateShortcut", Microsoft.VisualBasic.CallType.Method, shortcutPath)
+                Microsoft.VisualBasic.Interaction.CallByName(shortcut, "TargetPath", Microsoft.VisualBasic.CallType.Let, publishedExe)
+                Microsoft.VisualBasic.Interaction.CallByName(shortcut, "WorkingDirectory", Microsoft.VisualBasic.CallType.Let, destination)
+                Microsoft.VisualBasic.Interaction.CallByName(shortcut, "IconLocation", Microsoft.VisualBasic.CallType.Let, publishedExe & ",0")
+                Microsoft.VisualBasic.Interaction.CallByName(shortcut, "Save", Microsoft.VisualBasic.CallType.Method)
+            Catch shortcutError As Exception
+                MessageBox.Show("C-Menu.exe a bien été créé, mais le raccourci n'a pas pu être créé :" &
+                                Environment.NewLine & shortcutError.Message, "Raccourci C-Menu",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End Try
             Return publishedExe
         Finally
             Try
