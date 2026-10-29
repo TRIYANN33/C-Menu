@@ -305,6 +305,7 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private ReadOnly nextEventLabel As New Label With {
+        .ForeColor = Color.DeepSkyBlue,
         .AutoSize = False,
         .TextAlign = ContentAlignment.MiddleRight,
         .Padding = New Padding(8, 4, 12, 4),
@@ -323,6 +324,9 @@ Public Class FrmMenuAutonome
                                             topOfBody + offsetPixels)
         nextEventLabel.Height = Math.Max(28, nextEventLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None).Length * (nextEventLabel.Font.Height + 3) + 10)
         nextEventLabel.BringToFront()
+        Dim neededHeight = nextEventLabel.Bottom + 12 + (Height - ClientSize.Height)
+        If Height < neededHeight Then Height = neededHeight
+        PositionAppointments()
     End Sub
 
     Private Const AnniversaryDatabase As String = "C:\Menu\applications\Anniversaire\Anniversaires.db"
@@ -335,7 +339,7 @@ Public Class FrmMenuAutonome
         End If
         Try
             Dim nextDate As Date = Date.MaxValue
-            Dim nextText As String = Nothing
+            Dim nextTexts As New List(Of String)()
             Using cn As New SqliteConnection("Data Source=" & AnniversaryDatabase & ";Mode=ReadOnly")
                 cn.Open()
                 Using cmd = cn.CreateCommand()
@@ -354,19 +358,22 @@ Public Class FrmMenuAutonome
                                     year += 1
                                     occurrence = New Date(year, stored.Month, Math.Min(stored.Day, Date.DaysInMonth(year, stored.Month)))
                                 End If
-                                If occurrence < nextDate Then
-                                    nextDate = occurrence
+                                If occurrence <= nextDate Then
+                                    If occurrence < nextDate Then
+                                        nextDate = occurrence
+                                        nextTexts.Clear()
+                                    End If
                                     Dim kind = If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))
                                     If i = 2 Then
                                         Dim age = occurrence.Year - stored.Year
                                         kind = "Anniversaire des " & age.ToString() & " ans"
                                     End If
                                     If i = 2 Then
-                                        nextText = kind & " de" & Environment.NewLine & person & Environment.NewLine &
-                                            "le " & occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))
+                                        nextTexts.Add(kind & " de" & Environment.NewLine & person & Environment.NewLine &
+                                            "le " & occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")))
                                     Else
-                                        nextText = kind & " de " & person & " le " &
-                                            occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))
+                                        nextTexts.Add(kind & " de " & person & " le " &
+                                            occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")))
                                     End If
                                 End If
                             Next
@@ -374,9 +381,9 @@ Public Class FrmMenuAutonome
                     End Using
                 End Using
             End Using
-            If nextText IsNot Nothing Then
-                nextEventLabel.Text = nextText
-                nextEventLabel.Width = nextText.Split({Environment.NewLine}, StringSplitOptions.None).
+            If nextTexts.Count > 0 Then
+                nextEventLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, nextTexts)
+                nextEventLabel.Width = nextEventLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None).
                     Max(Function(line) TextRenderer.MeasureText(line, nextEventLabel.Font).Width) + 28
                 nextEventLabel.Visible = True
                 PositionNextEvent()
