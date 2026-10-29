@@ -12,45 +12,37 @@ Public NotInheritable Class CMenuPublisher
     End Sub
 
     Public Shared Async Function PublishAsync() As Task(Of String)
+        ' Ne jamais choisir automatiquement un projet parmi plusieurs copies dans source\\repos :
+        ' cela peut publier un ancien formulaire à la place de la version actuelle.
         Dim projectPath As String = Nothing
-        Dim searchRoots As New List(Of String) From {
-            AppContext.BaseDirectory,
-            Environment.CurrentDirectory,
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "source", "repos")
-        }
-        For Each root In searchRoots
-            If Not Directory.Exists(root) Then Continue For
-            Dim current As DirectoryInfo = New DirectoryInfo(root)
-            While current IsNot Nothing
-                Dim candidate = Path.Combine(current.FullName, "C-Menu.vbproj")
-                If File.Exists(candidate) Then
-                    projectPath = candidate
-                    Exit While
-                End If
-                current = current.Parent
-            End While
-            If projectPath IsNot Nothing Then Exit For
-        Next
-        If projectPath Is Nothing Then
-            Dim reposRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "source", "repos")
-            If Directory.Exists(reposRoot) Then
-                Try
-                    projectPath = Directory.EnumerateFiles(reposRoot, "C-Menu.vbproj", SearchOption.AllDirectories).FirstOrDefault()
-                Catch
-                End Try
+        Dim current As DirectoryInfo = New DirectoryInfo(AppContext.BaseDirectory)
+        While current IsNot Nothing
+            Dim candidate = Path.Combine(current.FullName, "C-Menu.vbproj")
+            If File.Exists(candidate) Then
+                projectPath = candidate
+                Exit While
             End If
-        End If
+            current = current.Parent
+        End While
         If projectPath Is Nothing Then
             Using picker As New OpenFileDialog With {
-                .Title = "Sélectionnez le projet C-Menu.vbproj pour publier",
+                .Title = "Choisir le projet C-Menu ACTUEL à publier",
                 .Filter = "Projet C-Menu (C-Menu.vbproj)|C-Menu.vbproj|Projets VB (*.vbproj)|*.vbproj",
-                .CheckFileExists = True
+                .CheckFileExists = True,
+                .InitialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "source", "repos")
             }
                 If picker.ShowDialog() <> DialogResult.OK Then
-                    Throw New FileNotFoundException("Publication annulée : sélectionnez le fichier C-Menu.vbproj du projet source.")
+                    Throw New InvalidOperationException("Publication annulée : aucun projet sélectionné.")
                 End If
                 projectPath = picker.FileName
             End Using
+        End If
+        If MessageBox.Show("Le programme distribué sera compilé depuis :" & Environment.NewLine &
+                           projectPath & Environment.NewLine & Environment.NewLine &
+                           "Vérifiez qu'il s'agit du projet avec le formulaire récent." &
+                           Environment.NewLine & "Continuer ?", "Vérification du projet",
+                           MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+            Throw New InvalidOperationException("Publication annulée : choisissez le bon projet source.")
         End If
 
         Dim destination = Path.Combine("C:\", "Menu", "C-Menu")
