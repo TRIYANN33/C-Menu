@@ -96,7 +96,11 @@ Public Class MenuRepository
         End Using
     End Sub
 
-    Public Function GetAll(Optional search As String = "", Optional sortFields As List(Of (Field As String, Descending As Boolean)) = Nothing) As List(Of MenuItem)
+    Private Shared Function EscapeLike(value As String) As String
+        Return value.Replace("~", "~~").Replace("%", "~%").Replace("_", "~_")
+    End Function
+
+    Public Function GetAll(Optional search As String = "", Optional sortFields As List(Of (Field As String, Descending As Boolean)) = Nothing, Optional filters As List(Of (Field As String, OperatorName As String, Value As String)) = Nothing) As List(Of MenuItem)
         Dim results As New List(Of MenuItem)()
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
@@ -115,7 +119,38 @@ Public Class MenuRepository
                     Next
                 End If
                 orderParts.Add("Id DESC")
-                cmd.CommandText = "SELECT Id,SaisieLe,ModifierLe,NumMenu,NumSousMenu,Frm_Menu,Menu,SousMenu,Info01,Info02,Application,Action,Chemin FROM Menus WHERE $search='' OR NumMenu LIKE $pattern OR NumSousMenu LIKE $pattern OR Frm_Menu LIKE $pattern OR Menu LIKE $pattern OR SousMenu LIKE $pattern OR Application LIKE $pattern ORDER BY " & String.Join(", ", orderParts)
+                Dim conditions As New List(Of String) From {
+                    "($search='' OR NumMenu LIKE $pattern OR NumSousMenu LIKE $pattern OR Frm_Menu LIKE $pattern OR Menu LIKE $pattern OR SousMenu LIKE $pattern OR Application LIKE $pattern)"
+                }
+                If filters IsNot Nothing Then
+                    Dim index As Integer = 0
+                    For Each spec In filters.Take(3)
+                        If Not allowed.Contains(spec.Field) Then Throw New ArgumentException("Champ de filtre invalide.")
+                        Dim columnName = """" & spec.Field.Replace("""", """""") & """"
+                        Dim paramName = "$filter" & index.ToString()
+                        Dim pattern As String = spec.Value
+                        Select Case spec.OperatorName
+                            Case "contains"
+                                conditions.Add(columnName & " LIKE " & paramName & " ESCAPE '~'")
+                                pattern = "%" & EscapeLike(pattern) & "%"
+                            Case "starts"
+                                conditions.Add(columnName & " LIKE " & paramName & " ESCAPE '~'")
+                                pattern = EscapeLike(pattern) & "%"
+                            Case "ends"
+                                conditions.Add(columnName & " LIKE " & paramName & " ESCAPE '~'")
+                                pattern = "%" & EscapeLike(pattern)
+                            Case "equals"
+                                conditions.Add(columnName & " = " & paramName & " COLLATE NOCASE")
+                            Case "not_equals"
+                                conditions.Add(columnName & " <> " & paramName & " COLLATE NOCASE")
+                            Case Else
+                                Throw New ArgumentException("Condition de filtre invalide.")
+                        End Select
+                        cmd.Parameters.AddWithValue(paramName, pattern)
+                        index += 1
+                    Next
+                End If
+                cmd.CommandText = "SELECT Id,SaisieLe,ModifierLe,NumMenu,NumSousMenu,Frm_Menu,Menu,SousMenu,Info01,Info02,Application,Action,Chemin FROM Menus WHERE " & String.Join(" AND ", conditions) & " ORDER BY " & String.Join(", ", orderParts)
                 cmd.Parameters.AddWithValue("$search", search)
                 cmd.Parameters.AddWithValue("$pattern", "%" & search & "%")
                 Using reader = cmd.ExecuteReader()
