@@ -9,6 +9,7 @@ Public Class MenuItem
     Public Property SousMenu As String = ""
     Public Property Info01 As String = ""
     Public Property Info02 As String = ""
+    Public Property Application As String = ""
     Public Property Action As String = ""
     Public Property Chemin As String = ""
 End Class
