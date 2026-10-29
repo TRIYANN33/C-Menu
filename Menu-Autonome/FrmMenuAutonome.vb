@@ -198,10 +198,17 @@ Public Class FrmMenuAutonome
         Try
             Dim destination = Environment.ExpandEnvironmentVariables(pathValue.Trim())
             If Directory.Exists(destination) Then
-                Process.Start(New ProcessStartInfo("explorer.exe") With {
-                    .UseShellExecute = True,
-                    .ArgumentList = {destination}
-                })
+                Dim opus = "C:\Program Files\GPSoftware\Directory Opus\x64\dopus.exe"
+                If File.Exists(opus) Then
+                    Dim launch As New ProcessStartInfo(opus) With {.UseShellExecute = True}
+                    launch.ArgumentList.Add(destination)
+                    Process.Start(launch)
+                Else
+                    Process.Start(New ProcessStartInfo("explorer.exe") With {
+                        .UseShellExecute = True,
+                        .ArgumentList = {destination}
+                    })
+                End If
             Else
                 Process.Start(New ProcessStartInfo(destination) With {.UseShellExecute = True})
             End If
