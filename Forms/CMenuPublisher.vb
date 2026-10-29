@@ -36,7 +36,8 @@ Public NotInheritable Class CMenuPublisher
             For Each arg In {"publish", projectPath, "-c", "Release", "-r", "win-x64",
                              "--self-contained", "true", "-p:PublishSingleFile=true",
                              "-p:IncludeNativeLibrariesForSelfExtract=true",
-                             "-p:DebugType=None", "-p:DebugSymbols=false", "-o", temporary}
+                             "-p:DebugType=None", "-p:DebugSymbols=false",
+                             "-p:CMenuAssemblyName=C-Menu", "-p:DefineConstants=DISTRIBUTED", "-o", temporary}
                 start.ArgumentList.Add(arg)
             Next
             Using proc = Process.Start(start)
@@ -55,7 +56,18 @@ Public NotInheritable Class CMenuPublisher
                 Dim target = Path.Combine(destination, Path.GetFileName(filePath))
                 File.Copy(filePath, target, True)
             Next
-            Return Path.Combine(destination, "C-Menu.exe")
+            Dim publishedExe = Path.Combine(destination, "C-Menu.exe")
+            Dim shortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "C-Menu.lnk")
+            Dim shellType = Type.GetTypeFromProgID("WScript.Shell")
+            If shellType IsNot Nothing Then
+                Dim shell = Activator.CreateInstance(shellType)
+                Dim shortcut = shell.CreateShortcut(shortcutPath)
+                shortcut.TargetPath = publishedExe
+                shortcut.WorkingDirectory = destination
+                shortcut.IconLocation = publishedExe & ",0"
+                shortcut.Save()
+            End If
+            Return publishedExe
         Finally
             Try
                 Directory.Delete(temporary, True)
