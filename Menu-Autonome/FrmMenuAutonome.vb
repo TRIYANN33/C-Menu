@@ -21,7 +21,7 @@ Public Class FrmMenuAutonome
     Private ReadOnly databasePath As String = Path.Combine(AppContext.BaseDirectory, "CMenu.db")
 
     Public Sub New()
-        Text = "C-Menu — " & GeneratedConfig.FormName
+        Text = "Menu--" & GeneratedConfig.FormName
         StartPosition = FormStartPosition.CenterScreen
         Size = New Size(1050, 680)
         MinimumSize = New Size(650, 400)
