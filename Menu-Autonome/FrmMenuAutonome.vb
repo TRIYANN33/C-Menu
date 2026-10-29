@@ -135,7 +135,7 @@ Public Class FrmMenuAutonome
                                 Using dialog As New FrmAnniversaire()
                                     dialog.ShowDialog(Me)
                                 End Using
-                                RefreshNextEvent()
+
                             ElseIf IsSlideshow(clicked.Text, DirectCast(clicked.Tag, MenuRow).ActionName) Then
                                 StartSlideshow()
                             ElseIf clicked.Text.StartsWith("Couleurs", StringComparison.OrdinalIgnoreCase) Then
