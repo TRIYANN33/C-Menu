@@ -12,7 +12,6 @@ Public Class FrmMenuAutonome
     Inherits Form
 
     Private ReadOnly menuBar As New MenuStrip()
-    Private ReadOnly titleLabel As New Label()
     Private ReadOnly clock As New Timer With {.Interval = 1000}
     Private ReadOnly databasePath As String = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -26,20 +25,12 @@ Public Class FrmMenuAutonome
         Font = New Font("Segoe UI", 10)
         BackColor = Color.FromArgb(241, 247, 237)
 
-        titleLabel.Dock = DockStyle.Top
-        titleLabel.Height = 65
-        titleLabel.Padding = New Padding(15, 0, 15, 0)
-        titleLabel.TextAlign = ContentAlignment.MiddleLeft
-        titleLabel.Font = New Font("Segoe UI", 13, FontStyle.Bold)
-        titleLabel.BackColor = Color.FromArgb(225, 244, 216)
-
         menuBar.Dock = DockStyle.Top
         menuBar.AutoSize = True
         menuBar.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
         menuBar.Padding = New Padding(10, 6, 10, 6)
         Controls.Add(menuBar)
-        Controls.Add(titleLabel)
         MainMenuStrip = menuBar
 
         AddHandler clock.Tick, Sub(sender, e) RefreshClock()
@@ -53,7 +44,7 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshClock()
         Dim nowValue = DateTime.Now
-        titleLabel.Text = "Menus — Nous sommes le " &
+        Text = "Menus — Nous sommes le " &
             nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
             " à " & nowValue.ToString("HH:mm:ss")
     End Sub
