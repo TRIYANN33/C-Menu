@@ -135,10 +135,8 @@ Public Class FrmMenu
             toolbarWidth += control.Width + control.Margin.Left + control.Margin.Right
         Next
         Dim requiredFormWidth = toolbarWidth + (Width - ClientSize.Width) + 12
-        If Width < requiredFormWidth Then Width = requiredFormWidth
-        If MinimumSize.Width < requiredFormWidth Then
-            MinimumSize = New Size(requiredFormWidth, MinimumSize.Height)
-        End If
+        MinimumSize = New Size(requiredFormWidth, MinimumSize.Height)
+        Width = requiredFormWidth
 
         editorPanel = New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 162, .ColumnCount = 6, .RowCount = 3,
