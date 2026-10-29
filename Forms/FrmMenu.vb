@@ -22,6 +22,9 @@ Public Class FrmMenu
     Private ReadOnly dateModified As New TextBox()
     Private ReadOnly searchBox As New TextBox()
     Private ReadOnly countLabel As New ToolStripStatusLabel()
+    Private miniMode As Boolean = False
+    Private normalBounds As Rectangle
+    Private normalMinimumSize As Size
     Private selectedId As Integer
     Private sortFields As New List(Of (Field As String, Descending As Boolean))()
     Private activeFilters As New List(Of (Field As String, OperatorName As String, Value As String))()
@@ -37,6 +40,26 @@ Public Class FrmMenu
         ApplyColors()
         ClearForm()
         ReloadGrid()
+    End Sub
+
+    Private Sub MiniMaxClicked(sender As Object, e As EventArgs)
+        If Not miniMode Then
+            If WindowState = FormWindowState.Maximized Then WindowState = FormWindowState.Normal
+            normalBounds = Bounds
+            normalMinimumSize = MinimumSize
+            MinimumSize = New Size(640, 440)
+            Dim targetWidth = CInt(Math.Round(normalBounds.Width * 0.8))
+            Dim targetHeight = CInt(Math.Round(normalBounds.Height * 0.8))
+            Bounds = New Rectangle(normalBounds.Left + (normalBounds.Width - targetWidth) \ 2,
+                                   normalBounds.Top + (normalBounds.Height - targetHeight) \ 2,
+                                   targetWidth, targetHeight)
+            miniMode = True
+        Else
+            MinimumSize = New Size(640, 440)
+            Bounds = normalBounds
+            MinimumSize = normalMinimumSize
+            miniMode = False
+        End If
     End Sub
 
     Private Function ButtonFor(title As String, handler As EventHandler) As Button
@@ -59,6 +82,7 @@ Public Class FrmMenu
             .WrapContents = False, .AutoScroll = True,
             .BackColor = Color.FromArgb(226, 234, 240)
         }
+        toolbarPanel.Controls.Add(ButtonFor("MiniMax", AddressOf MiniMaxClicked))
         toolbarPanel.Controls.Add(ButtonFor("Nouveau", AddressOf NewClicked))
         toolbarPanel.Controls.Add(ButtonFor("Enregistrer", AddressOf SaveClicked))
         toolbarPanel.Controls.Add(ButtonFor("Modifier", AddressOf UpdateClicked))
