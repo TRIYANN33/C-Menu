@@ -58,11 +58,10 @@ Public Class Frm_Filtre
             condition.Items.AddRange(New Object() {"Contient", "Est égal à", "Commence par", "Se termine par", "Est différent de"})
             condition.SelectedIndex = 0
             Dim value As New ComboBox With {
-                .Dock = DockStyle.Top, .DropDownStyle = ComboBoxStyle.Drop,
+                .Dock = DockStyle.Top, .DropDownStyle = ComboBoxStyle.DropDown,
                 .AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 .AutoCompleteSource = AutoCompleteSource.ListItems
             }
-            Dim currentIndex = i
             AddHandler field.SelectedIndexChanged, Sub(sender, e)
                 Dim previousValue = value.Text
                 value.Items.Clear()
