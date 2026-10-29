@@ -17,7 +17,7 @@ Public Class FrmMenu
     Private ReadOnly searchBox As New TextBox()
     Private ReadOnly countLabel As New ToolStripStatusLabel()
     Private selectedId As Integer
-    Private sortAZ As Boolean
+    Private sortFields As New List(Of (Field As String, Descending As Boolean))()
 
     Public Sub New()
         Text = "C-Menu | Gestion des menus"
@@ -196,7 +196,7 @@ Public Class FrmMenu
 
     Private Sub ReloadGrid()
         RemoveHandler grid.SelectionChanged, AddressOf GridSelectionChanged
-        Dim data = repo.GetAll(searchBox.Text.Trim(), sortAZ)
+        Dim data = repo.GetAll(searchBox.Text.Trim(), sortFields)
         grid.DataSource = New BindingList(Of MenuItem)(data)
         RefreshCombos(data)
         countLabel.Text = data.Count.ToString() & " enregistrement(s)"
@@ -300,9 +300,13 @@ Public Class FrmMenu
     End Sub
 
     Private Sub SortClicked(sender As Object, e As EventArgs)
-        sortAZ = Not sortAZ
-        ClearForm()
-        ReloadGrid()
+        Using dialog As New Frm_Tri(sortFields)
+            If dialog.ShowDialog(Me) = DialogResult.OK Then
+                sortFields = dialog.SortFields
+                ClearForm()
+                ReloadGrid()
+            End If
+        End Using
     End Sub
 
     Private Sub GridSelectionChanged(sender As Object, e As EventArgs)
