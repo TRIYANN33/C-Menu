@@ -42,15 +42,20 @@ Public Class FrmMenuAutonome
         menuBar.Padding = New Padding(10, 6, 10, 6)
         Controls.Add(menuBar)
         Controls.Add(nextEventLabel)
+        Controls.Add(appointmentLabel)
         ApplyColors()
         MainMenuStrip = menuBar
 
-        AddHandler Resize, Sub(sender, e) PositionNextEvent()
+        AddHandler Resize, Sub(sender, e)
+            PositionNextEvent()
+            PositionAppointments()
+        End Sub
         AddHandler clock.Tick, Sub(sender, e) RefreshClock()
         AddHandler Shown, Sub(sender, e)
             RefreshClock()
             LoadFromDatabase()
             RefreshNextEvent()
+            RefreshAppointmentsDisplay()
             clock.Start()
         End Sub
         AddHandler FormClosed, Sub(sender, e)
@@ -132,7 +137,12 @@ Public Class FrmMenuAutonome
                         }
                         AddHandler child.Click, Sub(sender, e)
                             Dim clicked = DirectCast(sender, ToolStripMenuItem)
-                            If String.Equals(clicked.Text.Trim(), "Anniversaire", StringComparison.OrdinalIgnoreCase) Then
+                            If String.Equals(clicked.Text.Trim(), "Rendez-vous", StringComparison.OrdinalIgnoreCase) OrElse
+                               String.Equals(clicked.Text.Trim(), "Rendez vous", StringComparison.OrdinalIgnoreCase) Then
+                                Using dialog As New FrmRendezVous()
+                                    dialog.ShowDialog(Me)
+                                End Using
+                            ElseIf String.Equals(clicked.Text.Trim(), "Anniversaire", StringComparison.OrdinalIgnoreCase) Then
                                 Using dialog As New FrmAnniversaire()
                                     dialog.ShowDialog(Me)
                                 End Using
@@ -231,6 +241,69 @@ Public Class FrmMenuAutonome
     Private originalWindowSize As Size
     Private Const SlideshowFolder As String = "C:\Menu\applications\Diaporama"
 
+    Private ReadOnly appointmentLabel As New Label With {
+        .AutoSize = False,
+        .TextAlign = ContentAlignment.TopRight,
+        .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+        .Visible = False
+    }
+    Private Const AppointmentDatabase As String = "C:\Menu\applications\Rendez-vous\RendezVous.db"
+
+    Private Sub RefreshAppointmentsDisplay()
+        appointmentLabel.Visible = False
+        If Not File.Exists(AppointmentDatabase) Then Return
+        Try
+            Dim lines As New List(Of String)()
+            Using cn As New SqliteConnection("Data Source=" & AppointmentDatabase & ";Mode=ReadOnly")
+                cn.Open()
+                Using cmd = cn.CreateCommand()
+                    cmd.CommandText = "SELECT Libelle, DateHeure, Note FROM RendezVous WHERE DateHeure >= $now ORDER BY DateHeure"
+                    cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim d As Date
+                            If Not Date.TryParseExact(reader.GetString(1), "yyyy-MM-dd HH:mm:ss",
+                                CultureInfo.InvariantCulture, DateTimeStyles.None, d) Then Continue While
+                            lines.Add(reader.GetString(0).Trim() & Environment.NewLine &
+                                "le " & d.ToString("dddd d MMMM yyyy 'à' HH'h'mm", CultureInfo.GetCultureInfo("fr-FR")) &
+                                If(reader.IsDBNull(2) OrElse String.IsNullOrWhiteSpace(If(reader.IsDBNull(2), "", reader.GetString(2))), "",
+                                   Environment.NewLine & reader.GetString(2).Trim()))
+                        End While
+                    End Using
+                End Using
+            End Using
+            If lines.Count > 0 Then
+                appointmentLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, lines)
+                Dim widthNeeded As Integer = 0
+                For Each line In appointmentLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None)
+                    widthNeeded = Math.Max(widthNeeded, TextRenderer.MeasureText(line, appointmentLabel.Font).Width)
+                Next
+                appointmentLabel.Width = widthNeeded + 20
+                appointmentLabel.Height = (lines.Sum(Function(x) x.Split({Environment.NewLine}, StringSplitOptions.None).Length) +
+                    (lines.Count - 1)) * (appointmentLabel.Font.Height + 3) + 12
+                appointmentLabel.Visible = True
+            End If
+        Catch ex As SqliteException
+        Catch ex As IOException
+        End Try
+        AdjustMenuWidth()
+    End Sub
+
+    Private Sub PositionAppointments()
+        If Not appointmentLabel.Visible Then Return
+        Dim topOfBody = menuBar.Bottom
+        Dim offsetPixels As Integer
+        Using graphics = CreateGraphics()
+            offsetPixels = CInt(Math.Round(graphics.DpiY * 0.5 / 2.54))
+        End Using
+        Dim topPosition = topOfBody + offsetPixels
+        If nextEventLabel.Visible Then topPosition = Math.Max(topPosition, nextEventLabel.Bottom + 8)
+        appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width - 12), topPosition)
+        appointmentLabel.BringToFront()
+        Dim neededHeight = appointmentLabel.Bottom + 12 + (Height - ClientSize.Height)
+        If Height < neededHeight Then Height = neededHeight
+    End Sub
+
     Private ReadOnly nextEventLabel As New Label With {
         .AutoSize = False,
         .TextAlign = ContentAlignment.MiddleRight,
@@ -321,6 +394,7 @@ Public Class FrmMenuAutonome
         Dim contentWidth = Math.Max(labelWidth, menusWidth)
         If slideshowPanel IsNot Nothing Then contentWidth += slideshowPanel.Width + 12
         If nextEventLabel.Visible Then contentWidth += nextEventLabel.Width + 12
+        If appointmentLabel.Visible Then contentWidth = Math.Max(contentWidth, appointmentLabel.Width + 24)
         Dim frameWidth = Width - ClientSize.Width
         Dim targetWidth = contentWidth + frameWidth
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
@@ -328,6 +402,7 @@ Public Class FrmMenuAutonome
         MinimumSize = New Size(Math.Min(targetWidth, availableWidth), MinimumSize.Height)
         Width = targetWidth
         PositionNextEvent()
+        PositionAppointments()
     End Sub
 
     Private Sub StartSlideshow()
@@ -639,6 +714,111 @@ Public Class FrmAnniversaire
             eventsGrid.Columns(1).HeaderText = "Dans"
             eventsGrid.Columns(2).HeaderText = "Nom et prénom"
             eventsGrid.Columns(3).HeaderText = "Événement"
+        End If
+    End Sub
+End Class
+
+Public Class FrmRendezVous
+    Inherits Form
+
+    Private Const DbPath As String = "C:\Menu\applications\Rendez-vous\RendezVous.db"
+    Private ReadOnly libelle As New TextBox()
+    Private ReadOnly dateHeure As New DateTimePicker With {
+        .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd/MM/yyyy HH:mm",
+        .ShowUpDown = False, .Width = 220
+    }
+    Private ReadOnly note As New TextBox With {.Multiline = True, .ScrollBars = ScrollBars.Vertical, .Height = 70}
+    Private ReadOnly upcoming As New DataGridView With {
+        .Dock = DockStyle.Fill, .ReadOnly = True, .AllowUserToAddRows = False,
+        .AllowUserToDeleteRows = False, .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    }
+
+    Public Sub New()
+        Text = "Rendez-vous"
+        StartPosition = FormStartPosition.CenterParent
+        Size = New Size(760, 560)
+        MinimumSize = New Size(620, 450)
+        Font = New Font("Segoe UI", 10)
+        Dim entry As New TableLayoutPanel With {
+            .Dock = DockStyle.Top, .Height = 215, .ColumnCount = 2, .RowCount = 3,
+            .Padding = New Padding(12)
+        }
+        entry.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 145))
+        entry.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+        entry.RowStyles.Add(New RowStyle(SizeType.Absolute, 45))
+        entry.RowStyles.Add(New RowStyle(SizeType.Absolute, 45))
+        entry.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
+        Dim labels = {"Libellé", "Date et heure", "Note"}
+        Dim inputs As Control() = {libelle, dateHeure, note}
+        For i = 0 To labels.Length - 1
+            entry.Controls.Add(New Label With {.Text = labels(i), .AutoSize = True, .Anchor = AnchorStyles.Left}, 0, i)
+            inputs(i).Dock = DockStyle.Fill
+            entry.Controls.Add(inputs(i), 1, i)
+        Next
+        Dim save As New Button With {.Text = "Enregistrer", .AutoSize = True}
+        AddHandler save.Click, AddressOf SaveAppointment
+        Dim bar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 45, .Padding = New Padding(12, 5, 0, 0)}
+        bar.Controls.Add(save)
+        Me.Controls.Add(upcoming)
+        Me.Controls.Add(bar)
+        Me.Controls.Add(entry)
+        Directory.CreateDirectory(Path.GetDirectoryName(DbPath))
+        Using cn As New SqliteConnection("Data Source=" & DbPath)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "CREATE TABLE IF NOT EXISTS RendezVous (Id INTEGER PRIMARY KEY AUTOINCREMENT, Libelle TEXT NOT NULL, DateHeure TEXT NOT NULL, Note TEXT)"
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+        RefreshAppointments()
+    End Sub
+
+    Private Sub SaveAppointment(sender As Object, e As EventArgs)
+        If String.IsNullOrWhiteSpace(libelle.Text) Then
+            MessageBox.Show(Me, "Saisissez le libellé du rendez-vous.", "Rendez-vous")
+            Return
+        End If
+        Using cn As New SqliteConnection("Data Source=" & DbPath)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "INSERT INTO RendezVous (Libelle, DateHeure, Note) VALUES ($libelle, $date, $note)"
+                cmd.Parameters.AddWithValue("$libelle", libelle.Text.Trim())
+                cmd.Parameters.AddWithValue("$date", dateHeure.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
+                cmd.Parameters.AddWithValue("$note", note.Text.Trim())
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+        libelle.Clear()
+        note.Clear()
+        RefreshAppointments()
+    End Sub
+
+    Private Sub RefreshAppointments()
+        Dim rows As New List(Of (DateValue As Date, Title As String, Notes As String))()
+        Using cn As New SqliteConnection("Data Source=" & DbPath)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "SELECT Libelle, DateHeure, Note FROM RendezVous WHERE DateHeure >= $now ORDER BY DateHeure"
+                cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
+                Using reader = cmd.ExecuteReader()
+                    While reader.Read()
+                        Dim d As Date
+                        If Date.TryParseExact(reader.GetString(1), "yyyy-MM-dd HH:mm:ss",
+                            CultureInfo.InvariantCulture, DateTimeStyles.None, d) Then
+                            rows.Add((d, reader.GetString(0), If(reader.IsDBNull(2), "", reader.GetString(2))))
+                        End If
+                    End While
+                End Using
+            End Using
+        End Using
+        upcoming.DataSource = rows.Select(Function(x) New With {
+            .Libelle = x.Title,
+            .DateEtHeure = x.DateValue.ToString("dddd d MMMM yyyy 'à' HH'h'mm", CultureInfo.GetCultureInfo("fr-FR")),
+            .Note = x.Notes
+        }).ToList()
+        If upcoming.Columns.Count = 3 Then
+            upcoming.Columns(0).HeaderText = "Libellé"
+            upcoming.Columns(1).HeaderText = "Date et heure"
         End If
     End Sub
 End Class
