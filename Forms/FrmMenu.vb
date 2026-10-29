@@ -9,7 +9,7 @@ Public Class FrmMenu
 
     Private ReadOnly repo As New MenuRepository()
     Private ReadOnly fields As New Dictionary(Of String, Control)()
-    Private ReadOnly comboKeys As New HashSet(Of String) From {"Frm_Menu", "Menu", "SousMenu", "Info01", "Info02", "Action"}
+    Private ReadOnly comboKeys As New HashSet(Of String) From {"Frm_Menu", "Menu", "SousMenu", "Info01", "Info02", "Application", "Action"}
     Private ReadOnly grid As New DataGridView()
     Private ReadOnly idBox As New TextBox()
     Private ReadOnly dateCreated As New TextBox()
@@ -72,12 +72,13 @@ Public Class FrmMenu
         AddField(editor, "N° Menu", "NumMenu", 3, 0)
         AddField(editor, "N° Sous-Menu", "NumSousMenu", 4, 0)
         AddField(editor, "Frm_Menu", "Frm_Menu", 5, 0)
-        AddField(editor, "Menu", "Menu", 0, 1, 2)
-        AddField(editor, "Sous-Menu", "SousMenu", 2, 1, 2)
-        AddField(editor, "Info_01", "Info01", 4, 1)
-        AddField(editor, "Info_02", "Info02", 5, 1)
-        AddField(editor, "Action", "Action", 0, 2, 2)
-        AddField(editor, "Chemin", "Chemin", 2, 2, 4)
+        AddField(editor, "Menu", "Menu", 0, 1)
+        AddField(editor, "Sous-Menu", "SousMenu", 1, 1)
+        AddField(editor, "Info_01", "Info01", 2, 1, 2)
+        AddField(editor, "Info_02", "Info02", 4, 1, 2)
+        AddField(editor, "Application", "Application", 0, 2, 2)
+        AddField(editor, "Action", "Action", 2, 2, 2)
+        AddField(editor, "Chemin", "Chemin", 4, 2, 2)
 
         Dim searchPanel As New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 60, .ColumnCount = 2,
@@ -129,7 +130,7 @@ Public Class FrmMenu
             ("Id", "N° Saisie", 65), ("NumMenu", "N° Menu", 75),
             ("NumSousMenu", "N° Sous-Menu", 90), ("Frm_Menu", "Frm_Menu", 120), ("Menu", "Menu", 130),
             ("SousMenu", "Sous-Menu", 130), ("Info01", "Info_01", 90),
-            ("Info02", "Info_02", 90), ("Action", "Action", 130),
+            ("Info02", "Info_02", 90), ("Application", "Application", 120), ("Action", "Action", 130),
             ("Chemin", "Chemin", 170), ("SaisieLe", "Saisie Le", 115),
             ("ModifierLe", "Modifier Le", 115)}
             Dim column As New DataGridViewTextBoxColumn With {
@@ -217,6 +218,7 @@ Public Class FrmMenu
                     Case "SousMenu" : value = item.SousMenu
                     Case "Info01" : value = item.Info01
                     Case "Info02" : value = item.Info02
+                    Case "Application" : value = item.Application
                     Case "Action" : value = item.Action
                 End Select
                 If Not String.IsNullOrWhiteSpace(value) Then values.Add(value.Trim())
@@ -248,6 +250,7 @@ Public Class FrmMenu
             .SousMenu = fields("SousMenu").Text.Trim(),
             .Info01 = fields("Info01").Text.Trim(),
             .Info02 = fields("Info02").Text.Trim(),
+            .Application = fields("Application").Text.Trim(),
             .Action = fields("Action").Text.Trim(),
             .Chemin = fields("Chemin").Text.Trim()
         }
@@ -325,6 +328,7 @@ Public Class FrmMenu
         fields("SousMenu").Text = item.SousMenu
         fields("Info01").Text = item.Info01
         fields("Info02").Text = item.Info02
+        fields("Application").Text = item.Application
         fields("Action").Text = item.Action
         fields("Chemin").Text = item.Chemin
     End Sub
