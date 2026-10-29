@@ -6,6 +6,8 @@
     <RootNamespace>CMenu</RootNamespace>
     <StartupObject>CMenu.Program</StartupObject>
     <MyType>Empty</MyType>
+    <CMenuAssemblyName Condition="'$(CMenuAssemblyName)' == ''">MenuPublier</CMenuAssemblyName>
+    <AssemblyName>$(CMenuAssemblyName)</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Menu-Autonome/**/*.vb" />
