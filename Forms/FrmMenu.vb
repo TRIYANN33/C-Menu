@@ -42,6 +42,25 @@ Public Class FrmMenu
         ReloadGrid()
     End Sub
 
+    Private Const WM_SYSCOMMAND As Integer = &H112
+    Private Const SC_MAXIMIZE As Integer = &HF030
+    Private Const SC_RESTORE As Integer = &HF120
+
+    Protected Overrides Sub WndProc(ByRef m As Message)
+        If m.Msg = WM_SYSCOMMAND Then
+            Dim command = CInt(m.WParam.ToInt64() And &HFFF0L)
+            If command = SC_MAXIMIZE OrElse (miniMode AndAlso command = SC_RESTORE) Then
+                ToggleMiniMode()
+                Return
+            End If
+        End If
+        MyBase.WndProc(m)
+    End Sub
+
+    Private Sub ToggleMiniMode()
+        MiniMaxClicked(Me, EventArgs.Empty)
+    End Sub
+
     Private Sub MiniMaxClicked(sender As Object, e As EventArgs)
         If Not miniMode Then
             If WindowState = FormWindowState.Maximized Then WindowState = FormWindowState.Normal
@@ -82,7 +101,6 @@ Public Class FrmMenu
             .WrapContents = False, .AutoScroll = True,
             .BackColor = Color.FromArgb(226, 234, 240)
         }
-        toolbarPanel.Controls.Add(ButtonFor("MiniMax", AddressOf MiniMaxClicked))
         toolbarPanel.Controls.Add(ButtonFor("Nouveau", AddressOf NewClicked))
         toolbarPanel.Controls.Add(ButtonFor("Enregistrer", AddressOf SaveClicked))
         toolbarPanel.Controls.Add(ButtonFor("Modifier", AddressOf UpdateClicked))
