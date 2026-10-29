@@ -434,6 +434,7 @@ Public Class FrmAnniversaire
     Private ReadOnly naissance As New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False}
     Private ReadOnly fete As New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False}
     Private ReadOnly noter As New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False}
+    Private ReadOnly libelleANoter As New TextBox()
     Private ReadOnly eventsGrid As New DataGridView With {
         .Dock = DockStyle.Fill, .ReadOnly = True, .AllowUserToAddRows = False,
         .AllowUserToDeleteRows = False, .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
@@ -446,13 +447,13 @@ Public Class FrmAnniversaire
         Size = New Size(800, 540)
         MinimumSize = New Size(650, 430)
         Font = New Font("Segoe UI", 10)
-        Dim entry As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 200, .ColumnCount = 2, .RowCount = 5, .Padding = New Padding(12)}
+        Dim entry As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 240, .ColumnCount = 2, .RowCount = 6, .Padding = New Padding(12)}
         entry.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 180))
         entry.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
-        Dim labels = {"Nom", "Prénom", "Date de naissance", "Date de fête", "Date à noter"}
-        Dim inputControls As Control() = {nom, prenom, naissance, fete, noter}
+        Dim labels = {"Nom", "Prénom", "Date de naissance", "Date de fête", "Date à noter", "Libellé de la date à noter"}
+        Dim inputControls As Control() = {nom, prenom, naissance, fete, noter, libelleANoter}
         For i = 0 To labels.Length - 1
-            entry.RowStyles.Add(New RowStyle(SizeType.Percent, 20))
+            entry.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F / labels.Length))
             entry.Controls.Add(New Label With {.Text = labels(i), .AutoSize = True, .Anchor = AnchorStyles.Left}, 0, i)
             inputControls(i).Dock = DockStyle.Fill
             entry.Controls.Add(inputControls(i), 1, i)
@@ -468,8 +469,13 @@ Public Class FrmAnniversaire
         Using cn As New SqliteConnection("Data Source=" & databaseFile)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "CREATE TABLE IF NOT EXISTS Evenements (Id INTEGER PRIMARY KEY AUTOINCREMENT, Nom TEXT NOT NULL, Prenom TEXT NOT NULL, Naissance TEXT, Fete TEXT, ANoter TEXT)"
+                cmd.CommandText = "CREATE TABLE IF NOT EXISTS Evenements (Id INTEGER PRIMARY KEY AUTOINCREMENT, Nom TEXT NOT NULL, Prenom TEXT NOT NULL, Naissance TEXT, Fete TEXT, ANoter TEXT, LibelleANoter TEXT)"
                 cmd.ExecuteNonQuery()
+                cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Evenements') WHERE name = 'LibelleANoter'"
+                If Convert.ToInt32(cmd.ExecuteScalar()) = 0 Then
+                    cmd.CommandText = "ALTER TABLE Evenements ADD COLUMN LibelleANoter TEXT"
+                    cmd.ExecuteNonQuery()
+                End If
             End Using
         End Using
         RefreshEvents()
@@ -483,17 +489,19 @@ Public Class FrmAnniversaire
         Using cn As New SqliteConnection("Data Source=" & databaseFile)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO Evenements (Nom, Prenom, Naissance, Fete, ANoter) VALUES ($nom, $prenom, $naissance, $fete, $noter)"
+                cmd.CommandText = "INSERT INTO Evenements (Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter) VALUES ($nom, $prenom, $naissance, $fete, $noter, $libelle)"
                 cmd.Parameters.AddWithValue("$nom", nom.Text.Trim())
                 cmd.Parameters.AddWithValue("$prenom", prenom.Text.Trim())
                 cmd.Parameters.AddWithValue("$naissance", If(naissance.Checked, naissance.Value.ToString("yyyy-MM-dd"), CType(DBNull.Value, Object)))
                 cmd.Parameters.AddWithValue("$fete", If(fete.Checked, fete.Value.ToString("yyyy-MM-dd"), CType(DBNull.Value, Object)))
                 cmd.Parameters.AddWithValue("$noter", If(noter.Checked, noter.Value.ToString("yyyy-MM-dd"), CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("$libelle", libelleANoter.Text.Trim())
                 cmd.ExecuteNonQuery()
             End Using
         End Using
         nom.Clear()
         prenom.Clear()
+        libelleANoter.Clear()
         naissance.Checked = False
         fete.Checked = False
         noter.Checked = False
@@ -516,7 +524,7 @@ Public Class FrmAnniversaire
         Using cn As New SqliteConnection("Data Source=" & databaseFile)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Nom, Prenom, Naissance, Fete, ANoter FROM Evenements"
+                cmd.CommandText = "SELECT Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter FROM Evenements"
                 Using reader = cmd.ExecuteReader()
                     While reader.Read()
                         Dim person = reader.GetString(1) & " " & reader.GetString(0)
@@ -524,7 +532,11 @@ Public Class FrmAnniversaire
                             If reader.IsDBNull(i) Then Continue For
                             Dim dateValue As Date
                             If Date.TryParseExact(reader.GetString(i), "yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture, Globalization.DateTimeStyles.None, dateValue) Then
-                                upcoming.Add((NextOccurrence(dateValue), person, If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))))
+                                Dim kind = If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))
+                                If i = 4 AndAlso Not reader.IsDBNull(5) AndAlso Not String.IsNullOrWhiteSpace(reader.GetString(5)) Then
+                                    kind = reader.GetString(5)
+                                End If
+                                upcoming.Add((NextOccurrence(dateValue), person, kind))
                             End If
                         Next
                     End While
