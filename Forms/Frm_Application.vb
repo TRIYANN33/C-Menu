@@ -20,8 +20,13 @@ Public Class Frm_Application
         If menuName = "" Then Throw New ArgumentException("Frm_Menu est obligatoire.")
         Text = "C-Menu — " & menuName
         StartPosition = FormStartPosition.CenterParent
-        Size = New Size(1000, 660)
-        MinimumSize = New Size(650, 400)
+        ' Hauteur de la fenêtre : 4 cm, calculée selon la résolution DPI Windows.
+        Dim height4cm As Integer
+        Using screenGraphics = Graphics.FromHwnd(IntPtr.Zero)
+            height4cm = CInt(Math.Round(screenGraphics.DpiY * 4.0 / 2.54))
+        End Using
+        Size = New Size(1000, height4cm)
+        MinimumSize = New Size(650, height4cm)
         Font = New Font("Segoe UI", 10)
 
         Dim colors = MenuColors.Load()
