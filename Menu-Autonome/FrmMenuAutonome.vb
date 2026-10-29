@@ -69,7 +69,7 @@ Public Class FrmMenuAutonome
                 cn.Open()
                 Using cmd = cn.CreateCommand()
                     cmd.CommandText =
-                        "SELECT Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Chemin " &
+                        "SELECT Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Chemin, Action " &
                         "FROM Menus WHERE TRIM(COALESCE(Menu,'')) <> '' " &
                         "AND Frm_Menu = $form COLLATE NOCASE " &
                         "ORDER BY Frm_Menu COLLATE NOCASE, CAST(NumMenu AS INTEGER), " &
@@ -83,7 +83,8 @@ Public Class FrmMenuAutonome
                                 .SubNumber = Value(reader, 2),
                                 .MenuText = Value(reader, 3),
                                 .SubText = Value(reader, 4),
-                                .Path = Value(reader, 5)
+                                .Path = Value(reader, 5),
+                                .ActionName = Value(reader, 6)
                             })
                         End While
                     End Using
@@ -102,18 +103,20 @@ Public Class FrmMenuAutonome
                     If String.IsNullOrWhiteSpace(record.SubText) Then
                         If Not String.IsNullOrWhiteSpace(record.Path) Then
                             Dim destination = record.Path
-                            AddHandler top.Click, Sub(sender, e) OpenPath(destination)
+                            Dim actionName = record.ActionName
+                            AddHandler top.Click, Sub(sender, e) OpenPath(destination, actionName)
                         End If
                     Else
                         Dim child As New ToolStripMenuItem(record.SubText.Trim()) With {
-                            .Tag = record.Path
+                            .Tag = record
                         }
                         AddHandler child.Click, Sub(sender, e)
                             Dim clicked = DirectCast(sender, ToolStripMenuItem)
                             If clicked.Text.StartsWith("Couleurs", StringComparison.OrdinalIgnoreCase) Then
                                 ChangeColor(clicked.Text)
                             Else
-                                OpenPath(CStr(clicked.Tag))
+                                Dim selected = DirectCast(clicked.Tag, MenuRow)
+                                OpenPath(selected.Path, selected.ActionName)
                             End If
                         End Sub
                         top.DropDownItems.Add(child)
@@ -190,14 +193,15 @@ Public Class FrmMenuAutonome
         MessageBox.Show(Me, message, "Menu autonome", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
-    Private Sub OpenPath(pathValue As String)
+    Private Sub OpenPath(pathValue As String, actionName As String)
         If String.IsNullOrWhiteSpace(pathValue) Then
             MessageBox.Show(Me, "Aucun chemin défini pour ce sous-menu.", "Menu autonome")
             Return
         End If
         Try
             Dim destination = Environment.ExpandEnvironmentVariables(pathValue.Trim())
-            If Directory.Exists(destination) Then
+            If String.Equals(If(actionName, "").Trim(), "DOSSIER-OUVRE", StringComparison.OrdinalIgnoreCase) OrElse Directory.Exists(destination) Then
+                If Not Directory.Exists(destination) Then Throw New DirectoryNotFoundException("Dossier introuvable : " & destination)
                 Dim opus = "C:\Program Files\GPSoftware\Directory Opus\x64\dopus.exe"
                 If File.Exists(opus) Then
                     Dim launch As New ProcessStartInfo(opus) With {.UseShellExecute = True}
@@ -226,5 +230,6 @@ Public Class FrmMenuAutonome
         Public Property MenuText As String = ""
         Public Property SubText As String = ""
         Public Property Path As String = ""
+        Public Property ActionName As String = ""
     End Class
 End Class
