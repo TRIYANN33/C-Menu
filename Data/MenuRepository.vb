@@ -115,6 +115,10 @@ Public Class MenuRepository
                         If Not allowed.Contains(spec.Field) Then Throw New ArgumentException("Champ de tri invalide.")
                         Dim col = """" & spec.Field.Replace("""", """""") & """"
                         Dim collate = If(spec.Field = "Id" OrElse spec.Field = "SaisieLe" OrElse spec.Field = "ModifierLe", "", " COLLATE NOCASE")
+                        If spec.Field = "NumMenu" OrElse spec.Field = "NumSousMenu" Then
+                            col = "CAST(" & col & " AS INTEGER)"
+                            collate = ""
+                        End If
                         orderParts.Add(col & collate & If(spec.Descending, " DESC", " ASC"))
                     Next
                 End If
