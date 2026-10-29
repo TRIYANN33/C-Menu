@@ -52,7 +52,10 @@ Public Class Frm_Application
         MainMenuStrip = menuBar
 
         AddHandler clock.Tick, Sub(sender, e) UpdateHeader()
-        AddHandler FormClosed, Sub(sender, e) clock.Stop()
+        AddHandler FormClosed, Sub(sender, e)
+            clock.Stop()
+            slideshowTimer.Stop()
+        End Sub
         AddHandler Shown, Sub(sender, e)
             LoadMenus()
             UpdateHeader()
@@ -103,8 +106,12 @@ Public Class Frm_Application
                 }
                 AddHandler child.Click, Sub(sender, e)
                     Dim selected = DirectCast(DirectCast(sender, ToolStripMenuItem).Tag, MenuItem)
-                    ShowInfo(selected.Info01, selected.Info02)
-                    OpenDestination(selected.Chemin, selected.Action)
+                    If IsSlideshow(selected.SousMenu, selected.Action) Then
+                        StartSlideshow()
+                    Else
+                        ShowInfo(selected.Info01, selected.Info02)
+                        OpenDestination(selected.Chemin, selected.Action)
+                    End If
                 End Sub
                 topItem.DropDownItems.Add(child)
             Next
@@ -120,6 +127,87 @@ Public Class Frm_Application
         Dim parsed As Long
         If Long.TryParse(value, parsed) Then Return parsed
         Return Long.MaxValue
+    End Function
+
+    Private ReadOnly slideshowTimer As New Timer With {.Interval = 3000}
+    Private slideshowPanel As Panel
+    Private slideshowPicture As PictureBox
+    Private slideshowFiles As String() = Array.Empty(Of String)()
+    Private slideshowIndex As Integer = 0
+    Private originalWindowSize As Size
+    Private Const SlideshowFolder As String = "C:\Menu\applications\Diaporama"
+
+    Private Sub StartSlideshow()
+        Try
+            Directory.CreateDirectory(SlideshowFolder)
+            If slideshowPanel Is Nothing Then
+                originalWindowSize = Size
+                Dim pxWidth As Integer
+                Dim pxHeight As Integer
+                Using graphics = CreateGraphics()
+                    pxWidth = CInt(Math.Round(graphics.DpiX * 6.22 / 2.54))
+                    pxHeight = CInt(Math.Round(graphics.DpiY * 6.19 / 2.54))
+                End Using
+                slideshowPanel = New Panel With {
+                    .Size = New Size(pxWidth, pxHeight),
+                    .Dock = DockStyle.Right,
+                    .BorderStyle = BorderStyle.FixedSingle,
+                    .BackColor = Color.Black
+                }
+                slideshowPicture = New PictureBox With {
+                    .Dock = DockStyle.Fill,
+                    .SizeMode = PictureBoxSizeMode.Zoom,
+                    .BackColor = Color.Black
+                }
+                slideshowPanel.Controls.Add(slideshowPicture)
+                Controls.Add(slideshowPanel)
+                slideshowPanel.BringToFront()
+                Size = New Size(Width + pxWidth + 12, Math.Max(Height, pxHeight + 70))
+                AddHandler slideshowTimer.Tick, Sub(sender, e) NextSlideshowImage()
+            End If
+            slideshowFiles = Directory.GetFiles(SlideshowFolder).
+                Where(Function(f) {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp"}.
+                Contains(Path.GetExtension(f).ToLowerInvariant())).
+                OrderBy(Function(f) f, StringComparer.CurrentCultureIgnoreCase).ToArray()
+            slideshowIndex = 0
+            NextSlideshowImage()
+            slideshowTimer.Start()
+            If slideshowFiles.Length = 0 Then
+                MessageBox.Show(Me, "Déposez des photos dans : " & SlideshowFolder,
+                                "Diaporama", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            MessageBox.Show(Me, "Impossible de démarrer le diaporama : " & ex.Message,
+                            "Diaporama", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
+    End Sub
+
+    Private Sub NextSlideshowImage()
+        If slideshowFiles.Length = 0 OrElse slideshowPicture Is Nothing Then Return
+        Dim attempts = slideshowFiles.Length
+        While attempts > 0
+            Dim filePath = slideshowFiles(slideshowIndex Mod slideshowFiles.Length)
+            slideshowIndex += 1
+            attempts -= 1
+            Try
+                Using stream = New FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                    Using sourceImage = Image.FromStream(stream)
+                        Dim replacement As New Bitmap(sourceImage)
+                        Dim previous = slideshowPicture.Image
+                        slideshowPicture.Image = replacement
+                        If previous IsNot Nothing Then previous.Dispose()
+                    End Using
+                End Using
+                Return
+            Catch
+                ' Ignorer les images illisibles et passer à la suivante.
+            End Try
+        End While
+    End Sub
+
+    Private Shared Function IsSlideshow(submenuText As String, actionName As String) As Boolean
+        Return String.Equals(If(submenuText, "").Trim(), "Diaporama", StringComparison.OrdinalIgnoreCase) OrElse
+               String.Equals(If(actionName, "").Trim(), "DIAPORAMA", StringComparison.OrdinalIgnoreCase)
     End Function
 
     Private Async Sub ShowInfo(info1 As String, info2 As String)
