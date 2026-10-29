@@ -24,8 +24,13 @@ Public Class FrmMenuAutonome
     Public Sub New()
         Text = "Menu--" & GeneratedConfig.FormName
         StartPosition = FormStartPosition.CenterScreen
-        Size = New Size(1050, 680)
-        MinimumSize = New Size(650, 400)
+        ' Hauteur de la fenêtre : 4 cm, calculée selon la résolution DPI Windows.
+        Dim height4cm As Integer
+        Using screenGraphics = Graphics.FromHwnd(IntPtr.Zero)
+            height4cm = CInt(Math.Round(screenGraphics.DpiY * 4.0 / 2.54))
+        End Using
+        Size = New Size(1050, height4cm)
+        MinimumSize = New Size(650, height4cm)
         Font = New Font("Segoe UI", 10)
         BackColor = bodyColor
         LoadColors()
