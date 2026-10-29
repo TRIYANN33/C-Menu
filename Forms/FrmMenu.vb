@@ -5,6 +5,7 @@ Imports System.Collections.Generic
 Imports System.Linq
 Imports System.Diagnostics
 Imports System.IO
+Imports System.IO.Compression
 
 Public Class FrmMenu
     Inherits Form
@@ -432,17 +433,35 @@ Public Class FrmMenu
 #If Not DISTRIBUTED Then
     Private Sub BackupClicked(sender As Object, e As EventArgs)
         Using dialog As New SaveFileDialog With {
-            .Title = "Sauvegarder la base de MenuPublier",
-            .Filter = "Base SQLite (*.db)|*.db",
-            .FileName = "MenuPublier_" & DateTime.Now.ToString("yyyyMMdd_HHmmss") & ".db"
+            .Title = "Sauvegarder et publier la base en ZIP",
+            .Filter = "Archive ZIP (*.zip)|*.zip",
+            .DefaultExt = "zip",
+            .FileName = "MenuPublier_" & DateTime.Now.ToString("yyyyMMdd_HHmmss") & ".zip"
         }
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            Dim tempDb = Path.Combine(Path.GetTempPath(), "CMenuBackup-" & Guid.NewGuid().ToString("N") & ".db")
             Try
-                PublisherBackup.SaveTo(dialog.FileName)
-                MessageBox.Show("Sauvegarde créée :" & Environment.NewLine & dialog.FileName, "Sauvegarder")
+                PublisherBackup.SaveTo(tempDb)
+                Using archive = ZipFile.Open(dialog.FileName, ZipArchiveMode.Create)
+                    archive.CreateEntryFromFile(tempDb, "CMenu.db", CompressionLevel.Optimal)
+                End Using
+                Dim publishDir = Path.Combine("C:\Menu", "Sauvegardes")
+                Directory.CreateDirectory(publishDir)
+                Dim publishedPath = Path.Combine(publishDir, Path.GetFileName(dialog.FileName))
+                If Not Path.GetFullPath(publishedPath).Equals(Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase) Then
+                    File.Copy(dialog.FileName, publishedPath, True)
+                End If
+                MessageBox.Show("Base sauvegardée en ZIP :" & Environment.NewLine & dialog.FileName &
+                                Environment.NewLine & Environment.NewLine & "Copie publiée :" & Environment.NewLine & publishedPath,
+                                "Sauvegarder")
             Catch ex As Exception
-                MessageBox.Show("Sauvegarde impossible : " & ex.Message, "Sauvegarder",
+                MessageBox.Show("Sauvegarde ou publication impossible : " & ex.Message, "Sauvegarder",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Finally
+                Try
+                    If File.Exists(tempDb) Then File.Delete(tempDb)
+                Catch
+                End Try
             End Try
         End Using
     End Sub
@@ -450,15 +469,26 @@ Public Class FrmMenu
     Private Sub RestoreClicked(sender As Object, e As EventArgs)
         Using dialog As New OpenFileDialog With {
             .Title = "Restaurer la base de MenuPublier",
-            .Filter = "Base SQLite (*.db)|*.db",
+            .Filter = "Sauvegarde ZIP ou SQLite (*.zip;*.db)|*.zip;*.db|Archive ZIP (*.zip)|*.zip|Base SQLite (*.db)|*.db",
             .CheckFileExists = True
         }
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
             If MessageBox.Show("Remplacer toutes les données actuelles par cette sauvegarde ?" &
                                Environment.NewLine & dialog.FileName, "Confirmer la restauration",
                                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+            Dim tempDb As String = Nothing
             Try
-                PublisherBackup.RestoreFrom(dialog.FileName)
+                Dim sourcePath = dialog.FileName
+                If Path.GetExtension(sourcePath).Equals(".zip", StringComparison.OrdinalIgnoreCase) Then
+                    tempDb = Path.Combine(Path.GetTempPath(), "CMenuRestore-" & Guid.NewGuid().ToString("N") & ".db")
+                    Using archive = ZipFile.OpenRead(sourcePath)
+                        Dim entry = archive.GetEntry("CMenu.db")
+                        If entry Is Nothing Then Throw New InvalidDataException("Le ZIP ne contient pas CMenu.db.")
+                        entry.ExtractToFile(tempDb)
+                    End Using
+                    sourcePath = tempDb
+                End If
+                PublisherBackup.RestoreFrom(sourcePath)
                 activeFilters.Clear()
                 sortFields.Clear()
                 searchBox.Clear()
@@ -468,6 +498,11 @@ Public Class FrmMenu
             Catch ex As Exception
                 MessageBox.Show("Restauration impossible : " & ex.Message, "Restaurer",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Finally
+                Try
+                    If tempDb IsNot Nothing AndAlso File.Exists(tempDb) Then File.Delete(tempDb)
+                Catch
+                End Try
             End Try
         End Using
     End Sub
