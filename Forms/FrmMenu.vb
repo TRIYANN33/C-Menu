@@ -538,11 +538,32 @@ Public Class FrmMenu
             Try
                 Cursor = Cursors.WaitCursor
                 Dim exePath = Await CMenuPublisher.PublishAsync()
+                Dim sourceRoot = Path.Combine(AppContext.BaseDirectory, "Sources")
+                If Not File.Exists(Path.Combine(sourceRoot, "C-Menu.vbproj")) Then
+                    Dim current = New DirectoryInfo(AppContext.BaseDirectory)
+                    While current IsNot Nothing
+                        If File.Exists(Path.Combine(current.FullName, "C-Menu.vbproj")) Then
+                            sourceRoot = current.FullName
+                            Exit While
+                        End If
+                        current = current.Parent
+                    End While
+                End If
+                If Not File.Exists(Path.Combine(sourceRoot, "C-Menu.vbproj")) Then
+                    Throw New FileNotFoundException("Sources introuvables : le dossier Sources doit accompagner C-Menu_Publier.exe.")
+                End If
                 PublisherBackup.SaveTo(tempDb)
                 ' SQLite peut garder un handle ouvert brièvement après BackupDatabase.
                 ' Ouvrir le fichier en lecture partagée évite le verrouillage lors du ZIP.
                 Using archive = ZipFile.Open(dialog.FileName, ZipArchiveMode.Create)
                     archive.CreateEntryFromFile(exePath, "C-Menu.exe", CompressionLevel.Optimal)
+                    For Each sourceFile In Directory.EnumerateFiles(sourceRoot, "*", SearchOption.AllDirectories)
+                        Dim relative = Path.GetRelativePath(sourceRoot, sourceFile)
+                        Dim segments = relative.Split(Path.DirectorySeparatorChar)
+                        If segments.Any(Function(part) {".git", ".vs", "bin", "obj"}.Contains(part, StringComparer.OrdinalIgnoreCase)) Then Continue For
+                        If {".db", ".exe", ".zip", ".pdb"}.Contains(Path.GetExtension(sourceFile), StringComparer.OrdinalIgnoreCase) Then Continue For
+                        archive.CreateEntryFromFile(sourceFile, "Sources/" & relative.Replace(Path.DirectorySeparatorChar, "/"c), CompressionLevel.Optimal)
+                    Next
                     Dim entry = archive.CreateEntry("CMenu.db", CompressionLevel.Optimal)
                     Using input = New FileStream(tempDb, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
                         Using output = entry.Open()
@@ -556,7 +577,7 @@ Public Class FrmMenu
                 If Not Path.GetFullPath(publishedPath).Equals(Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase) Then
                     File.Copy(dialog.FileName, publishedPath, True)
                 End If
-                MessageBox.Show("Programme C-Menu.exe et base CMenu.db sauvegardés en ZIP :" & Environment.NewLine & dialog.FileName &
+                MessageBox.Show("Programme C-Menu.exe, base CMenu.db et sources sauvegardés en ZIP :" & Environment.NewLine & dialog.FileName &
                                 Environment.NewLine & Environment.NewLine & "Copie publiée :" & Environment.NewLine & publishedPath,
                                 "Sauvegarder")
                 Process.Start(New ProcessStartInfo("explorer.exe", "/select,""" & dialog.FileName & """") With {.UseShellExecute = True})
