@@ -9,7 +9,7 @@ Public Class MenuRepository
     Public Sub New()
         Dim folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                   If(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar).Equals(
-                                      Path.Combine("C:\\", "Menu", "C-Menu"), StringComparison.OrdinalIgnoreCase),
+                                      Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Menu", "C-Menu"), StringComparison.OrdinalIgnoreCase),
                                      "C-Menu-Distribue", "C-Menu"))
         Directory.CreateDirectory(folder)
         connectionString = New SqliteConnectionStringBuilder With {.DataSource = Path.Combine(folder, "CMenu.db")}.ToString()
