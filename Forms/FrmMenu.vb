@@ -174,6 +174,14 @@ Public Class FrmMenu
         Else
             field = New TextBox()
         End If
+        If key = "NumMenu" OrElse key = "NumSousMenu" Then
+            Dim numericBox = DirectCast(field, TextBox)
+            AddHandler numericBox.KeyPress, Sub(sender, e)
+                If Not Char.IsControl(e.KeyChar) AndAlso Not Char.IsDigit(e.KeyChar) Then
+                    e.Handled = True
+                End If
+            End Sub
+        End If
         fields.Add(key, field)
         AddField(layout, title, field, col, row, span, False)
     End Sub
@@ -261,6 +269,17 @@ Public Class FrmMenu
     Private Function IsValid(item As MenuItem) As Boolean
         If item.NumMenu = "" OrElse item.Menu = "" Then
             MessageBox.Show("Les champs N° Menu et Menu sont obligatoires.", "Validation")
+            Return False
+        End If
+        Dim number As Long
+        If Not Long.TryParse(item.NumMenu, number) OrElse number < 0 Then
+            MessageBox.Show("N° Menu doit être un nombre entier positif ou zéro.", "Validation")
+            fields("NumMenu").Focus()
+            Return False
+        End If
+        If item.NumSousMenu <> "" AndAlso (Not Long.TryParse(item.NumSousMenu, number) OrElse number < 0) Then
+            MessageBox.Show("N° Sous-Menu doit être un nombre entier positif ou zéro.", "Validation")
+            fields("NumSousMenu").Focus()
             Return False
         End If
         Return True
