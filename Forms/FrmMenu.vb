@@ -65,6 +65,7 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
         toolbarPanel.Controls.Add(ButtonFor("Créer Menu", AddressOf OpenMenuClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Publier C-Menu", AddressOf PublishCMenuClicked))
 
         editorPanel = New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 162, .ColumnCount = 6, .RowCount = 3,
@@ -369,6 +370,20 @@ Public Class FrmMenu
                 ReloadGrid()
             End If
         End Using
+    End Sub
+
+    Private Async Sub PublishCMenuClicked(sender As Object, e As EventArgs)
+        Try
+            Cursor = Cursors.WaitCursor
+            Dim exePath = Await CMenuPublisher.PublishAsync()
+            Cursor = Cursors.Default
+            MessageBox.Show("C-Menu publié dans :" & Environment.NewLine & exePath, "Publier C-Menu")
+            Process.Start(New ProcessStartInfo("explorer.exe", "/select,""" & exePath & """") With {.UseShellExecute = True})
+        Catch ex As Exception
+            Cursor = Cursors.Default
+            MessageBox.Show("Publication impossible :" & Environment.NewLine & ex.Message, "Publier C-Menu",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Async Sub OpenMenuClicked(sender As Object, e As EventArgs)
