@@ -4,6 +4,7 @@ Public Class MenuItem
     Public Property ModifierLe As DateTime?
     Public Property NumMenu As String = ""
     Public Property NumSousMenu As String = ""
+    Public Property Frm_Menu As String = ""
     Public Property Menu As String = ""
     Public Property SousMenu As String = ""
     Public Property Info01 As String = ""
