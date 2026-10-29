@@ -162,12 +162,12 @@ Public Class Frm_Application
                     .Size = New Size(pxWidth, pxHeight),
                     .Dock = DockStyle.Left,
                     .BorderStyle = BorderStyle.FixedSingle,
-                    .BackColor = Color.Black
+                    .BackColor = Color.FromArgb(0, 153, 255)
                 }
                 slideshowPicture = New PictureBox With {
                     .Dock = DockStyle.Fill,
                     .SizeMode = PictureBoxSizeMode.Zoom,
-                    .BackColor = Color.Black
+                    .BackColor = Color.FromArgb(0, 153, 255)
                 }
                 slideshowPanel.Controls.Add(slideshowPicture)
                 Controls.Add(slideshowPanel)
