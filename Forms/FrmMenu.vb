@@ -12,6 +12,24 @@ Imports System.Text.Json
 Public Class FrmMenu
     Inherits Form
 
+    <System.Runtime.InteropServices.DllImport("dwmapi.dll")>
+    Private Shared Function DwmSetWindowAttribute(hwnd As IntPtr, attribute As Integer,
+                                                   ByRef value As Integer, size As Integer) As Integer
+    End Function
+
+    Protected Overrides Sub OnHandleCreated(e As EventArgs)
+        MyBase.OnHandleCreated(e)
+        If Environment.OSVersion.Version.Build >= 22000 Then
+            ' DWMWA_CAPTION_COLOR (Windows 11) : vert d'eau #A7E8D5.
+            Dim captionColor As Integer = &HD5E8A7
+            DwmSetWindowAttribute(Handle, 35, captionColor, 4)
+            ' DWMWA_TEXT_COLOR : noir.
+            Dim textColor As Integer = 0
+            DwmSetWindowAttribute(Handle, 36, textColor, 4)
+        End If
+    End Sub
+
+
     Private ReadOnly titleClock As New Timer With {.Interval = 1000}
     Private ReadOnly repo As New MenuRepository()
     Private themeColors As MenuColors = MenuColors.Load()
