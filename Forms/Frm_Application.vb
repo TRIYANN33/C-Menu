@@ -83,9 +83,11 @@ Public Class Frm_Application
 
     Private Sub UpdateHeader()
         Dim nowValue = DateTime.Now
-        header.Text = menuName & " — Nous sommes le " &
+        Dim titleInfo = menuName & " — Nous sommes le " &
             nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
             " à " & nowValue.ToString("HH:mm:ss")
+        header.Text = titleInfo
+        Text = titleInfo
     End Sub
 
     Private Sub LoadMenus()
