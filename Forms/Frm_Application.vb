@@ -245,7 +245,7 @@ Public Class Frm_Application
         Using graphics = CreateGraphics()
             offsetPixels = CInt(Math.Round(graphics.DpiY * 0.3 / 2.54))
         End Using
-        slideshowPanel.Location = New Point(Math.Max(0, ClientSize.Width - slideshowPanel.Width - 12),
+        slideshowPanel.Location = New Point(Math.Max(0, (ClientSize.Width - slideshowPanel.Width) \ 2),
                                             topOfBody + offsetPixels)
         slideshowPanel.BringToFront()
     End Sub
