@@ -1,4 +1,5 @@
 Imports System.Drawing
+Imports System.Globalization
 Imports System.Windows.Forms
 Imports System.ComponentModel
 Imports System.Collections.Generic
@@ -11,6 +12,7 @@ Imports System.Text.Json
 Public Class FrmMenu
     Inherits Form
 
+    Private ReadOnly titleClock As New Timer With {.Interval = 1000}
     Private ReadOnly repo As New MenuRepository()
     Private themeColors As MenuColors = MenuColors.Load()
     Private ReadOnly fieldLabels As New List(Of Label)()
@@ -33,7 +35,7 @@ Public Class FrmMenu
     Private activeFilters As New List(Of (Field As String, OperatorName As String, Value As String))()
 
     Public Sub New()
-        Text = "C-Menu | Gestion des menus"
+        Text = "C-Menu_Publier"
         Size = New Size(1400, 770)
         MinimumSize = New Size(1100, 620)
         StartPosition = FormStartPosition.CenterScreen
@@ -43,6 +45,17 @@ Public Class FrmMenu
         ApplyColors()
         ClearForm()
         ReloadGrid()
+        AddHandler titleClock.Tick, Sub(sender, e) UpdateWindowTitle()
+        AddHandler FormClosed, Sub(sender, e) titleClock.Stop()
+        UpdateWindowTitle()
+        titleClock.Start()
+    End Sub
+
+    Private Sub UpdateWindowTitle()
+        Dim nowValue = DateTime.Now
+        Text = "C-Menu_Publier — Nous sommes le " &
+            nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
+            " à " & nowValue.ToString("HH:mm:ss")
     End Sub
 
     Private Const WM_SYSCOMMAND As Integer = &H112
