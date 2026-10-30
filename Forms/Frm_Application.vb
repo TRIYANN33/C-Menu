@@ -238,15 +238,11 @@ Public Class Frm_Application
 
     Private Sub PositionSlideshow()
         If slideshowPanel Is Nothing Then Return
-        Dim eventWidth = Math.Max(If(nextEventLabel.Visible, nextEventLabel.Width, 0),
-                                  If(appointmentLabel.Visible, appointmentLabel.Width, 0))
         slideshowPanel.Dock = DockStyle.None
-        Dim leftEdge = If(eventWidth > 0, eventWidth + 24, 0)
         Dim topEdge = menuBar.Bottom
         topEdge = Math.Max(topEdge, header.Bottom)
-        Dim availableWidth = Math.Max(0, ClientSize.Width - leftEdge)
         Dim availableHeight = Math.Max(0, ClientSize.Height - topEdge)
-        slideshowPanel.Location = New Point(leftEdge + Math.Max(0, (availableWidth - slideshowPanel.Width) \ 2),
+        slideshowPanel.Location = New Point(Math.Max(0, (ClientSize.Width - slideshowPanel.Width) \ 2),
                                             topEdge + Math.Max(0, (availableHeight - slideshowPanel.Height) \ 2))
         slideshowPanel.BringToFront()
     End Sub
@@ -385,16 +381,18 @@ Public Class Frm_Application
 
     Private Sub StartSlideshow()
         Try
-            Directory.CreateDirectory(SlideshowFolder)
-            Dim opus = "C:\Program Files\GPSoftware\Directory Opus\x64\dopus.exe"
-            If File.Exists(opus) Then
-                Dim launch As New ProcessStartInfo(opus) With {.UseShellExecute = True}
-                launch.ArgumentList.Add(SlideshowFolder)
-                Process.Start(launch)
-            Else
-                Dim launch As New ProcessStartInfo("explorer.exe") With {.UseShellExecute = True}
-                launch.ArgumentList.Add(SlideshowFolder)
-                Process.Start(launch)
+            If Not Directory.Exists(SlideshowFolder) Then
+                Directory.CreateDirectory(SlideshowFolder)
+                Dim opus = "C:\Program Files\GPSoftware\Directory Opus\x64\dopus.exe"
+                If File.Exists(opus) Then
+                    Dim launch As New ProcessStartInfo(opus) With {.UseShellExecute = True}
+                    launch.ArgumentList.Add(SlideshowFolder)
+                    Process.Start(launch)
+                Else
+                    Dim launch As New ProcessStartInfo("explorer.exe") With {.UseShellExecute = True}
+                    launch.ArgumentList.Add(SlideshowFolder)
+                    Process.Start(launch)
+                End If
             End If
             If slideshowPanel Is Nothing Then
                 originalWindowSize = Size
