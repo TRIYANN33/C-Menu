@@ -320,11 +320,14 @@ Public Class FrmMenuAutonome
     Private Sub PositionSlideshow()
         If slideshowPanel Is Nothing Then Return
         slideshowPanel.Dock = DockStyle.None
-        Dim topEdge = menuBar.Bottom
+        Dim topOfBody = menuBar.Bottom
         
-        Dim availableHeight = Math.Max(0, ClientSize.Height - topEdge)
-        slideshowPanel.Location = New Point(Math.Max(0, (ClientSize.Width - slideshowPanel.Width) \ 2),
-                                            topEdge + Math.Max(0, (availableHeight - slideshowPanel.Height) \ 2))
+        Dim offsetPixels As Integer
+        Using graphics = CreateGraphics()
+            offsetPixels = CInt(Math.Round(graphics.DpiY * 0.3 / 2.54))
+        End Using
+        slideshowPanel.Location = New Point(Math.Max(0, ClientSize.Width - slideshowPanel.Width - 12),
+                                            topOfBody + offsetPixels)
         slideshowPanel.BringToFront()
     End Sub
 
