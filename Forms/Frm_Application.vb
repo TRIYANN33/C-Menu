@@ -66,6 +66,7 @@ Public Class Frm_Application
         AddHandler Resize, Sub(sender, e)
             PositionNextEvent()
             PositionAppointments()
+            PositionSlideshow()
         End Sub
         AddHandler clock.Tick, Sub(sender, e) UpdateHeader()
         AddHandler FormClosed, Sub(sender, e)
@@ -222,8 +223,13 @@ Public Class Frm_Application
         Dim eventWidth = Math.Max(If(nextEventLabel.Visible, nextEventLabel.Width, 0),
                                   If(appointmentLabel.Visible, appointmentLabel.Width, 0))
         slideshowPanel.Dock = DockStyle.None
-        slideshowPanel.Location = New Point(If(eventWidth > 0, eventWidth + 24, 0), menuBar.Bottom)
-        slideshowPanel.Top = Math.Max(menuBar.Bottom, header.Bottom)
+        Dim leftEdge = If(eventWidth > 0, eventWidth + 24, 0)
+        Dim topEdge = menuBar.Bottom
+        topEdge = Math.Max(topEdge, header.Bottom)
+        Dim availableWidth = Math.Max(0, ClientSize.Width - leftEdge)
+        Dim availableHeight = Math.Max(0, ClientSize.Height - topEdge)
+        slideshowPanel.Location = New Point(leftEdge + Math.Max(0, (availableWidth - slideshowPanel.Width) \ 2),
+                                            topEdge + Math.Max(0, (availableHeight - slideshowPanel.Height) \ 2))
         slideshowPanel.BringToFront()
     End Sub
 
@@ -382,14 +388,14 @@ Public Class Frm_Application
                 End Using
                 slideshowPanel = New Panel With {
                     .Size = New Size(pxWidth, pxHeight),
-                    .Dock = DockStyle.Left,
-                    .BorderStyle = BorderStyle.FixedSingle,
-                    .BackColor = Color.FromArgb(0, 153, 255)
+                    .Dock = DockStyle.None,
+                    .BorderStyle = BorderStyle.None,
+                    .BackColor = Color.Transparent
                 }
                 slideshowPicture = New PictureBox With {
                     .Dock = DockStyle.Fill,
                     .SizeMode = PictureBoxSizeMode.Zoom,
-                    .BackColor = Color.FromArgb(0, 153, 255)
+                    .BackColor = Color.Transparent
                 }
                 slideshowPanel.Controls.Add(slideshowPicture)
                 Controls.Add(slideshowPanel)
@@ -397,6 +403,7 @@ Public Class Frm_Application
                 AdjustMenuWidth()
                 PositionSlideshow()
                 Height = Math.Max(Height, pxHeight + 70)
+                PositionSlideshow()
                 AddHandler slideshowTimer.Tick, Sub(sender, e) NextSlideshowImage()
             End If
             slideshowFiles = Directory.GetFiles(SlideshowFolder).
