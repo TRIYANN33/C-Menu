@@ -239,11 +239,14 @@ Public Class Frm_Application
     Private Sub PositionSlideshow()
         If slideshowPanel Is Nothing Then Return
         slideshowPanel.Dock = DockStyle.None
-        Dim topEdge = menuBar.Bottom
-        topEdge = Math.Max(topEdge, header.Bottom)
-        Dim availableHeight = Math.Max(0, ClientSize.Height - topEdge)
-        slideshowPanel.Location = New Point(Math.Max(0, (ClientSize.Width - slideshowPanel.Width) \ 2),
-                                            topEdge + Math.Max(0, (availableHeight - slideshowPanel.Height) \ 2))
+        Dim topOfBody = menuBar.Bottom
+        topOfBody = Math.Max(topOfBody, header.Bottom)
+        Dim offsetPixels As Integer
+        Using graphics = CreateGraphics()
+            offsetPixels = CInt(Math.Round(graphics.DpiY * 0.3 / 2.54))
+        End Using
+        slideshowPanel.Location = New Point(Math.Max(0, ClientSize.Width - slideshowPanel.Width - 12),
+                                            topOfBody + offsetPixels)
         slideshowPanel.BringToFront()
     End Sub
 
