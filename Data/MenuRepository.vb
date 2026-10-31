@@ -95,7 +95,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id"
+                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id AND NOT (LOWER(REPLACE(REPLACE(COALESCE(Menu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(SousMenu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(Action,''),'-',''),' ','')) LIKE '%starterapplis%')"
                 cmd.Parameters.AddWithValue("$id", id)
                 cmd.ExecuteNonQuery()
             End Using
