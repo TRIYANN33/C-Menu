@@ -219,10 +219,6 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
         toolbarPanel.Controls.Add(ButtonFor("Créer Menu", AddressOf OpenMenuClicked))
-        toolbarPanel.Controls.Add(ButtonFor("Starter", AddressOf OpenStarterApplis))
-        toolbarPanel.Controls.Add(ButtonFor("Starter-Applis", AddressOf OpenStarterApplis))
-        toolbarPanel.Controls.Add(ButtonFor("Sauvegarde", AddressOf BackupDataClicked))
-        toolbarPanel.Controls.Add(ButtonFor("Restauration", AddressOf RestoreDataClicked))
 #If Not DISTRIBUTED Then
         toolbarPanel.Controls.Add(ButtonFor("Publier", AddressOf PublishCMenuClicked))
         toolbarPanel.Controls.Add(ButtonFor("Sauvegarder", AddressOf BackupClicked))
