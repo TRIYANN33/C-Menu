@@ -199,6 +199,11 @@ Public Class FrmMenuAutonome
             Next
             ' Fonctions système permanentes, indépendantes des lignes SQLite.
             Dim systemMenu As New ToolStripMenuItem("Starter / Sauvegarde")
+            systemMenu.DropDownItems.Add("Starter", Nothing, Sub(sender, e)
+                Using dialog As New StarterApplisForm()
+                    dialog.ShowDialog(Me)
+                End Using
+            End Sub)
             systemMenu.DropDownItems.Add("Starter-Applis", Nothing, Sub(sender, e)
                 Using dialog As New StarterApplisForm()
                     dialog.ShowDialog(Me)
