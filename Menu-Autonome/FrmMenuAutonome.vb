@@ -175,11 +175,11 @@ Public Class FrmMenuAutonome
                                     dialog.ShowDialog(Me)
                                 End Using
 
-                            ElseIf String.Equals(first.MenuText.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Sauvegarde", StringComparison.OrdinalIgnoreCase) Then
+                            ElseIf String.Equals(first.MenuText.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Sauvegarde", StringComparison.OrdinalIgnoreCase) Then
                                 SaveMenuDatabase(sender, e)
-                            ElseIf String.Equals(first.MenuText.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase) Then
+                            ElseIf String.Equals(first.MenuText.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase) Then
                                 RestoreMenuDatabase(sender, e)
-                            ElseIf String.Equals(first.MenuText.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) Then
+                            ElseIf String.Equals(first.MenuText.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
                                 Using dialog As New StarterApplisForm()
                                     dialog.ShowDialog(Me)
                                 End Using
