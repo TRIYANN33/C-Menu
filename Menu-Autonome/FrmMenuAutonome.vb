@@ -994,6 +994,7 @@ Public Class StarterApplisForm
         AddButton(buttons, "Sauvegarder", AddressOf Sauvegarder)
         AddButton(buttons, "Parcourir...", AddressOf Parcourir)
         AddButton(buttons, "Démarrer dans l’ordre", AddressOf Demarrer)
+        AddButton(buttons, "Importer depuis C-Menu", AddressOf ImporterDepuisMenu)
         Dim editor As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 220, .ColumnCount = 2, .RowCount = 7, .Padding = New Padding(12)}
         editor.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 135))
         editor.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
@@ -1020,6 +1021,68 @@ Public Class StarterApplisForm
         Catch ex As Exception
             MessageBox.Show(Me, ex.Message, "Starter-Applis", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub ImporterDepuisMenu(sender As Object, e As EventArgs)
+        Using dialog As New Form With {.Text = "Choisir un enregistrement C-Menu", .Size = New Size(1000, 560), .StartPosition = FormStartPosition.CenterParent}
+            Dim filters As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 48, .Padding = New Padding(8)}
+            Dim fMenu As New TextBox With {.Width = 160, .PlaceholderText = "Filtre Menu"}
+            Dim fSub As New TextBox With {.Width = 160, .PlaceholderText = "Filtre Sous-Menu"}
+            Dim fApp As New TextBox With {.Width = 160, .PlaceholderText = "Filtre Application"}
+            filters.Controls.AddRange(New Control() {fMenu, fSub, fApp})
+            Dim sourceGrid As New DataGridView With {.Dock = DockStyle.Fill, .ReadOnly = True, .SelectionMode = DataGridViewSelectionMode.FullRowSelect, .MultiSelect = False, .AllowUserToAddRows = False, .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill}
+            Dim bottom As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .Height = 48}
+            Dim choose As New Button With {.Text = "Insérer dans Started", .AutoSize = True}
+            bottom.Controls.Add(choose)
+            dialog.Controls.Add(sourceGrid)
+            dialog.Controls.Add(bottom)
+            dialog.Controls.Add(filters)
+            Dim reload As Action = Sub()
+                Try
+                    Using cn = Connexion()
+                        cn.Open()
+                        Using cmd = cn.CreateCommand()
+                            cmd.CommandText = "SELECT Id, Menu, SousMenu AS [Sous-Menu], Application, Action, Chemin AS Lien FROM Menus WHERE Menu LIKE $m AND SousMenu LIKE $s AND Application LIKE $a ORDER BY CAST(NumMenu AS INTEGER), CAST(NumSousMenu AS INTEGER)"
+                            cmd.Parameters.AddWithValue("$m", "%" & fMenu.Text & "%")
+                            cmd.Parameters.AddWithValue("$s", "%" & fSub.Text & "%")
+                            cmd.Parameters.AddWithValue("$a", "%" & fApp.Text & "%")
+                            Dim table As New DataTable()
+                            Using reader = cmd.ExecuteReader()
+                                table.Load(reader)
+                            End Using
+                            sourceGrid.DataSource = table
+                            If sourceGrid.Columns.Contains("Id") Then sourceGrid.Columns("Id").Visible = False
+                        End Using
+                    End Using
+                Catch ex As Exception
+                    MessageBox.Show(dialog, "Lecture des menus impossible : " & ex.Message)
+                End Try
+            End Sub
+            AddHandler fMenu.TextChanged, Sub(s, args) reload()
+            AddHandler fSub.TextChanged, Sub(s, args) reload()
+            AddHandler fApp.TextChanged, Sub(s, args) reload()
+            Dim selectRow As Action = Sub()
+                If sourceGrid.CurrentRow Is Nothing Then Return
+                Dim row = TryCast(sourceGrid.CurrentRow.DataBoundItem, DataRowView)
+                If row Is Nothing Then Return
+                Dim link = Convert.ToString(row("Lien"))
+                If String.IsNullOrWhiteSpace(link) Then
+                    MessageBox.Show(dialog, "Cet enregistrement n'a pas de lien à ouvrir.")
+                    Return
+                End If
+                Nouveau(Nothing, EventArgs.Empty)
+                libelle.Text = Convert.ToString(row("Sous-Menu"))
+                applicationNom.Text = Convert.ToString(row("Application"))
+                actionNom.Text = Convert.ToString(row("Action"))
+                chemin.Text = link
+                Ajouter(Nothing, EventArgs.Empty)
+                dialog.Close()
+            End Sub
+            AddHandler choose.Click, Sub(s, args) selectRow()
+            AddHandler sourceGrid.CellDoubleClick, Sub(s, args) selectRow()
+            reload()
+            dialog.ShowDialog(Me)
+        End Using
     End Sub
 
     Private Sub AddButton(panel As FlowLayoutPanel, title As String, handler As EventHandler)
