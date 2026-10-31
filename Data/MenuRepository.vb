@@ -53,17 +53,8 @@ Public Class MenuRepository
     End Sub
 
     Private Shared Sub EnsureStarterRecords(cn As SqliteConnection)
-        ' Corriger les enregistrements système créés par les anciennes versions.
-        Using correction = cn.CreateCommand()
-            correction.CommandText = "UPDATE Menus SET Menu='Started', SousMenu=CASE WHEN LOWER(TRIM(SousMenu))='starter' THEN 'Started' ELSE SousMenu END WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('started','sauvegarde','restauration')"
-            correction.ExecuteNonQuery()
-            correction.CommandText = "UPDATE Menus SET Menu='Exemple', SousMenu=CASE WHEN LOWER(TRIM(SousMenu))='started' THEN 'Exemple' ELSE SousMenu END WHERE LOWER(TRIM(Menu))='started' AND LOWER(TRIM(SousMenu)) IN ('started','sauvegarde','restauration')"
-            correction.ExecuteNonQuery()
-            correction.CommandText = "UPDATE Menus SET SousMenu='Started' WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))='exemple' AND NumMenu='99'"
-            correction.ExecuteNonQuery()
-            correction.CommandText = "UPDATE Menus SET NumMenu='99' WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('started','sauvegarde','restauration') AND NumMenu <> '99'"
-            correction.ExecuteNonQuery()
-        End Using
+        ' Ne jamais renommer ni déplacer les menus saisis par l'utilisateur.
+        ' Les exemples 99 sont ajoutés seulement s'ils sont absents.
         For Each subName In {"Started", "Sauvegarde", "Restauration"}
             Using cmd = cn.CreateCommand()
                 cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
