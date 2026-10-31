@@ -55,6 +55,12 @@ Public Class MenuRepository
     Private Shared Sub EnsureStarterRecords(cn As SqliteConnection)
         ' Ne jamais renommer ni déplacer les menus saisis par l'utilisateur.
         ' Les exemples 99 sont ajoutés seulement s'ils sont absents.
+        ' Ne conserver qu'une seule ligne Exemple / Started pour le sous-menu 99/0.
+        ' Ne touche à aucun autre enregistrement ni aux menus personnels.
+        Using deduplicate = cn.CreateCommand()
+            deduplicate.CommandText = "DELETE FROM Menus WHERE Id IN (SELECT Id FROM Menus WHERE NumMenu='99' AND NumSousMenu='0' AND LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))='started' AND Id NOT IN (SELECT MIN(Id) FROM Menus WHERE NumMenu='99' AND NumSousMenu='0' AND LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))='started'))"
+            deduplicate.ExecuteNonQuery()
+        End Using
         For Each subName In {"Started", "Sauvegarde", "Restauration"}
             Using cmd = cn.CreateCommand()
                 cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
