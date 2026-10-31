@@ -145,6 +145,65 @@ Public Class FrmMenu
         End Using
     End Sub
 
+    Private Sub BackupDataClicked(sender As Object, e As EventArgs)
+        Using dialog As New SaveFileDialog With {
+            .Title = "Sauvegarde C-Menu",
+            .Filter = "Base SQLite (*.db)|*.db",
+            .FileName = "CMenu-" & DateTime.Now.ToString("yyyyMMdd-HHmmss") & ".db"
+        }
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            Try
+                Using source As New Microsoft.Data.Sqlite.SqliteConnection(GetActiveDatabaseConnection())
+                    source.Open()
+                    Using destination As New Microsoft.Data.Sqlite.SqliteConnection("Data Source=" & dialog.FileName)
+                        destination.Open()
+                        source.BackupDatabase(destination)
+                    End Using
+                End Using
+                MessageBox.Show(Me, "Sauvegarde terminée.")
+            Catch ex As Exception
+                MessageBox.Show(Me, "Sauvegarde impossible : " & ex.Message)
+            End Try
+        End Using
+    End Sub
+
+    Private Function GetActiveDatabaseConnection() As String
+#If DISTRIBUTED Then
+        Return "Data Source=" & Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Menu", "C_Menu.db")
+#Else
+        Return "Data Source=" & Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "CMenu.db")
+#End If
+    End Function
+
+    Private Sub RestoreDataClicked(sender As Object, e As EventArgs)
+        Using dialog As New OpenFileDialog With {.Title = "Restauration C-Menu", .Filter = "Base SQLite (*.db)|*.db"}
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            If MessageBox.Show(Me, "Restaurer cette base ? Une sauvegarde de sécurité sera créée.", "Confirmation",
+                               MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+            Try
+                Dim backupDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "C-Menu-Sauvegardes")
+                Directory.CreateDirectory(backupDir)
+                Dim backupPath = Path.Combine(backupDir, "AvantRestauration-" & DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") & ".db")
+                Using target As New Microsoft.Data.Sqlite.SqliteConnection(GetActiveDatabaseConnection())
+                    target.Open()
+                    Using backup As New Microsoft.Data.Sqlite.SqliteConnection("Data Source=" & backupPath)
+                        backup.Open()
+                        target.BackupDatabase(backup)
+                    End Using
+                    Using source As New Microsoft.Data.Sqlite.SqliteConnection("Data Source=" & dialog.FileName & ";Mode=ReadOnly")
+                        source.Open()
+                        source.BackupDatabase(target)
+                    End Using
+                End Using
+                ClearForm()
+                ReloadGrid()
+                MessageBox.Show(Me, "Restauration terminée.")
+            Catch ex As Exception
+                MessageBox.Show(Me, "Restauration impossible : " & ex.Message)
+            End Try
+        End Using
+    End Sub
+
     Private Sub BuildUI()
         toolbarPanel = New FlowLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 42, .Padding = New Padding(8, 6, 0, 5),
@@ -161,6 +220,8 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
         toolbarPanel.Controls.Add(ButtonFor("Créer Menu", AddressOf OpenMenuClicked))
         toolbarPanel.Controls.Add(ButtonFor("Starter-Applis", AddressOf OpenStarterApplis))
+        toolbarPanel.Controls.Add(ButtonFor("Sauvegarde", AddressOf BackupDataClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Restauration", AddressOf RestoreDataClicked))
 #If Not DISTRIBUTED Then
         toolbarPanel.Controls.Add(ButtonFor("Publier", AddressOf PublishCMenuClicked))
         toolbarPanel.Controls.Add(ButtonFor("Sauvegarder", AddressOf BackupClicked))
