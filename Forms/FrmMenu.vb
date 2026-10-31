@@ -509,6 +509,18 @@ Public Class FrmMenu
         fields("NumMenu").Focus()
     End Sub
 
+    Private Function IsProtectedExample(id As Integer) As Boolean
+        If id = 0 Then Return False
+        Return repo.GetAll().Any(Function(entry) entry.Id = id AndAlso
+            String.Equals(entry.Menu.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) AndAlso
+            {"starter", "sauvegarde", "restauration"}.Contains(entry.SousMenu.Trim().ToLowerInvariant()))
+    End Function
+
+    Private Sub ShowProtectedExampleMessage()
+        MessageBox.Show(Me, "Ceci sont des exemples ni modifiables ni supprimables.", "Enregistrements protégés",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information)
+    End Sub
+
     Private Sub SaveClicked(sender As Object, e As EventArgs)
         Dim item = CurrentItem()
         If Not IsValid(item) Then Return
@@ -521,6 +533,10 @@ Public Class FrmMenu
             If existing IsNot Nothing Then item.Id = existing.Id
         End If
         If item.Id <> 0 Then
+            If IsProtectedExample(item.Id) Then
+                ShowProtectedExampleMessage()
+                Return
+            End If
             repo.Update(item)
         Else
             repo.Insert(item)
@@ -532,6 +548,10 @@ Public Class FrmMenu
     Private Sub UpdateClicked(sender As Object, e As EventArgs)
         If selectedId = 0 Then
             MessageBox.Show("Sélectionnez d'abord un enregistrement.")
+            Return
+        End If
+        If IsProtectedExample(selectedId) Then
+            ShowProtectedExampleMessage()
             Return
         End If
         Dim item = CurrentItem()
@@ -623,6 +643,10 @@ Public Class FrmMenu
     Private Sub DeleteClicked(sender As Object, e As EventArgs)
         If selectedId = 0 Then
             MessageBox.Show("Sélectionnez d'abord un enregistrement.")
+            Return
+        End If
+        If IsProtectedExample(selectedId) Then
+            ShowProtectedExampleMessage()
             Return
         End If
         If MessageBox.Show("Supprimer cet enregistrement ?", "Confirmation",
