@@ -75,6 +75,19 @@ Public Class StarterApplisForm
         Return New SqliteConnection("Data Source=" & dbPath)
     End Function
 
+    Private Sub BackupStarterData()
+        Dim backupFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "C-Menu-Sauvegardes")
+        Directory.CreateDirectory(backupFolder)
+        Dim target = Path.Combine(backupFolder, "StarterApplis-" & DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") & ".db")
+        Using source = Connexion()
+            source.Open()
+            Using backup As New SqliteConnection("Data Source=" & target)
+                backup.Open()
+                source.BackupDatabase(backup)
+            End Using
+        End Using
+    End Sub
+
     Private Sub InitDb()
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath))
         Using cn = Connexion()
@@ -137,6 +150,7 @@ Public Class StarterApplisForm
     Private Sub Ajouter(sender As Object, e As EventArgs)
         If Not Valide() Then Return
         Try
+            BackupStarterData()
             Dim nowText = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             Using cn = Connexion()
                 cn.Open()
@@ -159,6 +173,7 @@ Public Class StarterApplisForm
     Private Sub Modifier(sender As Object, e As EventArgs)
         If selectedId = 0 OrElse Not Valide() Then Return
         Try
+            BackupStarterData()
             Using cn = Connexion()
                 cn.Open()
                 Using cmd = cn.CreateCommand()
@@ -193,6 +208,7 @@ Public Class StarterApplisForm
         End If
         If MessageBox.Show(Me, "Supprimer cet enregistrement ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
         Try
+            BackupStarterData()
             Using cn = Connexion()
                 cn.Open()
                 Using cmd = cn.CreateCommand()
