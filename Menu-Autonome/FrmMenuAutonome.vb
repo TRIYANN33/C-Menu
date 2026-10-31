@@ -149,14 +149,14 @@ Public Class FrmMenuAutonome
                 }
                 For Each record In group
                     If String.IsNullOrWhiteSpace(record.SubText) Then
-                        If Not String.IsNullOrWhiteSpace(record.Path) Then
+                        If Not String.IsNullOrWhiteSpace(record.Path) OrElse IsStarterApplis(record.MenuText, record.ActionName) Then
                             Dim destination = record.Path
                             Dim actionName = record.ActionName
                             Dim info1 = record.Info01
                             Dim info2 = record.Info02
                             AddHandler top.Click, Sub(sender, e)
                                 ShowInfo(info1, info2)
-                                OpenPath(destination, actionName)
+                                OpenPath(destination, actionName, first.MenuText)
                             End Sub
                         End If
                     Else
@@ -186,7 +186,7 @@ Public Class FrmMenuAutonome
                             Else
                                 Dim selected = DirectCast(clicked.Tag, MenuRow)
                                 ShowInfo(selected.Info01, selected.Info02)
-                                OpenPath(selected.Path, selected.ActionName)
+                                OpenPath(selected.Path, selected.ActionName, selected.SubText)
                             End If
                         End Sub
                         top.DropDownItems.Add(child)
@@ -606,7 +606,21 @@ Public Class FrmMenuAutonome
         infoWindow.BringToFront()
     End Sub
 
-    Private Sub OpenPath(pathValue As String, actionName As String)
+    Private Shared Function IsStarterApplis(label As String, actionName As String) As Boolean
+        For Each candidate In {If(label, ""), If(actionName, "")}
+            Dim normalized = New String(candidate.ToLowerInvariant().Where(Function(ch) Char.IsLetterOrDigit(ch)).ToArray())
+            If normalized.Contains("starterapplis") Then Return True
+        Next
+        Return False
+    End Function
+
+    Private Sub OpenPath(pathValue As String, actionName As String, Optional menuLabel As String = "")
+        If IsStarterApplis(menuLabel, actionName) Then
+            Using dialog As New StarterApplisForm()
+                dialog.ShowDialog(Me)
+            End Using
+            Return
+        End If
         If String.IsNullOrWhiteSpace(pathValue) Then
             MessageBox.Show(Me, "Aucun chemin défini pour ce sous-menu.", "Menu autonome")
             Return
