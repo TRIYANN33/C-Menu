@@ -1175,7 +1175,7 @@ Public Class StarterApplisForm
                     While reader.Read()
                         Dim target = reader.GetString(1)
                         Try
-                            Process.Start(New ProcessStartInfo(target) With {.UseShellExecute = True})
+                            System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo(target) With {.UseShellExecute = True})
                         Catch ex As Exception
                             MessageBox.Show(Me, "Ouverture impossible : " & reader.GetString(0) & Environment.NewLine & ex.Message)
                         End Try
