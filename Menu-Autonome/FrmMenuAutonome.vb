@@ -175,6 +175,14 @@ Public Class FrmMenuAutonome
                                     dialog.ShowDialog(Me)
                                 End Using
 
+                            ElseIf String.Equals(first.MenuText.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Sauvegarde", StringComparison.OrdinalIgnoreCase) Then
+                                SaveMenuDatabase(sender, e)
+                            ElseIf String.Equals(first.MenuText.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase) Then
+                                RestoreMenuDatabase(sender, e)
+                            ElseIf String.Equals(first.MenuText.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Starter", StringComparison.OrdinalIgnoreCase) Then
+                                Using dialog As New StarterApplisForm()
+                                    dialog.ShowDialog(Me)
+                                End Using
                             ElseIf IsStarterApplis(clicked.Text, DirectCast(clicked.Tag, MenuRow).ActionName, first.MenuText) Then
                                 Using dialog As New StarterApplisForm()
                                     dialog.ShowDialog(Me)
@@ -197,21 +205,6 @@ Public Class FrmMenuAutonome
                 End If
                 menuBar.Items.Add(top)
             Next
-            ' Fonctions système permanentes, indépendantes des lignes SQLite.
-            Dim systemMenu As New ToolStripMenuItem("Starter / Sauvegarde")
-            systemMenu.DropDownItems.Add("Starter", Nothing, Sub(sender, e)
-                Using dialog As New StarterApplisForm()
-                    dialog.ShowDialog(Me)
-                End Using
-            End Sub)
-            systemMenu.DropDownItems.Add("Starter-Applis", Nothing, Sub(sender, e)
-                Using dialog As New StarterApplisForm()
-                    dialog.ShowDialog(Me)
-                End Using
-            End Sub)
-            systemMenu.DropDownItems.Add("Sauvegarde", Nothing, AddressOf SaveMenuDatabase)
-            systemMenu.DropDownItems.Add("Restauration", Nothing, AddressOf RestoreMenuDatabase)
-            menuBar.Items.Add(systemMenu)
             AdjustMenuWidth()
             If menuBar.Items.Count = 0 Then
                 ShowProblem("Aucun menu disponible pour " & GeneratedConfig.FormName & ".")
