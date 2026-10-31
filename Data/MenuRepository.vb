@@ -64,6 +64,12 @@ Public Class MenuRepository
             correction.CommandText = "UPDATE Menus SET NumMenu='99' WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('started','sauvegarde','restauration') AND NumMenu <> '99'"
             correction.ExecuteNonQuery()
         End Using
+        ' Ligne d'exemple n° 0, conservée dans chaque base et chaque publication.
+        Using cmd = cn.CreateCommand()
+            cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', '0', '', 'Exemple', 'Exemple', '', '', '', 'SYSTEM_EXEMPLE', '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE NumMenu='99' AND NumSousMenu='0' AND LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))='exemple')"
+            cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
+            cmd.ExecuteNonQuery()
+        End Using
         For Each subName In {"Started", "Sauvegarde", "Restauration"}
             Using cmd = cn.CreateCommand()
                 cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
@@ -107,7 +113,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Frm_Menu=$frmMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Application=$application, Action=$action, Chemin=$chemin WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('started','sauvegarde','restauration'))"
+                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Frm_Menu=$frmMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Application=$application, Action=$action, Chemin=$chemin WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('exemple','started','sauvegarde','restauration'))"
                 cmd.Parameters.AddWithValue("$modified", DateTime.Now.ToString("o"))
                 cmd.Parameters.AddWithValue("$id", item.Id)
                 Bind(cmd, item)
@@ -120,7 +126,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('started','sauvegarde','restauration')) AND NOT (LOWER(REPLACE(REPLACE(COALESCE(Menu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(SousMenu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(Action,''),'-',''),' ','')) LIKE '%starterapplis%')"
+                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('exemple','started','sauvegarde','restauration')) AND NOT (LOWER(REPLACE(REPLACE(COALESCE(Menu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(SousMenu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(Action,''),'-',''),' ','')) LIKE '%starterapplis%')"
                 cmd.Parameters.AddWithValue("$id", id)
                 cmd.ExecuteNonQuery()
             End Using
