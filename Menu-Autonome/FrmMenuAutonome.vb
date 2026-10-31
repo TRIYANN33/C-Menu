@@ -179,6 +179,10 @@ Public Class FrmMenuAutonome
                                 SaveMenuDatabase(sender, e)
                             ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase) Then
                                 RestoreMenuDatabase(sender, e)
+                            ElseIf String.Equals(first.MenuText.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
+                                Using dialog As New StarterApplisForm()
+                                    dialog.ShowDialog(Me)
+                                End Using
                             ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
                                 Using dialog As New StarterApplisForm()
                                     dialog.ShowDialog(Me)
@@ -667,6 +671,8 @@ Public Class FrmMenuAutonome
         Dim parent = normalize(parentLabel)
         Return item.Contains("starterapplis") OrElse action.Contains("starterapplis") OrElse
                item = "startersauvegarde" OrElse action = "startersauvegarde" OrElse
+               (item = "started" AndAlso (parent = "started" OrElse parent = "exemple")) OrElse
+               (action = "system_started" AndAlso (parent = "started" OrElse parent = "exemple")) OrElse
                ((parent = "starter" OrElse parent = "starterapplis") AndAlso item = "sauvegarde")
     End Function
 
