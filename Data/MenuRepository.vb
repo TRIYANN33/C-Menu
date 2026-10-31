@@ -48,7 +48,21 @@ Public Class MenuRepository
                 cmd.CommandText = "CREATE INDEX IF NOT EXISTS IX_Menus_Menu ON Menus(Menu, SousMenu)"
                 cmd.ExecuteNonQuery()
             End Using
+            EnsureStarterRecords(cn)
         End Using
+    End Sub
+
+    Private Shared Sub EnsureStarterRecords(cn As SqliteConnection)
+        For Each subName In {"Starter", "Sauvegarde", "Restauration"}
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '0', $num, '', 'Starter', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='starter' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
+                cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
+                cmd.Parameters.AddWithValue("$num", If(subName = "Starter", "1", If(subName = "Sauvegarde", "2", "3")))
+                cmd.Parameters.AddWithValue("$sub", subName)
+                cmd.Parameters.AddWithValue("$action", "SYSTEM_" & subName.ToUpperInvariant())
+                cmd.ExecuteNonQuery()
+            End Using
+        Next
     End Sub
 
     Private Shared Sub Bind(cmd As SqliteCommand, item As MenuItem)
@@ -82,7 +96,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Frm_Menu=$frmMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Application=$application, Action=$action, Chemin=$chemin WHERE Id=$id"
+                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Frm_Menu=$frmMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Application=$application, Action=$action, Chemin=$chemin WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='starter' AND LOWER(TRIM(SousMenu)) IN ('starter','sauvegarde','restauration'))"
                 cmd.Parameters.AddWithValue("$modified", DateTime.Now.ToString("o"))
                 cmd.Parameters.AddWithValue("$id", item.Id)
                 Bind(cmd, item)
@@ -95,7 +109,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id AND NOT (LOWER(REPLACE(REPLACE(COALESCE(Menu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(SousMenu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(Action,''),'-',''),' ','')) LIKE '%starterapplis%')"
+                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='starter' AND LOWER(TRIM(SousMenu)) IN ('starter','sauvegarde','restauration')) AND NOT (LOWER(REPLACE(REPLACE(COALESCE(Menu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(SousMenu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(Action,''),'-',''),' ','')) LIKE '%starterapplis%')"
                 cmd.Parameters.AddWithValue("$id", id)
                 cmd.ExecuteNonQuery()
             End Using
