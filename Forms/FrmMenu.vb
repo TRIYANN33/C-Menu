@@ -139,6 +139,12 @@ Public Class FrmMenu
         Return b
     End Function
 
+    Private Sub OpenStarterApplis(sender As Object, e As EventArgs)
+        Using dialog As New StarterApplisForm()
+            dialog.ShowDialog(Me)
+        End Using
+    End Sub
+
     Private Sub BuildUI()
         toolbarPanel = New FlowLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 42, .Padding = New Padding(8, 6, 0, 5),
@@ -154,6 +160,7 @@ Public Class FrmMenu
         toolbarPanel.Controls.Add(ButtonFor("A-Z", AddressOf SortClicked))
         toolbarPanel.Controls.Add(ButtonFor("Couleurs", AddressOf ColorsClicked))
         toolbarPanel.Controls.Add(ButtonFor("Créer Menu", AddressOf OpenMenuClicked))
+        toolbarPanel.Controls.Add(ButtonFor("Starter-Applis", AddressOf OpenStarterApplis))
 #If Not DISTRIBUTED Then
         toolbarPanel.Controls.Add(ButtonFor("Publier", AddressOf PublishCMenuClicked))
         toolbarPanel.Controls.Add(ButtonFor("Sauvegarder", AddressOf BackupClicked))
