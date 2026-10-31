@@ -1019,7 +1019,8 @@ Public Class StarterApplisForm
         grille.ClearSelection()
         grille.CurrentCell = Nothing
         selectedId = 0
-        saisiele.Text = ""
+        ' Prévisualisation de la date de saisie ; l'heure définitive est fixée à l'enregistrement.
+        saisiele.Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
         modifierle.Text = ""
         sauvegarde.Text = ""
         libelle.Text = ""
