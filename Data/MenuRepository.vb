@@ -80,6 +80,49 @@ Public Class MenuRepository
                 cmd.ExecuteNonQuery()
             End Using
         Next
+        ' Exemples prédéfinis 4 à 29, ajoutés uniquement lorsqu'ils sont absents.
+        Dim examples As (Number As Integer, Label As String, App As String, Action As String, Path As String)() = {
+            (4, "Excel", "EXCEL", "OUVR-EXCEL", "C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE"),
+            (5, "WORD", "WORD", "OUVR-WORD", "C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE"),
+            (6, "MSACCESS", "MSACCESS", "OUVR-MSACCESS", "C:\Program Files\Microsoft Office\root\Office16\MSACCESS.EXE"),
+            (7, "DOSSIERS", "DOSSIER", "OUVR-DOSSIER", "C:\Program Files"),
+            (8, "FICHIERS", "FICHIER", "OUVR-FICHIER", "IMPOT 2026-09-28--19-21.txt"),
+            (9, "Textes", "TEXTE", "OUVR-TEXTE", "IMPOT 2026-09-28--19-21.txt"),
+            (10, "PDF", "PDF", "OUVR-PDF", "IMPOT 2026-09-28--19-21.txt"),
+            (11, "Vidéos", "VIDEO", "OUVR-VIDEO", "IMPOT 2026-09-28--19-21.txt"),
+            (12, "Photos", "PHOTO", "DOSSIER", "C:\Menu\applications\Photos"),
+            (13, "Images", "IMAGES", "SYSTEM_IMAGES", "C:\Menu\applications\Images"),
+            (14, "Diaporama", "DIAPORAMA", "SYSTEM_DIAPORAMA", ""),
+            (15, "DOSS-DIAPORAMA", "DOSS-DIAPO", "OUVR-DOSSIER", "C:\Menu\applications\Diaporama"),
+            (16, "Design", "DESIGN", "SYSTEM_DESIGN", ""),
+            (17, "Anniversaires", "ANNIVERSAIRES", "SYSTEM_ANNIVERSAIRES", ""),
+            (18, "Rendez-vous", "RDV", "SYSTEM_RDV", ""),
+            (19, "PC", "PC", "OUVR-PC", "Ce PC"),
+            (20, "Corbeille", "CORBEILLE", "OUVR-CORBEILLE", "Corbeille"),
+            (21, "Downloads", "Downloads", "OUVR-Downloads", "C:\Users\OCTOPUS-007\Downloads"),
+            (22, "Documents", "Documents", "OUVR-Documents", "C:\Users\OCTOPUS-007\Documents"),
+            (23, "Applications", "APPLICATION", "OUVR-APPLICATION", "C:\Program Files\Audacity 4\bin\Audacity4.exe"),
+            (24, "Applications", "APPLICATION", "OUVR-APPLICATION", "C:\Program Files (x86)\Brother\BrLauncher\BrLauncher.exe"),
+            (25, "Web", "WEB", "OUVR-WEB", "https://www.impots.gouv.fr/"),
+            (26, "Disque", "DD", "OUVR-DD", "file:///G:\"),
+            (27, "DuckDuckGo", "EXPLORATEUR", "OUVR-EXPLORATEUR", "DuckDuckGo.DesktopBrowser_ya2fgkz3nks94!App"),
+            (28, "Firefox", "EXPLORATEUR", "OUVR-EXPLORATEUR", "C:\Program Files\Mozilla Firefox\firefox.exe"),
+            (29, "Applications", "APPLICATION", "OUVR-APPLICATION", "C:\Program Files\Avast Software\Suite\AvastUI.exe")
+        }
+        For Each example In examples
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $label, $info1, $info2, $app, $action, $path WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE NumMenu='99' AND NumSousMenu=$num AND LOWER(TRIM(Menu))='exemple')"
+                cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
+                cmd.Parameters.AddWithValue("$num", example.Number.ToString())
+                cmd.Parameters.AddWithValue("$label", example.Label)
+                cmd.Parameters.AddWithValue("$info1", If(example.Number = 25, "Mot de passe", ""))
+                cmd.Parameters.AddWithValue("$info2", If(example.Number = 25, "Login", ""))
+                cmd.Parameters.AddWithValue("$app", example.App)
+                cmd.Parameters.AddWithValue("$action", example.Action)
+                cmd.Parameters.AddWithValue("$path", example.Path)
+                cmd.ExecuteNonQuery()
+            End Using
+        Next
     End Sub
 
     Private Shared Sub Bind(cmd As SqliteCommand, item As MenuItem)
@@ -113,7 +156,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Frm_Menu=$frmMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Application=$application, Action=$action, Chemin=$chemin WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('exemple','started','sauvegarde','restauration'))"
+                cmd.CommandText = "UPDATE Menus SET ModifierLe=$modified, NumMenu=$numMenu, NumSousMenu=$numSousMenu, Frm_Menu=$frmMenu, Menu=$menu, SousMenu=$sousMenu, Info01=$info01, Info02=$info02, Application=$application, Action=$action, Chemin=$chemin WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='exemple' AND NumMenu='99')"
                 cmd.Parameters.AddWithValue("$modified", DateTime.Now.ToString("o"))
                 cmd.Parameters.AddWithValue("$id", item.Id)
                 Bind(cmd, item)
@@ -126,7 +169,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu)) IN ('exemple','started','sauvegarde','restauration')) AND NOT (LOWER(REPLACE(REPLACE(COALESCE(Menu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(SousMenu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(Action,''),'-',''),' ','')) LIKE '%starterapplis%')"
+                cmd.CommandText = "DELETE FROM Menus WHERE Id=$id AND NOT (LOWER(TRIM(Menu))='exemple' AND NumMenu='99') AND NOT (LOWER(REPLACE(REPLACE(COALESCE(Menu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(SousMenu,''),'-',''),' ','')) LIKE '%starterapplis%' OR LOWER(REPLACE(REPLACE(COALESCE(Action,''),'-',''),' ','')) LIKE '%starterapplis%')"
                 cmd.Parameters.AddWithValue("$id", id)
                 cmd.ExecuteNonQuery()
             End Using
