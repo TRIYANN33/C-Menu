@@ -890,13 +890,6 @@ End Class
 
 
 ' Formulaire Starter-Applis inclus dans le menu autonome généré.
-Imports System
-Imports System.Data
-Imports System.IO
-Imports System.Drawing
-Imports System.Windows.Forms
-Imports Microsoft.Data.Sqlite
-
 Public Class StarterApplisForm
     Inherits Form
 
