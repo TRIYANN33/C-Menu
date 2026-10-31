@@ -197,6 +197,16 @@ Public Class FrmMenuAutonome
                 End If
                 menuBar.Items.Add(top)
             Next
+            ' Fonctions système permanentes, indépendantes des lignes SQLite.
+            Dim systemMenu As New ToolStripMenuItem("Starter / Sauvegarde")
+            systemMenu.DropDownItems.Add("Starter-Applis", Nothing, Sub(sender, e)
+                Using dialog As New StarterApplisForm()
+                    dialog.ShowDialog(Me)
+                End Using
+            End Sub)
+            systemMenu.DropDownItems.Add("Sauvegarde", Nothing, AddressOf SaveMenuDatabase)
+            systemMenu.DropDownItems.Add("Restauration", Nothing, AddressOf RestoreMenuDatabase)
+            menuBar.Items.Add(systemMenu)
             AdjustMenuWidth()
             If menuBar.Items.Count = 0 Then
                 ShowProblem("Aucun menu disponible pour " & GeneratedConfig.FormName & ".")
@@ -204,6 +214,51 @@ Public Class FrmMenuAutonome
         Catch ex As Exception
             ShowProblem("Lecture de SQLite impossible : " & ex.Message)
         End Try
+    End Sub
+
+    Private Sub SaveMenuDatabase(sender As Object, e As EventArgs)
+        Using dialog As New SaveFileDialog With {.Title = "Sauvegarder le menu autonome", .Filter = "SQLite (*.db)|*.db", .FileName = "CMenu-" & DateTime.Now.ToString("yyyyMMdd-HHmmss") & ".db"}
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            Try
+                Using source As New SqliteConnection("Data Source=" & databasePath & ";Mode=ReadOnly")
+                    source.Open()
+                    Using dest As New SqliteConnection("Data Source=" & dialog.FileName)
+                        dest.Open()
+                        source.BackupDatabase(dest)
+                    End Using
+                End Using
+                MessageBox.Show(Me, "Sauvegarde terminée.")
+            Catch ex As Exception
+                MessageBox.Show(Me, "Sauvegarde impossible : " & ex.Message)
+            End Try
+        End Using
+    End Sub
+
+    Private Sub RestoreMenuDatabase(sender As Object, e As EventArgs)
+        Using dialog As New OpenFileDialog With {.Title = "Restaurer le menu autonome", .Filter = "SQLite (*.db)|*.db"}
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            If MessageBox.Show(Me, "Restaurer la base ? Une copie de sécurité sera créée.", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+            Try
+                Dim backupDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "C-Menu-Sauvegardes")
+                Directory.CreateDirectory(backupDir)
+                Dim backupPath = Path.Combine(backupDir, "MenuAutonome-" & DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") & ".db")
+                Using target As New SqliteConnection("Data Source=" & databasePath)
+                    target.Open()
+                    Using backup As New SqliteConnection("Data Source=" & backupPath)
+                        backup.Open()
+                        target.BackupDatabase(backup)
+                    End Using
+                    Using source As New SqliteConnection("Data Source=" & dialog.FileName & ";Mode=ReadOnly")
+                        source.Open()
+                        source.BackupDatabase(target)
+                    End Using
+                End Using
+                LoadFromDatabase()
+                MessageBox.Show(Me, "Restauration terminée.")
+            Catch ex As Exception
+                MessageBox.Show(Me, "Restauration impossible : " & ex.Message)
+            End Try
+        End Using
     End Sub
 
     Private Sub ChangeColor(menuText As String)
