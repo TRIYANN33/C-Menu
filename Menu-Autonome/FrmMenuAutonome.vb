@@ -175,7 +175,7 @@ Public Class FrmMenuAutonome
                                     dialog.ShowDialog(Me)
                                 End Using
 
-                            ElseIf String.Equals(clicked.Text.Trim(), "Starter-Applis", StringComparison.OrdinalIgnoreCase) Then
+                            ElseIf IsStarterApplis(clicked.Text, DirectCast(clicked.Tag, MenuRow).ActionName, first.MenuText) Then
                                 Using dialog As New StarterApplisForm()
                                     dialog.ShowDialog(Me)
                                 End Using
@@ -186,7 +186,7 @@ Public Class FrmMenuAutonome
                             Else
                                 Dim selected = DirectCast(clicked.Tag, MenuRow)
                                 ShowInfo(selected.Info01, selected.Info02)
-                                OpenPath(selected.Path, selected.ActionName, selected.SubText)
+                                OpenPath(selected.Path, selected.ActionName, selected.SubText, selected.MenuText)
                             End If
                         End Sub
                         top.DropDownItems.Add(child)
@@ -606,16 +606,19 @@ Public Class FrmMenuAutonome
         infoWindow.BringToFront()
     End Sub
 
-    Private Shared Function IsStarterApplis(label As String, actionName As String) As Boolean
-        For Each candidate In {If(label, ""), If(actionName, "")}
-            Dim normalized = New String(candidate.ToLowerInvariant().Where(Function(ch) Char.IsLetterOrDigit(ch)).ToArray())
-            If normalized.Contains("starterapplis") Then Return True
-        Next
-        Return False
+    Private Shared Function IsStarterApplis(label As String, actionName As String, Optional parentLabel As String = "") As Boolean
+        Dim normalize As Func(Of String, String) =
+            Function(value) New String(If(value, "").ToLowerInvariant().Where(Function(ch) Char.IsLetterOrDigit(ch)).ToArray())
+        Dim item = normalize(label)
+        Dim action = normalize(actionName)
+        Dim parent = normalize(parentLabel)
+        Return item.Contains("starterapplis") OrElse action.Contains("starterapplis") OrElse
+               item = "startersauvegarde" OrElse action = "startersauvegarde" OrElse
+               ((parent = "starter" OrElse parent = "starterapplis") AndAlso item = "sauvegarde")
     End Function
 
-    Private Sub OpenPath(pathValue As String, actionName As String, Optional menuLabel As String = "")
-        If IsStarterApplis(menuLabel, actionName) Then
+    Private Sub OpenPath(pathValue As String, actionName As String, Optional menuLabel As String = "", Optional parentLabel As String = "")
+        If IsStarterApplis(menuLabel, actionName, parentLabel) Then
             Using dialog As New StarterApplisForm()
                 dialog.ShowDialog(Me)
             End Using
