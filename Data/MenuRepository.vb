@@ -53,9 +53,14 @@ Public Class MenuRepository
     End Sub
 
     Private Shared Sub EnsureStarterRecords(cn As SqliteConnection)
+        ' Corriger les enregistrements système créés par les anciennes versions.
+        Using correction = cn.CreateCommand()
+            correction.CommandText = "UPDATE Menus SET NumMenu='99' WHERE LOWER(TRIM(Menu))='starter' AND LOWER(TRIM(SousMenu)) IN ('starter','sauvegarde','restauration') AND NumMenu <> '99'"
+            correction.ExecuteNonQuery()
+        End Using
         For Each subName In {"Starter", "Sauvegarde", "Restauration"}
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '0', $num, '', 'Starter', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='starter' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
+                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Starter', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='starter' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
                 cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
                 cmd.Parameters.AddWithValue("$num", If(subName = "Starter", "1", If(subName = "Sauvegarde", "2", "3")))
                 cmd.Parameters.AddWithValue("$sub", subName)
