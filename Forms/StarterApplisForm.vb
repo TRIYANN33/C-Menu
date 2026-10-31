@@ -187,6 +187,10 @@ Public Class StarterApplisForm
 
     Private Sub Supprimer(sender As Object, e As EventArgs)
         If selectedId = 0 Then Return
+        If String.Equals(libelle.Text.Trim(), "Starter-Applis", StringComparison.OrdinalIgnoreCase) OrElse String.Equals(applicationNom.Text.Trim(), "Starter-Applis", StringComparison.OrdinalIgnoreCase) Then
+            MessageBox.Show(Me, "Starter-Applis est protégé contre la suppression.")
+            Return
+        End If
         If MessageBox.Show(Me, "Supprimer cet enregistrement ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
         Try
             Using cn = Connexion()
