@@ -513,7 +513,7 @@ Public Class FrmMenu
         If id = 0 Then Return False
         Return repo.GetAll().Any(Function(entry) entry.Id = id AndAlso
             String.Equals(entry.Menu.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso
-            {"exemple", "sauvegarde", "restauration"}.Contains(entry.SousMenu.Trim().ToLowerInvariant()))
+            {"started", "sauvegarde", "restauration"}.Contains(entry.SousMenu.Trim().ToLowerInvariant()))
     End Function
 
     Private Sub ShowProtectedExampleMessage()
