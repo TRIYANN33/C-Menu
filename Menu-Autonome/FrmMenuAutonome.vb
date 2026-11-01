@@ -2,6 +2,8 @@ Imports System
 Imports System.Data
 Imports System.Diagnostics
 Imports System.Drawing
+Imports System.Drawing.Drawing2D
+Imports System.Media
 Imports System.Globalization
 Imports System.IO
 Imports System.IO.Compression
