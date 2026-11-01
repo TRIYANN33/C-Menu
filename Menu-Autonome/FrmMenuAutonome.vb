@@ -45,6 +45,7 @@ Public Class FrmMenuAutonome
     Private previousTitleBounds As Rectangle
     Private previousTitleMinimum As Size
     Private ReadOnly databasePath As String = Path.Combine(AppContext.BaseDirectory, "CMenu.db")
+    Private countdowns As CountdownManager
 
     Public Sub New()
         Text = "Menu--" & GeneratedConfig.FormName
@@ -86,6 +87,7 @@ Public Class FrmMenuAutonome
             End If
         End Sub
         MainMenuStrip = menuBar
+        countdowns = New CountdownManager(Me, GeneratedConfig.SafeName)
 
         AddHandler Resize, Sub(sender, e)
             UpdateRoundedCorners()
@@ -99,6 +101,7 @@ Public Class FrmMenuAutonome
             RefreshClock()
             RenameExampleMenuInDatabase()
             LoadFromDatabase()
+            countdowns.Start()
             StartSlideshow(True)
             RefreshNextEvent()
             RefreshAppointmentsDisplay()
@@ -107,6 +110,7 @@ Public Class FrmMenuAutonome
         AddHandler FormClosed, Sub(sender, e)
             clock.Stop()
             slideshowTimer.Stop()
+            countdowns.Dispose()
         End Sub
     End Sub
 
@@ -436,6 +440,13 @@ Public Class FrmMenuAutonome
             If restoreEntry Is Nothing Then
                 Dim entry As New ToolStripMenuItem("Restauration")
                 AddHandler entry.Click, AddressOf RestoreMenuDatabase
+                designMenu.DropDownItems.Add(entry)
+            End If
+            Dim countdownEntry = designMenu.DropDownItems.OfType(Of ToolStripItem)().
+                FirstOrDefault(Function(item) String.Equals(item.Text.Trim(), "Countdown timer", StringComparison.OrdinalIgnoreCase))
+            If countdownEntry Is Nothing Then
+                Dim entry As New ToolStripMenuItem("Countdown timer")
+                AddHandler entry.Click, Sub(sender, e) countdowns.OpenEditor()
                 designMenu.DropDownItems.Add(entry)
             End If
             ' Tri numérique des menus et sous-menus, sans lambda multiligne.
