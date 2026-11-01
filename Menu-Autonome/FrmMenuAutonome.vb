@@ -356,9 +356,10 @@ Public Class FrmMenuAutonome
                 End If
                 menuBar.Items.Add(top)
             Next
-            Dim colorsMenu As New ToolStripMenuItem("Couleurs")
-            AddHandler colorsMenu.Click, Sub(sender, e) ShowColorsForm()
-            menuBar.Items.Add(colorsMenu)
+            ' Entrée systématique Design (NumMenu 97 / NumSousMenu 0), sans toucher à SQLite.
+            Dim designMenu As New ToolStripMenuItem("Design") With {.ToolTipText = "97 / 0 — Design"}
+            AddHandler designMenu.Click, Sub(sender, e) ShowColorsForm()
+            menuBar.Items.Add(designMenu)
             AdjustMenuWidth()
             If menuBar.Items.Count = 0 Then
                 ShowProblem("Aucun menu disponible pour " & GeneratedConfig.FormName & ".")
