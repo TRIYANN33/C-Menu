@@ -894,6 +894,7 @@ Public Class FrmMenuAutonome
         Next
         frame.Width = Math.Max(30, maxWidth + frame.Padding.Horizontal + 12)
         frame.Height = Math.Max(28, contentLines.Length * (frame.Font.Height + 3) + frame.Padding.Vertical + 8)
+        frame.AutoSize = False
     End Sub
 
     Private Sub DrawEventBorder(sender As Object, e As PaintEventArgs)
@@ -938,7 +939,11 @@ Public Class FrmMenuAutonome
         Using graphics = CreateGraphics()
             offsetPixels = CInt(Math.Round(graphics.DpiY * 0.5 / 2.54))
         End Using
-        birthdayLabel.Location = New Point(0,
+        Dim leftMargin As Integer
+        Using graphics = CreateGraphics()
+            leftMargin = CInt(Math.Round(graphics.DpiX * 0.3 / 2.54))
+        End Using
+        birthdayLabel.Location = New Point(leftMargin,
             menuBar.Bottom + offsetPixels)
         birthdayLabel.BringToFront()
         birthdayLabel.Invalidate()
@@ -1062,6 +1067,7 @@ Public Class FrmMenuAutonome
         Dim contentWidth = Math.Max(labelWidth, menusWidth)
         If slideshowPanel IsNot Nothing Then contentWidth = Math.Max(contentWidth, slideshowPanel.Width + 24)
         If nextEventLabel.Visible Then contentWidth += nextEventLabel.Width + 12
+        If birthdayLabel.Visible Then contentWidth = Math.Max(contentWidth, birthdayLabel.Width + 32)
         Dim eventWidth = Math.Max(If(nextEventLabel.Visible, nextEventLabel.Width, 0), If(appointmentLabel.Visible, appointmentLabel.Width, 0))
         If eventWidth > 0 Then contentWidth = Math.Max(contentWidth, eventWidth + 24)
         Dim frameWidth = Width - ClientSize.Width
@@ -1071,6 +1077,7 @@ Public Class FrmMenuAutonome
         MinimumSize = New Size(Math.Min(targetWidth, availableWidth), MinimumSize.Height)
         Width = targetWidth
         PositionNextEvent()
+        PositionBirthdays()
         PositionAppointments()
         PositionSlideshow()
     End Sub
