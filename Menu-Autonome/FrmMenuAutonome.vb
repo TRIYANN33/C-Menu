@@ -742,6 +742,7 @@ Public Class FrmMenuAutonome
                                                       .FlowDirection = FlowDirection.LeftToRight, .Padding = New Padding(8)}
             Dim browseFile As New Button With {.Text = "Rechercher un fichier", .AutoSize = True}
             Dim browseFolder As New Button With {.Text = "Rechercher un dossier", .AutoSize = True}
+            Dim browseMenu As New Button With {.Text = "Rechercher dans C-Menu", .AutoSize = True}
             Dim saveList As New Button With {.Text = "Enregistrer la liste", .AutoSize = True}
             Dim backup As New Button With {.Text = "Sauvegarde ZIP", .AutoSize = True}
             AddHandler browseFile.Click, Sub()
@@ -757,6 +758,61 @@ Public Class FrmMenuAutonome
                         grid.Rows.Add(Path.GetFileName(picker.SelectedPath.TrimEnd(Path.DirectorySeparatorChar)), picker.SelectedPath)
                     End If
                 End Using
+            End Sub
+            AddHandler browseMenu.Click, Sub()
+                Try
+                    If Not File.Exists(databasePath) Then
+                        MessageBox.Show(dialog, "Base C-Menu introuvable : " & databasePath)
+                        Return
+                    End If
+                    Dim applications As New DataTable()
+                    Using cn As New SqliteConnection("Data Source=" & databasePath & ";Mode=ReadOnly")
+                        cn.Open()
+                        Using cmd = cn.CreateCommand()
+                            cmd.CommandText = "SELECT COALESCE(Menu,'') AS Menu, COALESCE(SousMenu,'') AS SousMenu, " &
+                                              "COALESCE(Application,'') AS Application, COALESCE(Chemin,'') AS Chemin " &
+                                              "FROM Menus WHERE TRIM(COALESCE(Chemin,'')) <> '' " &
+                                              "ORDER BY Menu, SousMenu, Application"
+                            Using reader = cmd.ExecuteReader()
+                                applications.Load(reader)
+                            End Using
+                        End Using
+                    End Using
+                    Using picker As New Form With {.Text = "Rechercher dans C-Menu", .Size = New Size(850, 480),
+                                                   .StartPosition = FormStartPosition.CenterParent}
+                        Dim search As New TextBox With {.Dock = DockStyle.Top, .PlaceholderText = "Rechercher un menu, sous-menu, application ou chemin"}
+                        Dim results As New DataGridView With {.Dock = DockStyle.Fill, .ReadOnly = True,
+                                                               .AllowUserToAddRows = False, .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                                                               .MultiSelect = True, .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                                                               .DataSource = applications}
+                        Dim add As New Button With {.Text = "Ajouter la sélection", .Dock = DockStyle.Bottom, .Height = 40}
+                        AddHandler search.TextChanged, Sub()
+                            Dim value = search.Text.Replace("'", "''").Replace("[", "[[]").Replace("%", "[%]").Replace("*", "[*]")
+                            applications.DefaultView.RowFilter = "Menu LIKE '%" & value & "%' OR SousMenu LIKE '%" & value &
+                                                                 "%' OR Application LIKE '%" & value & "%' OR Chemin LIKE '%" & value & "%'"
+                        End Sub
+                        AddHandler add.Click, Sub()
+                            Dim count As Integer = 0
+                            For Each row As DataGridViewRow In results.SelectedRows
+                                Dim pathValue = Convert.ToString(row.Cells("Chemin").Value).Trim()
+                                Dim labelValue = Convert.ToString(row.Cells("Application").Value).Trim()
+                                If labelValue = "" Then labelValue = Convert.ToString(row.Cells("SousMenu").Value).Trim()
+                                If labelValue = "" Then labelValue = Convert.ToString(row.Cells("Menu").Value).Trim()
+                                If pathValue <> "" Then
+                                    grid.Rows.Add(labelValue, pathValue)
+                                    count += 1
+                                End If
+                            Next
+                            If count > 0 Then picker.Close()
+                        End Sub
+                        picker.Controls.Add(results)
+                        picker.Controls.Add(add)
+                        picker.Controls.Add(search)
+                        picker.ShowDialog(dialog)
+                    End Using
+                Catch ex As Exception
+                    MessageBox.Show(dialog, "Recherche dans C-Menu impossible : " & ex.Message)
+                End Try
             End Sub
             Dim readItems As Func(Of List(Of BackupItem)) = Function()
                 grid.EndEdit()
@@ -843,7 +899,7 @@ Public Class FrmMenuAutonome
                     MessageBox.Show(dialog, "Sauvegarde impossible : " & ex.Message)
                 End Try
             End Sub
-            buttons.Controls.AddRange(New Control() {browseFile, browseFolder, saveList, backup})
+            buttons.Controls.AddRange(New Control() {browseFile, browseFolder, browseMenu, saveList, backup})
             dialog.Controls.Add(grid)
             dialog.Controls.Add(buttons)
             dialog.ShowDialog(Me)
