@@ -71,6 +71,7 @@ Public Class FrmMenuAutonome
         Controls.Add(customTitle)
         Controls.SetChildIndex(customTitle, Controls.Count - 1)
         ApplyColors()
+        ApplyDesignBackgrounds()
         KeyPreview = True
         AddHandler KeyDown, Sub(sender, e)
             If e.KeyCode = Keys.F5 Then
@@ -630,6 +631,44 @@ Public Class FrmMenuAutonome
         End Using
     End Sub
 
+    Private Function DesignImagePath(index As Integer) As String
+        Dim folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                                  "C-Menu", "Design_" & GeneratedConfig.SafeName)
+        Return Path.Combine(folder, "Fond_" & index.ToString(CultureInfo.InvariantCulture) & ".png")
+    End Function
+
+    Private Sub ApplyDesignBackgrounds()
+        Dim targets As Control() = {customTitle, menuBar, Me}
+        For i As Integer = 0 To targets.Length - 1
+            Dim target = targets(i)
+            Dim previous = target.BackgroundImage
+            target.BackgroundImage = Nothing
+            If previous IsNot Nothing Then previous.Dispose()
+            Dim imagePath = DesignImagePath(i)
+            If Not File.Exists(imagePath) Then Continue For
+            Try
+                Using source = Image.FromFile(imagePath)
+                    target.BackgroundImage = New Bitmap(source)
+                    target.BackgroundImageLayout = ImageLayout.Stretch
+                End Using
+            Catch
+            End Try
+        Next
+    End Sub
+
+    Private Sub SaveDesignBackgrounds(images As Dictionary(Of Integer, String))
+        For Each selected In images
+            Dim destination = DesignImagePath(selected.Key)
+            Directory.CreateDirectory(Path.GetDirectoryName(destination))
+            Using source = Image.FromFile(selected.Value)
+                Using copy As New Bitmap(source)
+                    copy.Save(destination, System.Drawing.Imaging.ImageFormat.Png)
+                End Using
+            End Using
+        Next
+        ApplyDesignBackgrounds()
+    End Sub
+
     Private Sub ShowColorsForm()
         Using dialog As New Form With {
             .Text = "Couleurs du menu — " & GeneratedConfig.FormName,
@@ -637,21 +676,23 @@ Public Class FrmMenuAutonome
             .FormBorderStyle = FormBorderStyle.FixedDialog,
             .MaximizeBox = False,
             .MinimizeBox = False,
-            .ClientSize = New Size(420, 250),
+            .ClientSize = New Size(620, 250),
             .Font = New Font("Segoe UI", 10)
         }
             Dim layout As New TableLayoutPanel With {
-                .Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 4,
+                .Dock = DockStyle.Fill, .ColumnCount = 3, .RowCount = 4,
                 .Padding = New Padding(16), .AutoSize = False
             }
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 60))
             layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 30))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 30))
             For i As Integer = 0 To 2
                 layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 48))
             Next
             layout.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
             Dim names = {"Barre de titre", "Barre des menus", "Fond du formulaire"}
             Dim values = {titleColor, barColor, bodyColor}
+            Dim images As New Dictionary(Of Integer, String)()
             For i As Integer = 0 To 2
                 Dim index = i
                 Dim label As New Label With {.Text = names(i), .Dock = DockStyle.Fill, .TextAlign = ContentAlignment.MiddleLeft}
@@ -666,6 +707,19 @@ Public Class FrmMenuAutonome
                 End Sub
                 layout.Controls.Add(label, 0, i)
                 layout.Controls.Add(pick, 1, i)
+                Dim imageButton As New Button With {.Text = "Image…", .Dock = DockStyle.Fill}
+                AddHandler imageButton.Click, Sub(sender, e)
+                    Using filePicker As New OpenFileDialog With {
+                        .Title = "Image de fond : " & names(index),
+                        .Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp"
+                    }
+                        If filePicker.ShowDialog(dialog) = DialogResult.OK Then
+                            images(index) = filePicker.FileName
+                            imageButton.Text = "Image ✓"
+                        End If
+                    End Using
+                End Sub
+                layout.Controls.Add(imageButton, 2, i)
             Next
             Dim save As New Button With {.Text = "Enregistrer", .Dock = DockStyle.Fill}
             Dim cancel As New Button With {.Text = "Annuler", .Dock = DockStyle.Fill}
@@ -677,6 +731,7 @@ Public Class FrmMenuAutonome
                 Try
                     Directory.CreateDirectory(Path.GetDirectoryName(settingsPath))
                     File.WriteAllLines(settingsPath, {titleColor.ToArgb().ToString(), barColor.ToArgb().ToString(), bodyColor.ToArgb().ToString()})
+                    SaveDesignBackgrounds(images)
                     dialog.DialogResult = DialogResult.OK
                 Catch ex As Exception
                     MessageBox.Show(dialog, "Sauvegarde impossible : " & ex.Message, "Couleurs", MessageBoxButtons.OK, MessageBoxIcon.Warning)
