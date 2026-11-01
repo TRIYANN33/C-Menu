@@ -408,9 +408,34 @@ Public Class FrmMenuAutonome
                 bddMenu.DropDownItems.Add(rendezVousItem)
             End If
             ' Entrée systématique Design (NumMenu 97 / NumSousMenu 0), sans toucher à SQLite.
-            Dim designMenu As New ToolStripMenuItem("Design") With {.ToolTipText = "97 / 0 — Design"}
-            AddHandler designMenu.Click, Sub(sender, e) ShowColorsForm()
-            menuBar.Items.Add(designMenu)
+            Dim designMenu = menuBar.Items.OfType(Of ToolStripMenuItem)().
+                FirstOrDefault(Function(item) String.Equals(item.Text.Trim(), "Design", StringComparison.OrdinalIgnoreCase))
+            If designMenu Is Nothing Then
+                designMenu = New ToolStripMenuItem("Design") With {.ToolTipText = "97 / 0 — Design"}
+                menuBar.Items.Add(designMenu)
+            End If
+            ' Sous-menus systématiques : Design, Sauvegarde, Restauration.
+            Dim designEntry = designMenu.DropDownItems.OfType(Of ToolStripItem)().
+                FirstOrDefault(Function(item) String.Equals(item.Text.Trim(), "Design", StringComparison.OrdinalIgnoreCase))
+            If designEntry Is Nothing Then
+                Dim entry As New ToolStripMenuItem("Design")
+                AddHandler entry.Click, Sub(sender, e) ShowColorsForm()
+                designMenu.DropDownItems.Add(entry)
+            End If
+            Dim saveEntry = designMenu.DropDownItems.OfType(Of ToolStripItem)().
+                FirstOrDefault(Function(item) String.Equals(item.Text.Trim(), "Sauvegarde", StringComparison.OrdinalIgnoreCase))
+            If saveEntry Is Nothing Then
+                Dim entry As New ToolStripMenuItem("Sauvegarde")
+                AddHandler entry.Click, AddressOf SaveMenuDatabase
+                designMenu.DropDownItems.Add(entry)
+            End If
+            Dim restoreEntry = designMenu.DropDownItems.OfType(Of ToolStripItem)().
+                FirstOrDefault(Function(item) String.Equals(item.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase))
+            If restoreEntry Is Nothing Then
+                Dim entry As New ToolStripMenuItem("Restauration")
+                AddHandler entry.Click, AddressOf RestoreMenuDatabase
+                designMenu.DropDownItems.Add(entry)
+            End If
             ' Tri numérique des menus et sous-menus, sans lambda multiligne.
             Dim orderedMenus = menuBar.Items.OfType(Of ToolStripMenuItem)().
                 OrderBy(Function(item) MenuSortNumber(item.Text, records)).
