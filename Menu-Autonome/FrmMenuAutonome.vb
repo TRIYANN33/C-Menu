@@ -66,10 +66,8 @@ Public Class FrmMenuAutonome
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
         menuBar.Padding = New Padding(10, 6, 10, 6)
         Controls.Add(menuBar)
-        Controls.Add(nextEventLabel)
         Controls.Add(birthdayLabel)
         Controls.Add(appointmentLabel)
-        AddHandler nextEventLabel.Paint, AddressOf DrawEventBorder
         AddHandler birthdayLabel.Paint, AddressOf DrawEventBorder
         AddHandler appointmentLabel.Paint, AddressOf DrawEventBorder
         Controls.Add(customTitle)
@@ -884,17 +882,21 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private Sub FitEventFrame(frame As Label)
+        ' Mesurer chaque ligne réelle, sans retour à la ligne automatique.
         Dim contentLines = frame.Text.Split({Environment.NewLine}, StringSplitOptions.None)
-        Dim maxWidth As Integer = 0
-        For Each line In contentLines
-            If String.IsNullOrWhiteSpace(line) Then Continue For
-            maxWidth = Math.Max(maxWidth, TextRenderer.MeasureText(line, frame.Font,
-                New Size(Integer.MaxValue, Integer.MaxValue),
-                TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding).Width)
-        Next
-        frame.Width = Math.Max(30, maxWidth + frame.Padding.Horizontal + 12)
-        frame.Height = Math.Max(28, contentLines.Length * (frame.Font.Height + 3) + frame.Padding.Vertical + 8)
+        Dim widest As Single = 0
+        Using graphics = frame.CreateGraphics()
+            For Each line In contentLines
+                If line.Length = 0 Then Continue For
+                Dim measured = graphics.MeasureString(line, frame.Font,
+                    New PointF(0, 0), StringFormat.GenericTypographic)
+                widest = Math.Max(widest, measured.Width)
+            Next
+        End Using
         frame.AutoSize = False
+        frame.Width = Math.Max(40, CInt(Math.Ceiling(widest)) + frame.Padding.Horizontal + 24)
+        frame.Height = Math.Max(30, contentLines.Length * (frame.Font.Height + 5) +
+            frame.Padding.Vertical + 12)
     End Sub
 
     Private Sub DrawEventBorder(sender As Object, e As PaintEventArgs)
@@ -1047,7 +1049,7 @@ Public Class FrmMenuAutonome
                 birthdayLabel.Visible = True
                 PositionBirthdays()
             End If
-            If nextTexts.Count > 0 Then
+            If False AndAlso nextTexts.Count > 0 Then
                 nextEventLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, nextTexts)
                 FitEventFrame(nextEventLabel)
                 nextEventLabel.Visible = True
@@ -1071,7 +1073,6 @@ Public Class FrmMenuAutonome
         Next
         Dim contentWidth = Math.Max(labelWidth, menusWidth)
         If slideshowPanel IsNot Nothing Then contentWidth = Math.Max(contentWidth, slideshowPanel.Width + 24)
-        If nextEventLabel.Visible Then contentWidth += nextEventLabel.Width + 12
         If birthdayLabel.Visible Then contentWidth = Math.Max(contentWidth, birthdayLabel.Width + 32)
         Dim eventWidth = Math.Max(If(nextEventLabel.Visible, nextEventLabel.Width, 0), If(appointmentLabel.Visible, appointmentLabel.Width, 0))
         If eventWidth > 0 Then contentWidth = Math.Max(contentWidth, eventWidth + 24)
