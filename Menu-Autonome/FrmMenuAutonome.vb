@@ -931,7 +931,12 @@ Public Class FrmMenuAutonome
                 slideshowPanel.BringToFront()
                 AdjustMenuWidth()
                 PositionSlideshow()
-                Height = Math.Max(Height, pxHeight + 70)
+                ' Garder 3 mm libres sous le diaporama, quelle que soit la résolution DPI.
+                Dim bottomMargin As Integer
+                Using graphics = CreateGraphics()
+                    bottomMargin = CInt(Math.Round(graphics.DpiY * 0.3 / 2.54))
+                End Using
+                Height = Math.Max(Height, slideshowPanel.Bottom + bottomMargin + (Height - ClientSize.Height))
                 PositionSlideshow()
                 AddHandler slideshowTimer.Tick, Sub(sender, e) NextSlideshowImage()
             End If
