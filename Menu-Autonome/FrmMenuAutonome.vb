@@ -95,6 +95,25 @@ Public Class FrmMenuAutonome
         customTitle.Width = ClientSize.Width
         menuBar.Width = ClientSize.Width
         customTitle.BringToFront()
+        ' Poignée de redimensionnement utilisable même avec une fenêtre sans bordure.
+        Dim resizeGrip As New Label With {.Text = "◢", .Width = 22, .Height = 22,
+            .TextAlign = ContentAlignment.MiddleCenter, .Cursor = Cursors.SizeNWSE,
+            .Anchor = AnchorStyles.Bottom Or AnchorStyles.Right,
+            .BackColor = Color.Transparent}
+        resizeGrip.Location = New Point(Math.Max(0, ClientSize.Width - 22), Math.Max(0, ClientSize.Height - 22))
+        AddHandler resizeGrip.MouseDown, Sub(sender, e)
+            If e.Button = MouseButtons.Left AndAlso WindowState = FormWindowState.Normal Then
+                NativeReleaseCapture()
+                NativeSendMessage(Handle, &HA1, New IntPtr(17), IntPtr.Zero)
+            End If
+        End Sub
+        Controls.Add(resizeGrip)
+        resizeGrip.BringToFront()
+        AddHandler Resize, Sub(sender, e)
+            resizeGrip.Location = New Point(Math.Max(0, ClientSize.Width - resizeGrip.Width),
+                                            Math.Max(0, ClientSize.Height - resizeGrip.Height))
+            resizeGrip.BringToFront()
+        End Sub
         ApplyColors()
         ApplyDesignBackgrounds()
         KeyPreview = True
