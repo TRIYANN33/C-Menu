@@ -67,8 +67,10 @@ Public Class FrmMenuAutonome
         menuBar.Padding = New Padding(10, 6, 10, 6)
         Controls.Add(menuBar)
         Controls.Add(nextEventLabel)
+        Controls.Add(birthdayLabel)
         Controls.Add(appointmentLabel)
         AddHandler nextEventLabel.Paint, AddressOf DrawEventBorder
+        AddHandler birthdayLabel.Paint, AddressOf DrawEventBorder
         AddHandler appointmentLabel.Paint, AddressOf DrawEventBorder
         Controls.Add(customTitle)
         Controls.SetChildIndex(customTitle, Controls.Count - 1)
@@ -919,6 +921,31 @@ Public Class FrmMenuAutonome
         If Height < neededHeight Then Height = neededHeight
     End Sub
 
+    Private ReadOnly birthdayLabel As New Label With {
+        .ForeColor = Color.Black,
+        .BackColor = Color.Transparent,
+        .AutoSize = False,
+        .TextAlign = ContentAlignment.MiddleLeft,
+        .Padding = New Padding(4, 4, 8, 4),
+        .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+        .Visible = False
+    }
+
+    Private Sub PositionBirthdays()
+        If Not birthdayLabel.Visible Then Return
+        FitEventFrame(birthdayLabel)
+        Dim offsetPixels As Integer
+        Using graphics = CreateGraphics()
+            offsetPixels = CInt(Math.Round(graphics.DpiY * 0.5 / 2.54))
+        End Using
+        birthdayLabel.Location = New Point(Math.Max(0, ClientSize.Width - birthdayLabel.Width),
+            menuBar.Bottom + offsetPixels)
+        birthdayLabel.BringToFront()
+        birthdayLabel.Invalidate()
+        Dim neededHeight = birthdayLabel.Bottom + 12 + (Height - ClientSize.Height)
+        If Height < neededHeight Then Height = neededHeight
+    End Sub
+
     Private ReadOnly nextEventLabel As New Label With {
         .ForeColor = Color.Black,
         .BackColor = Color.Transparent,
@@ -943,6 +970,7 @@ Public Class FrmMenuAutonome
         nextEventLabel.Invalidate()
         Dim neededHeight = nextEventLabel.Bottom + 12 + (Height - ClientSize.Height)
         If Height < neededHeight Then Height = neededHeight
+        PositionBirthdays()
         PositionAppointments()
     End Sub
 
@@ -950,6 +978,7 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshNextEvent()
         nextEventLabel.Visible = False
+        birthdayLabel.Visible = False
         If Not File.Exists(AnniversaryDatabase) Then
             AdjustMenuWidth()
             Return
@@ -957,6 +986,8 @@ Public Class FrmMenuAutonome
         Try
             Dim nextDate As Date = Date.MaxValue
             Dim nextTexts As New List(Of String)()
+            Dim birthdayDate As Date = Date.MaxValue
+            Dim birthdayTexts As New List(Of String)()
             Using cn As New SqliteConnection("Data Source=" & AnniversaryDatabase & ";Mode=ReadOnly")
                 cn.Open()
                 Using cmd = cn.CreateCommand()
@@ -977,30 +1008,36 @@ Public Class FrmMenuAutonome
                                     year += 1
                                     occurrence = New Date(year, stored.Month, Math.Min(stored.Day, Date.DaysInMonth(year, stored.Month)))
                                 End If
-                                If occurrence <= nextDate Then
+                                If i = 2 Then
+                                    If occurrence <= birthdayDate Then
+                                        If occurrence < birthdayDate Then
+                                            birthdayDate = occurrence
+                                            birthdayTexts.Clear()
+                                        End If
+                                        Dim age = occurrence.Year - stored.Year
+                                        birthdayTexts.Add("Anniversaire des " & age.ToString(CultureInfo.InvariantCulture) &
+                                            " ans de " & person & Environment.NewLine &
+                                            "le " & occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")))
+                                    End If
+                                ElseIf occurrence <= nextDate Then
                                     If occurrence < nextDate Then
                                         nextDate = occurrence
                                         nextTexts.Clear()
                                     End If
-                                    Dim kind = If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))
-                                    If i = 2 Then
-                                        ' L'âge est celui atteint à la date anniversaire affichée.
-                                        Dim age As Integer = occurrence.Year - stored.Year
-                                        kind = "Anniversaire des " & age.ToString(CultureInfo.InvariantCulture) & " ans"
-                                    End If
-                                    If i = 2 Then
-                                        nextTexts.Add(kind & " de" & Environment.NewLine & person & Environment.NewLine &
-                                            "le " & occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")))
-                                    Else
-                                        nextTexts.Add(kind & " de " & person & " le " &
-                                            occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")))
-                                    End If
+                                    Dim kind = If(i = 3, "Fête", "Date à noter")
+                                    nextTexts.Add(kind & " de " & person & " le " &
+                                        occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")))
                                 End If
                             Next
                         End While
                     End Using
                 End Using
             End Using
+            If birthdayTexts.Count > 0 Then
+                birthdayLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, birthdayTexts)
+                birthdayLabel.Visible = True
+                PositionBirthdays()
+            End If
             If nextTexts.Count > 0 Then
                 nextEventLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, nextTexts)
                 FitEventFrame(nextEventLabel)
