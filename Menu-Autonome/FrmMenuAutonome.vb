@@ -95,6 +95,7 @@ Public Class FrmMenuAutonome
         AddHandler Shown, Sub(sender, e)
             UpdateRoundedCorners()
             RefreshClock()
+            RenameExampleMenuInDatabase()
             LoadFromDatabase()
             StartSlideshow(True)
             RefreshNextEvent()
@@ -239,6 +240,21 @@ Public Class FrmMenuAutonome
             nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
             " à " & nowValue.ToString("HH:mm:ss")
         customTitleText.Text = Text
+    End Sub
+
+    Private Sub RenameExampleMenuInDatabase()
+        If Not File.Exists(databasePath) Then Return
+        Try
+            Using cn As New SqliteConnection("Data Source=" & databasePath)
+                cn.Open()
+                Using cmd = cn.CreateCommand()
+                    cmd.CommandText = "UPDATE Menus SET Menu = 'Exemples' WHERE TRIM(NumMenu) = '99' AND LOWER(TRIM(Menu)) = 'exemple'"
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            ShowProblem("Renommage automatique du menu Exemples impossible : " & ex.Message)
+        End Try
     End Sub
 
     Private Sub LoadFromDatabase()
