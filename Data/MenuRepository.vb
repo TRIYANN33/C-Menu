@@ -53,6 +53,11 @@ Public Class MenuRepository
     End Sub
 
     Private Shared Sub EnsureStarterRecords(cn As SqliteConnection)
+        ' Nettoyer les doublons 99 en conservant le plus ancien Id pour chaque numéro.
+        Using cleanup = cn.CreateCommand()
+            cleanup.CommandText = "DELETE FROM Menus WHERE NumMenu='99' AND Id NOT IN (SELECT MIN(Id) FROM Menus WHERE NumMenu='99' GROUP BY CAST(NumSousMenu AS INTEGER))"
+            cleanup.ExecuteNonQuery()
+        End Using
         ' Ne jamais renommer ni déplacer les menus saisis par l'utilisateur.
         ' Les exemples 99 sont ajoutés seulement s'ils sont absents.
         ' Le sous-menu Started doit exister uniquement sous le numéro 1.
@@ -114,6 +119,12 @@ Public Class MenuRepository
                 cmd.ExecuteNonQuery()
             End Using
         Next
+        Using cleanup = cn.CreateCommand()
+            cleanup.CommandText = "DELETE FROM Menus WHERE NumMenu='99' AND Id NOT IN (SELECT MIN(Id) FROM Menus WHERE NumMenu='99' GROUP BY CAST(NumSousMenu AS INTEGER))"
+            cleanup.ExecuteNonQuery()
+            cleanup.CommandText = "CREATE UNIQUE INDEX IF NOT EXISTS UX_Menus_99_NumSousMenu ON Menus(NumMenu, CAST(NumSousMenu AS INTEGER)) WHERE NumMenu='99'"
+            cleanup.ExecuteNonQuery()
+        End Using
     End Sub
 
     Private Shared Sub Bind(cmd As SqliteCommand, item As MenuItem)
@@ -129,7 +140,21 @@ Public Class MenuRepository
         cmd.Parameters.AddWithValue("$chemin", item.Chemin)
     End Sub
 
+    Private Sub EnsureNotDuplicate99(item As MenuItem, Optional excludeId As Integer = 0)
+        If item.NumMenu.Trim() <> "99" Then Return
+        Using cn As New SqliteConnection(connectionString)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "SELECT COUNT(*) FROM Menus WHERE NumMenu='99' AND CAST(NumSousMenu AS INTEGER)=CAST($num AS INTEGER) AND Id<>$id"
+                cmd.Parameters.AddWithValue("$num", item.NumSousMenu)
+                cmd.Parameters.AddWithValue("$id", excludeId)
+                If Convert.ToInt32(cmd.ExecuteScalar()) > 0 Then Throw New InvalidOperationException("Le sous-menu n° " & item.NumSousMenu & " du menu 99 existe déjà et ne peut pas être dupliqué.")
+            End Using
+        End Using
+    End Sub
+
     Public Sub Insert(item As MenuItem)
+        EnsureNotDuplicate99(item)
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
@@ -144,6 +169,7 @@ Public Class MenuRepository
     End Sub
 
     Public Sub Update(item As MenuItem)
+        EnsureNotDuplicate99(item, item.Id)
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
