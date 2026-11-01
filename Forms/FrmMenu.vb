@@ -423,8 +423,11 @@ Public Class FrmMenu
             .BackColor = Color.FromArgb(29, 171, 79),
             .Padding = New Padding(14, 4, 14, 4)
         }
-        For i = 1 To 6
-            editorPanel.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F / 6))
+        ' Largeurs adaptées aux informations : identifiants compacts,
+        ' dates plus larges, Frm_Menu et champs descriptifs prioritaires.
+        Dim fieldWeights As Single() = {11.0F, 17.0F, 17.0F, 10.0F, 14.0F, 31.0F}
+        For Each weight In fieldWeights
+            editorPanel.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, weight))
         Next
         editorPanel.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
         editorPanel.RowStyles.Add(New RowStyle(SizeType.Percent, 33.0F))
