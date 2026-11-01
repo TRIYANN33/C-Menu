@@ -1259,6 +1259,7 @@ Public Class FrmAnniversaire
     Inherits Form
 
     Private ReadOnly databaseFile As String = Path.Combine("C:\", "Menu", "applications", "Anniversaire", "Anniversaires.db")
+    Private selectedId As Integer
     Private ReadOnly nom As New TextBox()
     Private ReadOnly prenom As New TextBox()
     Private ReadOnly naissance As New DateTimePicker With {.Format = DateTimePickerFormat.Short, .ShowCheckBox = True, .Checked = False}
@@ -1292,6 +1293,13 @@ Public Class FrmAnniversaire
         AddHandler saveButton.Click, AddressOf SaveEvent
         Dim toolbar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 43, .Padding = New Padding(12, 5, 0, 0)}
         toolbar.Controls.Add(saveButton)
+        Dim nouveau As New Button With {.Text = "Nouveau", .AutoSize = True}
+        AddHandler nouveau.Click, Sub(sender, e) ClearEntry()
+        toolbar.Controls.Add(nouveau)
+        Dim supprimer As New Button With {.Text = "Supprimer", .AutoSize = True}
+        AddHandler supprimer.Click, AddressOf DeleteEvent
+        toolbar.Controls.Add(supprimer)
+        AddHandler eventsGrid.SelectionChanged, AddressOf SelectEvent
         Me.Controls.Add(eventsGrid)
         Me.Controls.Add(toolbar)
         Me.Controls.Add(entry)
@@ -1319,7 +1327,10 @@ Public Class FrmAnniversaire
         Using cn As New SqliteConnection("Data Source=" & databaseFile)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO Evenements (Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter) VALUES ($nom, $prenom, $naissance, $fete, $noter, $libelle)"
+                cmd.CommandText = If(selectedId = 0,
+                    "INSERT INTO Evenements (Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter) VALUES ($nom, $prenom, $naissance, $fete, $noter, $libelle)",
+                    "UPDATE Evenements SET Nom=$nom, Prenom=$prenom, Naissance=$naissance, Fete=$fete, ANoter=$noter, LibelleANoter=$libelle WHERE Id=$id")
+                If selectedId <> 0 Then cmd.Parameters.AddWithValue("$id", selectedId)
                 cmd.Parameters.AddWithValue("$nom", nom.Text.Trim())
                 cmd.Parameters.AddWithValue("$prenom", prenom.Text.Trim())
                 cmd.Parameters.AddWithValue("$naissance", If(naissance.Checked, naissance.Value.ToString("yyyy-MM-dd"), CType(DBNull.Value, Object)))
@@ -1329,12 +1340,51 @@ Public Class FrmAnniversaire
                 cmd.ExecuteNonQuery()
             End Using
         End Using
+        ClearEntry()
+        RefreshEvents()
+    End Sub
+
+    Private Sub ClearEntry()
+        selectedId = 0
+        eventsGrid.ClearSelection()
         nom.Clear()
         prenom.Clear()
         libelleANoter.Clear()
         naissance.Checked = False
         fete.Checked = False
         noter.Checked = False
+    End Sub
+
+    Private Sub SelectEvent(sender As Object, e As EventArgs)
+        If eventsGrid.SelectedRows.Count = 0 Then Return
+        Dim row = eventsGrid.SelectedRows(0)
+        If row.Cells("Id").Value Is Nothing Then Return
+        selectedId = Convert.ToInt32(row.Cells("Id").Value)
+        nom.Text = Convert.ToString(row.Cells("Nom").Value)
+        prenom.Text = Convert.ToString(row.Cells("Prenom").Value)
+        Dim pickers = {naissance, fete, noter}
+        Dim names = {"Naissance", "Fete", "ANoter"}
+        For i = 0 To 2
+            Dim parsed As Date
+            pickers(i).Checked = Date.TryParse(Convert.ToString(row.Cells(names(i)).Value), parsed)
+            If pickers(i).Checked Then pickers(i).Value = parsed
+        Next
+        libelleANoter.Text = Convert.ToString(row.Cells("LibelleANoter").Value)
+    End Sub
+
+    Private Sub DeleteEvent(sender As Object, e As EventArgs)
+        If selectedId = 0 Then Return
+        If MessageBox.Show(Me, "Supprimer cet enregistrement ?", "Anniversaires",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+        Using cn As New SqliteConnection("Data Source=" & databaseFile)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "DELETE FROM Evenements WHERE Id=$id"
+                cmd.Parameters.AddWithValue("$id", selectedId)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+        ClearEntry()
         RefreshEvents()
     End Sub
 
@@ -1350,42 +1400,19 @@ Public Class FrmAnniversaire
     End Function
 
     Private Sub RefreshEvents()
-        Dim upcoming As New List(Of (DateValue As Date, Person As String, Kind As String))()
+        Dim records As New DataTable()
         Using cn As New SqliteConnection("Data Source=" & databaseFile)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter FROM Evenements"
+                cmd.CommandText = "SELECT Id, Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter FROM Evenements ORDER BY Nom, Prenom, Id"
                 Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        Dim person = reader.GetString(1) & " " & reader.GetString(0)
-                        For i = 2 To 4
-                            If reader.IsDBNull(i) Then Continue For
-                            Dim dateValue As Date
-                            If Date.TryParseExact(reader.GetString(i), "yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture, Globalization.DateTimeStyles.None, dateValue) Then
-                                Dim kind = If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))
-                                If i = 4 AndAlso Not reader.IsDBNull(5) AndAlso Not String.IsNullOrWhiteSpace(reader.GetString(5)) Then
-                                    kind = reader.GetString(5)
-                                End If
-                                upcoming.Add((NextOccurrence(dateValue), person, kind))
-                            End If
-                        Next
-                    End While
+                    records.Load(reader)
                 End Using
             End Using
         End Using
-        eventsGrid.DataSource = upcoming.OrderBy(Function(x) x.DateValue).
-            Select(Function(x) New With {
-                .DateEvenement = x.DateValue.ToString("dd/MM/yyyy"),
-                .Dans = (x.DateValue - Date.Today).Days.ToString() & " jour(s)",
-                .Personne = x.Person,
-                .Evenement = x.Kind
-            }).ToList()
-        If eventsGrid.Columns.Count = 4 Then
-            eventsGrid.Columns(0).HeaderText = "Date"
-            eventsGrid.Columns(1).HeaderText = "Dans"
-            eventsGrid.Columns(2).HeaderText = "Nom et prénom"
-            eventsGrid.Columns(3).HeaderText = "Événement"
-        End If
+        eventsGrid.DataSource = records
+        If eventsGrid.Columns.Contains("Id") Then eventsGrid.Columns("Id").Visible = False
+        eventsGrid.ClearSelection()
     End Sub
 End Class
 
