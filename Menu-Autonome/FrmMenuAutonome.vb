@@ -867,7 +867,25 @@ Public Class FrmMenuAutonome
                                 index += 1
                                 Dim prefix = index.ToString("000") & "-" & String.Concat(item.Libelle.Select(Function(ch) If(Path.GetInvalidFileNameChars().Contains(ch), "_"c, ch))) & "/"
                                 If File.Exists(item.Chemin) Then
-                                    archive.CreateEntryFromFile(item.Chemin, prefix & Path.GetFileName(item.Chemin), CompressionLevel.Optimal)
+                                    If String.Equals(Path.GetExtension(item.Chemin), ".db", StringComparison.OrdinalIgnoreCase) Then
+                                        Dim snapshot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") & ".db")
+                                        Try
+                                            Using source As New SqliteConnection(New SqliteConnectionStringBuilder With {
+                                                .DataSource = item.Chemin, .Mode = SqliteOpenMode.ReadOnly
+                                            }.ToString())
+                                                source.Open()
+                                                Using destination As New SqliteConnection("Data Source=" & snapshot)
+                                                    destination.Open()
+                                                    source.BackupDatabase(destination)
+                                                End Using
+                                            End Using
+                                            archive.CreateEntryFromFile(snapshot, prefix & Path.GetFileName(item.Chemin), CompressionLevel.Optimal)
+                                        Finally
+                                            If File.Exists(snapshot) Then File.Delete(snapshot)
+                                        End Try
+                                    Else
+                                        archive.CreateEntryFromFile(item.Chemin, prefix & Path.GetFileName(item.Chemin), CompressionLevel.Optimal)
+                                    End If
                                 Else
                                     For Each filePath In Directory.GetFiles(item.Chemin, "*", SearchOption.AllDirectories)
                                         Dim relative = Path.GetRelativePath(item.Chemin, filePath).Replace("\", "/")
