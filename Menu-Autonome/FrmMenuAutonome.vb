@@ -1000,8 +1000,6 @@ Public Class FrmMenuAutonome
                                 Dim stored As Date
                                 If Not Date.TryParseExact(reader.GetString(i), "yyyy-MM-dd",
                                     CultureInfo.InvariantCulture, DateTimeStyles.None, stored) Then Continue For
-                                ' Une date de naissance future ne représente pas un anniversaire valide.
-                                If i = 2 AndAlso stored.Date > Date.Today Then Continue For
                                 Dim year = Date.Today.Year
                                 Dim occurrence = New Date(year, stored.Month, Math.Min(stored.Day, Date.DaysInMonth(year, stored.Month)))
                                 If occurrence < Date.Today Then
@@ -1015,9 +1013,10 @@ Public Class FrmMenuAutonome
                                             birthdayTexts.Clear()
                                         End If
                                         Dim age = occurrence.Year - stored.Year
-                                        birthdayTexts.Add("Anniversaire des " & age.ToString(CultureInfo.InvariantCulture) &
-                                            " ans de " & person & Environment.NewLine &
-                                            "le " & occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")))
+                                        birthdayTexts.Add(person & Environment.NewLine &
+                                            "Va avoir " & age.ToString(CultureInfo.InvariantCulture) & " ans" & Environment.NewLine &
+                                            "Le " & CultureInfo.GetCultureInfo("fr-FR").TextInfo.ToTitleCase(
+                                                occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))))
                                     End If
                                 ElseIf occurrence <= nextDate Then
                                     If occurrence < nextDate Then
