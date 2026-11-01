@@ -83,6 +83,8 @@ Public Class FrmMenu
         BackColor = Color.FromArgb(241, 247, 237)
         BuildUI()
         BuildCustomTitleBar()
+        AddHandler Me.Resize, Sub(sender, e) UpdateRoundedCorners()
+        AddHandler Me.Shown, Sub(sender, e) UpdateRoundedCorners()
         ApplyColors()
         ClearForm()
         ReloadGrid()
@@ -103,6 +105,27 @@ Public Class FrmMenu
             nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
             " à " & nowValue.ToString("HH:mm:ss")
         customTitleText.Text = Text
+    End Sub
+
+    Private Sub UpdateRoundedCorners()
+        If ClientSize.Width <= 24 OrElse ClientSize.Height <= 24 Then Return
+        If WindowState = FormWindowState.Maximized Then
+            Region = Nothing
+            Return
+        End If
+        Const radius As Integer = 14
+        Dim bounds = New Rectangle(0, 0, ClientSize.Width, ClientSize.Height)
+        Using shape As New System.Drawing.Drawing2D.GraphicsPath()
+            Dim diameter = radius * 2
+            shape.AddArc(bounds.Left, bounds.Top, diameter, diameter, 180, 90)
+            shape.AddArc(bounds.Right - diameter, bounds.Top, diameter, diameter, 270, 90)
+            shape.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90)
+            shape.AddArc(bounds.Left, bounds.Bottom - diameter, diameter, diameter, 90, 90)
+            shape.CloseFigure()
+            Dim oldRegion = Region
+            Region = New Region(shape)
+            If oldRegion IsNot Nothing Then oldRegion.Dispose()
+        End Using
     End Sub
 
     Private Sub BuildCustomTitleBar()
