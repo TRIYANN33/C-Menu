@@ -2377,17 +2377,29 @@ Public Class CountdownManager
 
     Private Sub Render()
         panel.SuspendLayout()
-        panel.Controls.Clear()
-        Dim width = Math.Max(120, (owner.ClientSize.Width - 38) \ 3)
-        Dim activeItems = items.Where(Function(x) x.Fin > DateTime.Now).OrderBy(Function(x) x.Id).ToList()
-        For Each item In activeItems
-            Dim circle As New CountdownCircle With {.Item = item, .Width = width, .Height = 156}
-            panel.Controls.Add(circle)
-        Next
-        Dim rows = CInt(Math.Ceiling(activeItems.Count / 3.0))
-        panel.Height = If(rows = 0, 0, Math.Min(500, rows * 162 + 16))
-        owner.Height = baseHeight + panel.Height
-        panel.ResumeLayout()
+        Try
+            panel.Controls.Clear()
+            ' La colonne centrale de la première ligne reste libre pour le diaporama.
+            ' Ligne 1 : CT_01 à gauche, diaporama au centre, CT_02 à droite.
+            ' Lignes suivantes : CT_03 à gauche, CT_04 au centre, CT_05 à droite, etc.
+            Dim width = Math.Max(100, (owner.ClientSize.Width - panel.Padding.Horizontal - 24) \ 3)
+            Dim activeItems = items.Where(Function(x) x.Fin > DateTime.Now).OrderBy(Function(x) x.Id).ToList()
+            For index As Integer = 0 To activeItems.Count - 1
+                If index = 1 Then
+                    panel.Controls.Add(New Panel With {.Width = width, .Height = 156,
+                        .Margin = New Padding(0), .BackColor = Color.Transparent})
+                End If
+                Dim circle As New CountdownCircle With {.Item = activeItems(index),
+                    .Width = width, .Height = 156, .Margin = New Padding(0)}
+                panel.Controls.Add(circle)
+            Next
+            Dim occupied = activeItems.Count + If(activeItems.Count >= 2, 1, 0)
+            Dim rows = CInt(Math.Ceiling(occupied / 3.0))
+            panel.Height = If(rows = 0, 0, Math.Min(500, rows * 162 + 16))
+            owner.Height = baseHeight + panel.Height
+        Finally
+            panel.ResumeLayout()
+        End Try
     End Sub
 
     Private Sub OnTick(sender As Object, e As EventArgs)
