@@ -137,8 +137,19 @@ Public Class FrmMenu
         End Sub
         customTitleBar.Controls.Add(customTitleText)
         customTitleBar.Controls.Add(buttons)
-        Controls.Add(customTitleBar)
-        customTitleBar.BringToFront()
+
+        ' Regrouper les deux barres dans un seul en-tête pour imposer leur ordre :
+        ' barre de titre tout en haut, boutons du menu immédiatement en dessous.
+        Dim header As New Panel With {
+            .Dock = DockStyle.Top,
+            .Height = customTitleBar.Height + toolbarPanel.Height
+        }
+        Controls.Remove(toolbarPanel)
+        toolbarPanel.Dock = DockStyle.Bottom
+        header.Controls.Add(toolbarPanel)
+        header.Controls.Add(customTitleBar)
+        Controls.Add(header)
+        Controls.SetChildIndex(header, 0)
     End Sub
 
     Private Sub DragCustomTitle(sender As Object, e As MouseEventArgs)
