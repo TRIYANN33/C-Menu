@@ -28,9 +28,14 @@ Public Class FrmMenu
         Try
             Dim selected = Color.FromArgb(themeColors.TitleBar)
             Dim captionColor As Integer = selected.R Or (selected.G << 8) Or (selected.B << 16)
-            DwmSetWindowAttribute(Handle, 35, captionColor, 4)
+            Dim result = DwmSetWindowAttribute(Handle, 35, captionColor, 4)
+            If result <> 0 Then
+                MessageBox.Show(Me, "Windows refuse le changement de couleur de la barre de titre (code " & result.ToString() & ").", "Couleurs", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
             Dim textColor As Integer = 0
             DwmSetWindowAttribute(Handle, 36, textColor, 4)
+            Me.Invalidate(True)
         Catch
             ' La personnalisation de la barre de titre dépend de Windows.
         End Try
@@ -421,6 +426,9 @@ Public Class FrmMenu
             If dialog.ShowDialog(Me) = DialogResult.OK Then
                 themeColors = dialog.SelectedColors.Copy()
                 ApplyColors()
+                ' Réappliquer après fermeture de la boîte de dialogue : Windows peut
+                ' rétablir la couleur d'accent lors de la réactivation de la fenêtre.
+                BeginInvoke(New MethodInvoker(Sub() ApplyTitleBarColor()))
                 Try
                     themeColors.Save()
                 Catch ex As Exception
