@@ -618,10 +618,21 @@ Public Class FrmMenu
             MessageBox.Show("Sélectionnez une ligne à dupliquer.", "Dupliquer")
             Return
         End If
+        If String.Equals(item.NumMenu.Trim(), "99", StringComparison.OrdinalIgnoreCase) Then
+            MessageBox.Show(Me, "Les enregistrements du menu Exemple n° 99 ne peuvent pas être dupliqués.", "Duplication interdite",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
         If Not IsValid(item) Then Return
-        repo.Insert(item)
-        ClearForm()
-        ReloadGrid()
+        Try
+            repo.Insert(item)
+            ClearForm()
+            ReloadGrid()
+        Catch ex As InvalidOperationException
+            MessageBox.Show(Me, ex.Message, "Duplication impossible", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        Catch ex As Microsoft.Data.Sqlite.SqliteException
+            MessageBox.Show(Me, "Duplication impossible : " & ex.Message, "Erreur SQLite", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
     End Sub
 
     Private Sub GridKeyDown(sender As Object, e As KeyEventArgs)
