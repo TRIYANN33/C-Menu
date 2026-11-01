@@ -144,10 +144,28 @@ Public Class FrmMenu
             .Dock = DockStyle.Top,
             .Height = customTitleBar.Height + toolbarPanel.Height
         }
+        ' Les zones de saisie et de recherche restent sous les boutons.
+        Dim searchPanel = Controls.OfType(Of TableLayoutPanel)().FirstOrDefault(
+            Function(panel) panel IsNot editorPanel AndAlso panel.Dock = DockStyle.Top)
         Controls.Remove(toolbarPanel)
-        toolbarPanel.Dock = DockStyle.Bottom
-        header.Controls.Add(toolbarPanel)
+        Controls.Remove(editorPanel)
+        If searchPanel IsNot Nothing Then Controls.Remove(searchPanel)
+        header.Height = customTitleBar.Height + toolbarPanel.Height + editorPanel.Height +
+            If(searchPanel Is Nothing, 0, searchPanel.Height)
+        customTitleBar.Dock = DockStyle.Top
+        toolbarPanel.Dock = DockStyle.Top
+        editorPanel.Dock = DockStyle.Top
         header.Controls.Add(customTitleBar)
+        header.Controls.Add(toolbarPanel)
+        header.Controls.Add(editorPanel)
+        If searchPanel IsNot Nothing Then
+            searchPanel.Dock = DockStyle.Top
+            header.Controls.Add(searchPanel)
+        End If
+        header.Controls.SetChildIndex(customTitleBar, 0)
+        header.Controls.SetChildIndex(toolbarPanel, 1)
+        header.Controls.SetChildIndex(editorPanel, 2)
+        If searchPanel IsNot Nothing Then header.Controls.SetChildIndex(searchPanel, 3)
         Controls.Add(header)
         Controls.SetChildIndex(header, 0)
     End Sub
