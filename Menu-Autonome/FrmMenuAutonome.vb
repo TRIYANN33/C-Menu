@@ -259,7 +259,7 @@ Public Class FrmMenuAutonome
                     cmd.CommandText =
                         "SELECT Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Chemin, Action, Info01, Info02 " &
                         "FROM Menus WHERE TRIM(COALESCE(Menu,'')) <> '' " &
-                        "AND (Frm_Menu = $form COLLATE NOCASE OR (TRIM(NumMenu) = '99' AND LOWER(TRIM(Menu)) = 'exemple')) " &
+                        "AND (Frm_Menu = $form COLLATE NOCASE OR (TRIM(NumMenu) = '99' AND LOWER(TRIM(Menu)) = 'exemples')) " &
                         "ORDER BY CAST(NumMenu AS INTEGER), Menu COLLATE NOCASE, " &
                         "CAST(NumSousMenu AS INTEGER), SousMenu COLLATE NOCASE"
                     cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
@@ -307,7 +307,7 @@ Public Class FrmMenuAutonome
                         }
                         AddHandler child.Click, Sub(sender, e)
                             Dim clicked = DirectCast(sender, ToolStripMenuItem)
-                            If String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso first.MenuNumber.Trim() = "99" Then
+                            If String.Equals(first.MenuText.Trim(), "Exemples", StringComparison.OrdinalIgnoreCase) AndAlso first.MenuNumber.Trim() = "99" Then
                                 ShowExampleDetails(DirectCast(clicked.Tag, MenuRow))
                             ElseIf String.Equals(clicked.Text.Trim(), "NomDeFichier", StringComparison.OrdinalIgnoreCase) Then
                                 ShowCreateFileDialog()
@@ -323,9 +323,9 @@ Public Class FrmMenuAutonome
                                     dialog.ShowDialog(Me)
                                 End Using
 
-                            ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Sauvegarde", StringComparison.OrdinalIgnoreCase) Then
+                            ElseIf String.Equals(first.MenuText.Trim(), "Exemples", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Sauvegarde", StringComparison.OrdinalIgnoreCase) Then
                                 SaveMenuDatabase(sender, e)
-                            ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase) Then
+                            ElseIf String.Equals(first.MenuText.Trim(), "Exemples", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase) Then
                                 RestoreMenuDatabase(sender, e)
                             ElseIf String.Equals(first.MenuText.Trim(), "BDD", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
                                 Using dialog As New StarterApplisForm()
@@ -333,7 +333,7 @@ Public Class FrmMenuAutonome
                                 End Using
                             ElseIf String.Equals(first.MenuText.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
                                 StarterApplisForm.DemarrerApplications(Me)
-                            ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
+                            ElseIf String.Equals(first.MenuText.Trim(), "Exemples", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
                                 Using dialog As New StarterApplisForm()
                                     dialog.ShowDialog(Me)
                                 End Using
@@ -612,7 +612,7 @@ Public Class FrmMenuAutonome
 
     Private Sub ShowExampleDetails(item As MenuRow)
         Using details As New Form With {
-            .Text = "Exemple — " & item.SubText,
+            .Text = "Exemples — " & item.SubText,
             .StartPosition = FormStartPosition.CenterParent,
             .Size = New Size(720, 560),
             .MinimumSize = New Size(480, 360)
@@ -1365,8 +1365,8 @@ Public Class FrmMenuAutonome
         Dim parent = normalize(parentLabel)
         Return item.Contains("starterapplis") OrElse action.Contains("starterapplis") OrElse
                item = "startersauvegarde" OrElse action = "startersauvegarde" OrElse
-               (item = "started" AndAlso (parent = "started" OrElse parent = "exemple")) OrElse
-               (action = "system_started" AndAlso (parent = "started" OrElse parent = "exemple")) OrElse
+               (item = "started" AndAlso (parent = "started" OrElse parent = "exemples")) OrElse
+               (action = "system_started" AndAlso (parent = "started" OrElse parent = "exemples")) OrElse
                ((parent = "starter" OrElse parent = "starterapplis") AndAlso item = "sauvegarde")
     End Function
 
