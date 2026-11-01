@@ -427,7 +427,9 @@ Public Class FrmMenu
         RemoveHandler grid.SelectionChanged, AddressOf GridSelectionChanged
         Dim data = repo.GetAll(searchBox.Text.Trim(), sortFields, activeFilters)
         grid.DataSource = New BindingList(Of MenuItem)(data)
-        RefreshCombos(data)
+        ' Les listes modifiables doivent toujours contenir toutes les valeurs de la BDD,
+        ' même si la grille est réduite par la recherche ou les filtres.
+        RefreshCombos(repo.GetAll())
         countLabel.Text = data.Count.ToString() & " enregistrement(s)"
         grid.ClearSelection()
         AddHandler grid.SelectionChanged, AddressOf GridSelectionChanged
