@@ -86,6 +86,7 @@ Public Class FrmMenu
         AddHandler Me.Resize, Sub(sender, e) UpdateRoundedCorners()
         AddHandler Me.Shown, Sub(sender, e) UpdateRoundedCorners()
         ApplyColors()
+        ApplyDesignImages()
         ClearForm()
         ReloadGrid()
         ' Windows peut rétablir sa couleur d'accent à chaque activation.
@@ -600,11 +601,51 @@ Public Class FrmMenu
         grid.Invalidate()
     End Sub
 
+    Private Sub ApplyDesignImages()
+        Dim folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "DesignImages")
+        Dim zones As New Dictionary(Of String, Control) From {
+            {"TitleBar", customTitleBar}, {"Toolbar", toolbarPanel},
+            {"Entry", editorPanel}, {"Table", grid}
+        }
+        For Each pair In zones
+            Dim target = Path.Combine(folder, pair.Key & ".png")
+            If File.Exists(target) Then
+                Try
+                    Using original = Image.FromFile(target)
+                        Dim previous = pair.Value.BackgroundImage
+                        pair.Value.BackgroundImage = New Bitmap(original)
+                        pair.Value.BackgroundImageLayout = ImageLayout.Stretch
+                        If previous IsNot Nothing Then previous.Dispose()
+                    End Using
+                Catch
+                    ' Image indisponible : conserver la couleur.
+                End Try
+            End If
+        Next
+    End Sub
+
+    Private Sub SaveDesignImages(chosen As Dictionary(Of String, String))
+        Dim folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "DesignImages")
+        Directory.CreateDirectory(folder)
+        For Each pair In chosen
+            Dim target = Path.Combine(folder, pair.Key & ".png")
+            If String.IsNullOrEmpty(pair.Value) Then
+                If File.Exists(target) Then File.Delete(target)
+            Else
+                Using original = Image.FromFile(pair.Value)
+                    original.Save(target, System.Drawing.Imaging.ImageFormat.Png)
+                End Using
+            End If
+        Next
+        ApplyDesignImages()
+    End Sub
+
     Private Sub ColorsClicked(sender As Object, e As EventArgs)
         Using dialog As New Frm_Couleurs(themeColors)
             If dialog.ShowDialog(Me) = DialogResult.OK Then
                 themeColors = dialog.SelectedColors.Copy()
                 ApplyColors()
+                SaveDesignImages(dialog.Images)
                 ' Réappliquer après fermeture de la boîte de dialogue : Windows peut
                 ' rétablir la couleur d'accent lors de la réactivation de la fenêtre.
                 BeginInvoke(New MethodInvoker(Sub()
