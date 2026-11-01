@@ -75,6 +75,20 @@ Public Class FrmMenuAutonome
         Controls.Add(appointmentLabel)
         AddHandler birthdayLabel.Paint, AddressOf DrawEventBorder
         AddHandler appointmentLabel.Paint, AddressOf DrawEventBorder
+        birthdayLabel.Cursor = Cursors.Hand
+        appointmentLabel.Cursor = Cursors.Hand
+        AddHandler birthdayLabel.Click, Sub(sender, e)
+            Using dialog As New FrmAnniversaire()
+                dialog.ShowDialog(Me)
+            End Using
+            RefreshNextEvent()
+        End Sub
+        AddHandler appointmentLabel.Click, Sub(sender, e)
+            Using dialog As New FrmRendezVous()
+                dialog.ShowDialog(Me)
+            End Using
+            RefreshAppointmentsDisplay()
+        End Sub
         Controls.Add(customTitle)
         Controls.SetChildIndex(customTitle, Controls.Count - 1)
         ApplyColors()
@@ -2391,6 +2405,8 @@ Public Class CountdownManager
                 End If
                 Dim circle As New CountdownCircle With {.Item = activeItems(index),
                     .Width = width, .Height = 156, .Margin = New Padding(0)}
+                circle.Cursor = Cursors.Hand
+                AddHandler circle.Click, Sub(sender, e) OpenEditor()
                 panel.Controls.Add(circle)
             Next
             Dim occupied = activeItems.Count + If(activeItems.Count >= 2, 1, 0)
