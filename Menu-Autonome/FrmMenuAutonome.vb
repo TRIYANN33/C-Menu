@@ -185,6 +185,10 @@ Public Class FrmMenuAutonome
                                 SaveMenuDatabase(sender, e)
                             ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase) Then
                                 RestoreMenuDatabase(sender, e)
+                            ElseIf String.Equals(first.MenuText.Trim(), "BDD", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
+                                Using dialog As New StarterApplisForm()
+                                    dialog.ShowDialog(Me)
+                                End Using
                             ElseIf String.Equals(first.MenuText.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
                                 StarterApplisForm.DemarrerApplications(Me)
                             ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
@@ -1207,6 +1211,7 @@ Public Class StarterApplisForm
     Private ReadOnly libelle As New TextBox()
     Private ReadOnly applicationNom As New TextBox()
     Private ReadOnly chemin As New TextBox()
+    Private ReadOnly priorite As New NumericUpDown With {.Minimum = 1, .Maximum = 99999, .Value = 100}
     Private selectedId As Long = 0
 
     Public Sub New()
@@ -1224,7 +1229,7 @@ Public Class StarterApplisForm
         AddButton(buttons, "Parcourir...", AddressOf Parcourir)
         AddButton(buttons, "Démarrer dans l’ordre", AddressOf Demarrer)
         AddButton(buttons, "Importer depuis C-Menu", AddressOf ImporterDepuisMenu)
-        Dim editor As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 220, .ColumnCount = 2, .RowCount = 7, .Padding = New Padding(12)}
+        Dim editor As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 252, .ColumnCount = 2, .RowCount = 8, .Padding = New Padding(12)}
         editor.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 135))
         editor.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
         AddField(editor, "Saisiele", saisiele, 0, True)
@@ -1234,6 +1239,9 @@ Public Class StarterApplisForm
         AddField(editor, "Application", applicationNom, 4, False)
         AddField(editor, "ACTION", actionNom, 5, False)
         AddField(editor, "Lien", chemin, 6, False)
+        editor.Controls.Add(New Label With {.Text = "Priorité (1 = premier)", .Dock = DockStyle.Fill}, 0, 7)
+        priorite.Dock = DockStyle.Fill
+        editor.Controls.Add(priorite, 1, 7)
         grille.Dock = DockStyle.Fill
         grille.ReadOnly = True
         grille.AllowUserToAddRows = False
@@ -1303,6 +1311,7 @@ Public Class StarterApplisForm
                 libelle.Text = Convert.ToString(row("Sous-Menu"))
                 applicationNom.Text = Convert.ToString(row("Application"))
                 actionNom.Text = Convert.ToString(row("Action"))
+        priorite.Value = Math.Max(priorite.Minimum, Math.Min(priorite.Maximum, Convert.ToDecimal(row("Priorité"))))
                 chemin.Text = link
                 Ajouter(Nothing, EventArgs.Empty)
                 dialog.Close()
@@ -1362,6 +1371,11 @@ Public Class StarterApplisForm
                     cmd.CommandText = "ALTER TABLE StarterApplis ADD COLUMN Action TEXT NOT NULL DEFAULT ''"
                     cmd.ExecuteNonQuery()
                 End If
+                cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('StarterApplis') WHERE name='Priorite'"
+                If Convert.ToInt32(cmd.ExecuteScalar()) = 0 Then
+                    cmd.CommandText = "ALTER TABLE StarterApplis ADD COLUMN Priorite INTEGER NOT NULL DEFAULT 100"
+                    cmd.ExecuteNonQuery()
+                End If
             End Using
         End Using
     End Sub
@@ -1370,7 +1384,7 @@ Public Class StarterApplisForm
         Using cn = Connexion()
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Id, Saisiele, Modifierle, Sauvegarde, Libelle AS [Libellé], Application, Action, Chemin AS Lien FROM StarterApplis ORDER BY Id"
+                cmd.CommandText = "SELECT Id, Saisiele, Modifierle, Sauvegarde, Libelle AS [Libellé], Application, Action, Chemin AS Lien, Priorite AS [Priorité] FROM StarterApplis ORDER BY Priorite ASC, Id ASC"
                 Using reader = cmd.ExecuteReader()
                     Dim table As New DataTable()
                     table.Load(reader)
@@ -1406,6 +1420,7 @@ Public Class StarterApplisForm
         applicationNom.Text = ""
         chemin.Text = ""
         actionNom.Text = ""
+        priorite.Value = 100
         libelle.Focus()
     End Sub
 
@@ -1425,13 +1440,14 @@ Public Class StarterApplisForm
             Using cn = Connexion()
                 cn.Open()
                 Using cmd = cn.CreateCommand()
-                    cmd.CommandText = "INSERT INTO StarterApplis (Saisiele, Modifierle, Sauvegarde, Libelle, Application, Action, Chemin) VALUES ($s, '', $b, $l, $a, $act, $c)"
+                    cmd.CommandText = "INSERT INTO StarterApplis (Saisiele, Modifierle, Sauvegarde, Libelle, Application, Action, Chemin, Priorite) VALUES ($s, '', $b, $l, $a, $act, $c, $p)"
                     cmd.Parameters.AddWithValue("$s", nowText)
                     cmd.Parameters.AddWithValue("$b", nowText)
                     cmd.Parameters.AddWithValue("$l", libelle.Text.Trim())
                     cmd.Parameters.AddWithValue("$a", applicationNom.Text.Trim())
                     cmd.Parameters.AddWithValue("$act", actionNom.Text.Trim())
                     cmd.Parameters.AddWithValue("$c", chemin.Text.Trim())
+                    cmd.Parameters.AddWithValue("$p", Convert.ToInt32(priorite.Value))
                     cmd.ExecuteNonQuery()
                 End Using
             End Using
@@ -1448,12 +1464,13 @@ Public Class StarterApplisForm
             Using cn = Connexion()
                 cn.Open()
                 Using cmd = cn.CreateCommand()
-                    cmd.CommandText = "UPDATE StarterApplis SET Modifierle=$m, Sauvegarde=$m, Libelle=$l, Application=$a, Action=$act, Chemin=$c WHERE Id=$id"
+                    cmd.CommandText = "UPDATE StarterApplis SET Modifierle=$m, Sauvegarde=$m, Libelle=$l, Application=$a, Action=$act, Chemin=$c, Priorite=$p WHERE Id=$id"
                     cmd.Parameters.AddWithValue("$m", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"))
                     cmd.Parameters.AddWithValue("$l", libelle.Text.Trim())
                     cmd.Parameters.AddWithValue("$a", applicationNom.Text.Trim())
                     cmd.Parameters.AddWithValue("$act", actionNom.Text.Trim())
                     cmd.Parameters.AddWithValue("$c", chemin.Text.Trim())
+                    cmd.Parameters.AddWithValue("$p", Convert.ToInt32(priorite.Value))
                     cmd.Parameters.AddWithValue("$id", selectedId)
                     cmd.ExecuteNonQuery()
                 End Using
@@ -1478,7 +1495,7 @@ Public Class StarterApplisForm
             Using cn As New SqliteConnection("Data Source=" & dataFile & ";Mode=ReadOnly")
                 cn.Open()
                 Using cmd = cn.CreateCommand()
-                    cmd.CommandText = "SELECT Application, Chemin FROM StarterApplis ORDER BY Id"
+                    cmd.CommandText = "SELECT Application, Chemin FROM StarterApplis ORDER BY Priorite ASC, Id ASC"
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
                             Dim target = reader.GetString(1)
