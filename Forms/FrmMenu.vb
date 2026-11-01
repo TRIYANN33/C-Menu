@@ -19,21 +19,18 @@ Public Class FrmMenu
 
     Protected Overrides Sub OnHandleCreated(e As EventArgs)
         MyBase.OnHandleCreated(e)
-        If Environment.OSVersion.Version.Build >= 22000 Then
-            ApplyTitleBarColor()
-            ' DWMWA_TEXT_COLOR : noir.
-            Dim textColor As Integer = 0
-            DwmSetWindowAttribute(Handle, 36, textColor, 4)
-        End If
+        ApplyTitleBarColor()
     End Sub
 
 
     Private Sub ApplyTitleBarColor()
-        If Not IsHandleCreated OrElse Environment.OSVersion.Version.Build < 22000 Then Return
+        If Not IsHandleCreated Then Return
         Try
             Dim selected = Color.FromArgb(themeColors.TitleBar)
             Dim captionColor As Integer = selected.R Or (selected.G << 8) Or (selected.B << 16)
             DwmSetWindowAttribute(Handle, 35, captionColor, 4)
+            Dim textColor As Integer = 0
+            DwmSetWindowAttribute(Handle, 36, textColor, 4)
         Catch
             ' La personnalisation de la barre de titre dépend de Windows.
         End Try
