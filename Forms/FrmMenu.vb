@@ -238,7 +238,32 @@ Public Class FrmMenu
     Private Const SC_MAXIMIZE As Integer = &HF030
     Private Const SC_RESTORE As Integer = &HF120
 
+    Private Function ResizeHitTest(m As Message) As Integer
+        If WindowState <> FormWindowState.Normal Then Return 0
+        Dim point = PointToClient(New Point(CInt(CShort(m.LParam.ToInt64() And &HFFFFL)), CInt(CShort((m.LParam.ToInt64() >> 16) And &HFFFFL))))
+        Const edge As Integer = 8
+        Dim leftEdge = point.X >= 0 AndAlso point.X < edge
+        Dim rightEdge = point.X < ClientSize.Width AndAlso point.X >= ClientSize.Width - edge
+        Dim topEdge = point.Y >= 0 AndAlso point.Y < edge
+        Dim bottomEdge = point.Y < ClientSize.Height AndAlso point.Y >= ClientSize.Height - edge
+        If topEdge AndAlso leftEdge Then Return 13
+        If topEdge AndAlso rightEdge Then Return 14
+        If bottomEdge AndAlso leftEdge Then Return 16
+        If bottomEdge AndAlso rightEdge Then Return 17
+        If leftEdge Then Return 10
+        If rightEdge Then Return 11
+        If topEdge Then Return 12
+        If bottomEdge Then Return 15
+        Return 0
+    End Function
+
     Protected Overrides Sub WndProc(ByRef m As Message)
+        If m.Msg = &H84 Then
+            MyBase.WndProc(m)
+            Dim hit = ResizeHitTest(m)
+            If hit <> 0 Then m.Result = New IntPtr(hit)
+            Return
+        End If
         If m.Msg = WM_SYSCOMMAND Then
             Dim command = CInt(m.WParam.ToInt64() And &HFFF0L)
             If command = SC_MAXIMIZE OrElse (miniMode AndAlso command = SC_RESTORE) Then
