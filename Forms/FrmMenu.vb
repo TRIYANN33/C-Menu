@@ -195,7 +195,8 @@ Public Class FrmMenu
         header.Controls.SetChildIndex(toolbarPanel, If(searchPanel Is Nothing, 1, 2))
         header.Controls.SetChildIndex(customTitleBar, If(searchPanel Is Nothing, 2, 3))
         Controls.Add(header)
-        Controls.SetChildIndex(header, 0)
+        ' Dock=Fill doit être calculé après les zones haut/bas, sans recouvrement.
+        Controls.SetChildIndex(header, Controls.Count - 1)
     End Sub
 
     Private slideshowSized As Boolean = False
@@ -453,20 +454,7 @@ Public Class FrmMenu
         grid.EnableHeadersVisualStyles = False
         grid.ColumnHeadersHeight = 36
         grid.RowTemplate.Height = 25
-        ' Éviter qu'une ligne soit partiellement visible en haut après défilement.
-        AddHandler grid.Scroll, Sub(sender, e)
-            If e.ScrollOrientation <> ScrollOrientation.VerticalScroll Then Return
-            Dim firstRow = grid.FirstDisplayedScrollingRowIndex
-            If firstRow < 0 Then Return
-            BeginInvoke(New MethodInvoker(Sub()
-                If grid.IsDisposed OrElse firstRow >= grid.RowCount Then Return
-                Try
-                    grid.FirstDisplayedScrollingRowIndex = firstRow
-                Catch
-                    ' La grille peut être en cours de rafraîchissement.
-                End Try
-            End Sub))
-        End Sub
+        ' Laisser DataGridView gérer le défilement sans BeginInvoke réentrant.
         grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None
         grid.AllowUserToResizeRows = False
         grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(51, 119, 140)
