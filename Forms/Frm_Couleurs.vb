@@ -19,24 +19,25 @@ Public Class Frm_Couleurs
         FormBorderStyle = FormBorderStyle.FixedDialog
         MaximizeBox = False
         MinimizeBox = False
-        ClientSize = New Size(540, 315)
+        ClientSize = New Size(540, 365)
         Font = New Font("Segoe UI", 10)
         BackColor = Color.FromArgb(241, 247, 237)
 
         Dim layout As New TableLayoutPanel With {
-            .Dock = DockStyle.Top, .Height = 235, .Padding = New Padding(18, 14, 18, 5),
-            .ColumnCount = 3, .RowCount = 4
+            .Dock = DockStyle.Top, .Height = 280, .Padding = New Padding(18, 14, 18, 5),
+            .ColumnCount = 3, .RowCount = 5
         }
         layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 43))
         layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25))
         layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 32))
-        For i = 0 To 3
-            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 25))
+        For i = 0 To 4
+            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 20))
         Next
-        AddColorRow(layout, 0, "Libellés", "Labels")
-        AddColorRow(layout, 1, "Menu des boutons", "Toolbar")
-        AddColorRow(layout, 2, "Zone de saisie", "Entry")
-        AddColorRow(layout, 3, "Tableau", "Table")
+        AddColorRow(layout, 0, "Barre de titre", "TitleBar")
+        AddColorRow(layout, 1, "Libellés", "Labels")
+        AddColorRow(layout, 2, "Menu des boutons", "Toolbar")
+        AddColorRow(layout, 3, "Zone de saisie", "Entry")
+        AddColorRow(layout, 4, "Tableau", "Table")
         Controls.Add(layout)
 
         Dim actions As New FlowLayoutPanel With {
@@ -57,6 +58,7 @@ Public Class Frm_Couleurs
         End Sub
         AddHandler defaults.Click, Sub(sender, e)
             Dim standard As New MenuColors()
+            working.TitleBar = standard.TitleBar
             working.Labels = standard.Labels
             working.Toolbar = standard.Toolbar
             working.Entry = standard.Entry
@@ -73,6 +75,7 @@ Public Class Frm_Couleurs
 
     Private Function ColorFor(key As String) As Color
         Select Case key
+            Case "TitleBar" : Return Color.FromArgb(working.TitleBar)
             Case "Labels" : Return Color.FromArgb(working.Labels)
             Case "Toolbar" : Return Color.FromArgb(working.Toolbar)
             Case "Entry" : Return Color.FromArgb(working.Entry)
@@ -82,6 +85,7 @@ Public Class Frm_Couleurs
 
     Private Sub SetColor(key As String, chosen As Color)
         Select Case key
+            Case "TitleBar" : working.TitleBar = chosen.ToArgb()
             Case "Labels" : working.Labels = chosen.ToArgb()
             Case "Toolbar" : working.Toolbar = chosen.ToArgb()
             Case "Entry" : working.Entry = chosen.ToArgb()
