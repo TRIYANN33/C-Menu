@@ -2338,7 +2338,7 @@ Public Class CountdownManager
     Private ReadOnly filePath As String
     Private ReadOnly tick As New Timer With {.Interval = 1000}
     Private ReadOnly panel As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .Height = 0,
-        .AutoScroll = True, .WrapContents = True, .Padding = New Padding(8)}
+        .BackColor = Color.Transparent, .AutoScroll = True, .WrapContents = True, .Padding = New Padding(8)}
     Private items As New List(Of CountdownItem)
     Private started As Boolean
     Private baseHeight As Integer
@@ -2571,15 +2571,35 @@ Public Class CountdownCircle
         BackColor = Color.Transparent
         Font = New Font("Segoe UI", 10, FontStyle.Bold)
     End Sub
+    Protected Overrides Sub OnPaintBackground(e As PaintEventArgs)
+        ' Dessiner le fond du formulaire sous le cercle, y compris son image.
+        Dim host As Control = Parent
+        While host IsNot Nothing AndAlso Not TypeOf host Is Form
+            host = host.Parent
+        End While
+        If host Is Nothing Then
+            MyBase.OnPaintBackground(e)
+            Return
+        End If
+        Using brush As New SolidBrush(host.BackColor)
+            e.Graphics.FillRectangle(brush, ClientRectangle)
+        End Using
+        If host.BackgroundImage IsNot Nothing Then
+            Dim offset = PointToScreen(Point.Empty)
+            Dim origin = host.PointToScreen(Point.Empty)
+            Dim imageRect As New Rectangle(origin.X - offset.X, origin.Y - offset.Y, host.ClientSize.Width, host.ClientSize.Height)
+            Dim state = e.Graphics.Save()
+            e.Graphics.SetClip(ClientRectangle)
+            ControlPaint.DrawBackgroundImage(e.Graphics, host.BackgroundImage, host.BackColor,
+                host.BackgroundImageLayout, host.ClientRectangle, imageRect, host.DisplayRectangle.Location)
+            e.Graphics.Restore(state)
+        End If
+    End Sub
+
     Protected Overrides Sub OnPaint(e As PaintEventArgs)
         MyBase.OnPaint(e)
         If Item Is Nothing Then Return
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias
-        If Parent IsNot Nothing Then
-            Using brush As New SolidBrush(Parent.BackColor)
-                e.Graphics.FillRectangle(brush, ClientRectangle)
-            End Using
-        End If
         Dim diameter = Math.Min(112, Math.Min(Width - 12, Height - 35))
         Dim rect As New Rectangle((Width - diameter) \ 2, 5, diameter, diameter)
         Using pen As New Pen(Color.FromArgb(Item.CouleurFond), 12)
