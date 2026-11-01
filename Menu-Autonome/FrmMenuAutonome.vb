@@ -37,6 +37,11 @@ Public Class FrmMenuAutonome
     Private barColor As Color = Color.FromArgb(62, 130, 137)
     Private bodyColor As Color = Color.FromArgb(255, 128, 0)
     Private ReadOnly clock As New Timer With {.Interval = 1000}
+    Private ReadOnly customTitle As New Panel With {.Dock = DockStyle.Top, .Height = 34}
+    Private ReadOnly customTitleText As New Label With {.Dock = DockStyle.Fill, .TextAlign = ContentAlignment.MiddleLeft, .AutoEllipsis = True, .Padding = New Padding(10, 0, 0, 0)}
+    Private slideshowTitleMode As Boolean
+    Private previousTitleBounds As Rectangle
+    Private previousTitleMinimum As Size
     Private ReadOnly databasePath As String = Path.Combine(AppContext.BaseDirectory, "CMenu.db")
 
     Public Sub New()
@@ -50,7 +55,9 @@ Public Class FrmMenuAutonome
         Size = New Size(1050, height4cm)
         MinimumSize = New Size(180, height4cm)
         Font = New Font("Segoe UI", 10)
+        FormBorderStyle = FormBorderStyle.None
         BackColor = bodyColor
+        BuildCustomTitleBar()
         LoadColors()
 
         menuBar.Dock = DockStyle.Top
@@ -61,6 +68,8 @@ Public Class FrmMenuAutonome
         Controls.Add(menuBar)
         Controls.Add(nextEventLabel)
         Controls.Add(appointmentLabel)
+        Controls.Add(customTitle)
+        Controls.SetChildIndex(customTitle, Controls.Count - 1)
         ApplyColors()
         KeyPreview = True
         AddHandler KeyDown, Sub(sender, e)
@@ -92,11 +101,80 @@ Public Class FrmMenuAutonome
         End Sub
     End Sub
 
+    Private Sub BuildCustomTitleBar()
+        customTitle.BackColor = titleColor
+        Dim buttons As New FlowLayoutPanel With {
+            .Dock = DockStyle.Right, .Width = 192, .Height = 34,
+            .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False,
+            .Margin = Padding.Empty, .Padding = Padding.Empty
+        }
+        Dim minimize As New Button With {.Text = "—", .Width = 48, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        Dim small As New Button With {.Text = "8×8", .Width = 48, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        Dim maximize As New Button With {.Text = "□", .Width = 48, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        Dim closeButton As New Button With {.Text = "×", .Width = 48, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        For Each btn In {minimize, small, maximize, closeButton}
+            btn.FlatAppearance.BorderSize = 0
+            btn.Margin = Padding.Empty
+            buttons.Controls.Add(btn)
+        Next
+        AddHandler minimize.Click, Sub(sender, e) WindowState = FormWindowState.Minimized
+        AddHandler small.Click, Sub(sender, e) ToggleTitleSlideshowSize()
+        AddHandler maximize.Click, Sub(sender, e)
+            WindowState = If(WindowState = FormWindowState.Maximized, FormWindowState.Normal, FormWindowState.Maximized)
+        End Sub
+        AddHandler closeButton.Click, Sub(sender, e) Close()
+        AddHandler customTitle.MouseDown, AddressOf DragTitle
+        AddHandler customTitleText.MouseDown, AddressOf DragTitle
+        AddHandler customTitleText.DoubleClick, Sub(sender, e) maximize.PerformClick()
+        customTitle.Controls.Add(customTitleText)
+        customTitle.Controls.Add(buttons)
+    End Sub
+
+    Private Sub DragTitle(sender As Object, e As MouseEventArgs)
+        If e.Button <> MouseButtons.Left Then Return
+        If WindowState = FormWindowState.Maximized Then WindowState = FormWindowState.Normal
+        NativeReleaseCapture()
+        NativeSendMessage(Handle, &HA1, New IntPtr(2), IntPtr.Zero)
+    End Sub
+
+    <System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint:="ReleaseCapture")>
+    Private Shared Function NativeReleaseCapture() As Boolean
+    End Function
+
+    <System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint:="SendMessageW")>
+    Private Shared Function NativeSendMessage(hwnd As IntPtr, msg As Integer, wp As IntPtr, lp As IntPtr) As IntPtr
+    End Function
+
+    Private Sub ToggleTitleSlideshowSize()
+        If Not slideshowTitleMode Then
+            If WindowState <> FormWindowState.Normal Then WindowState = FormWindowState.Normal
+            previousTitleBounds = Bounds
+            previousTitleMinimum = MinimumSize
+            Dim work = Screen.FromControl(Me).WorkingArea
+            Dim dpiX As Single
+            Dim dpiY As Single
+            Using graphics = CreateGraphics()
+                dpiX = graphics.DpiX
+                dpiY = graphics.DpiY
+            End Using
+            MinimumSize = Size.Empty
+            Bounds = New Rectangle(work.Left, work.Top,
+                Math.Min(work.Width, CInt(Math.Round(8.0 * dpiX / 2.54))),
+                Math.Min(work.Height, CInt(Math.Round(8.0 * dpiY / 2.54))))
+            slideshowTitleMode = True
+        Else
+            slideshowTitleMode = False
+            Bounds = previousTitleBounds
+            MinimumSize = previousTitleMinimum
+        End If
+    End Sub
+
     Private Sub RefreshClock()
         Dim nowValue = DateTime.Now
         Text = "Menu--" & GeneratedConfig.FormName & " — Nous sommes le " &
             nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
             " à " & nowValue.ToString("HH:mm:ss")
+        customTitleText.Text = Text
     End Sub
 
     Private Sub LoadFromDatabase()
@@ -533,6 +611,8 @@ Public Class FrmMenuAutonome
 
     Private Sub ApplyColors()
         menuBar.BackColor = barColor
+        customTitle.BackColor = titleColor
+        customTitleText.BackColor = titleColor
         BackColor = bodyColor
     End Sub
 
