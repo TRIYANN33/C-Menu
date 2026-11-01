@@ -420,8 +420,10 @@ Public Class FrmMenu
         grid.BackgroundColor = Color.White
         grid.BorderStyle = BorderStyle.FixedSingle
         grid.EnableHeadersVisualStyles = False
-        grid.ColumnHeadersHeight = 42
-        grid.RowTemplate.Height = 34
+        grid.ColumnHeadersHeight = 36
+        grid.RowTemplate.Height = 25
+        grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None
+        grid.AllowUserToResizeRows = False
         grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(51, 119, 140)
         grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
         grid.ColumnHeadersDefaultCellStyle.Font = New Font(Font, FontStyle.Bold)
@@ -464,7 +466,7 @@ Public Class FrmMenu
         AddHandler grid.SelectionChanged, AddressOf GridSelectionChanged
 
         Dim gridHost As New Panel With {
-            .Dock = DockStyle.Fill, .Padding = New Padding(16, 0, 16, 10),
+            .Dock = DockStyle.Fill, .Padding = New Padding(8, 0, 8, 5),
             .BackColor = Color.FromArgb(241, 247, 237)
         }
         gridHost.Controls.Add(grid)
