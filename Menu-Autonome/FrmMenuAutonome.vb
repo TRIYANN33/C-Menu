@@ -882,21 +882,20 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private Sub FitEventFrame(frame As Label)
-        ' Mesurer chaque ligne réelle, sans retour à la ligne automatique.
-        Dim contentLines = frame.Text.Split({Environment.NewLine}, StringSplitOptions.None)
-        Dim widest As Single = 0
-        Using graphics = frame.CreateGraphics()
-            For Each line In contentLines
-                If line.Length = 0 Then Continue For
-                Dim measured = graphics.MeasureString(line, frame.Font,
-                    New PointF(0, 0), StringFormat.GenericTypographic)
-                widest = Math.Max(widest, measured.Width)
-            Next
-        End Using
+        ' Largeur du cadre = largeur de la ligne la plus longue + marges intérieures.
+        Dim lines = frame.Text.Split({Environment.NewLine}, StringSplitOptions.None)
+        Dim maxLineWidth As Integer = 0
+        For Each line In lines
+            If line.Length = 0 Then Continue For
+            Dim lineWidth = TextRenderer.MeasureText(line, frame.Font,
+                New Size(Integer.MaxValue, Integer.MaxValue),
+                TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding).Width
+            maxLineWidth = Math.Max(maxLineWidth, lineWidth)
+        Next
         frame.AutoSize = False
-        frame.Width = Math.Max(40, CInt(Math.Ceiling(widest)) + frame.Padding.Horizontal + 24)
-        frame.Height = Math.Max(30, contentLines.Length * (frame.Font.Height + 5) +
-            frame.Padding.Vertical + 12)
+        frame.Width = Math.Max(40, maxLineWidth + frame.Padding.Horizontal + 8)
+        frame.Height = Math.Max(30, lines.Length * (frame.Font.Height + 3) +
+            frame.Padding.Vertical + 8)
     End Sub
 
     Private Sub DrawEventBorder(sender As Object, e As PaintEventArgs)
