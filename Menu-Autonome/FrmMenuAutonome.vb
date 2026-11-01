@@ -316,7 +316,7 @@ Public Class FrmMenuAutonome
                                 Using dialog As New FrmRendezVous()
                                     dialog.ShowDialog(Me)
                                 End Using
-                            ElseIf String.Equals(clicked.Text.Trim(), "Anniversaire", StringComparison.OrdinalIgnoreCase) Then
+                            ElseIf IsAnniversaryMenu(clicked.Text) Then
                                 Using dialog As New FrmAnniversaire()
                                     dialog.ShowDialog(Me)
                                 End Using
@@ -1202,7 +1202,19 @@ Public Class FrmMenuAutonome
                ((parent = "starter" OrElse parent = "starterapplis") AndAlso item = "sauvegarde")
     End Function
 
+    Private Shared Function IsAnniversaryMenu(label As String) As Boolean
+        Dim normalized = If(label, "").Trim()
+        Return String.Equals(normalized, "Anniversaire", StringComparison.OrdinalIgnoreCase) OrElse
+               String.Equals(normalized, "Anniversaires", StringComparison.OrdinalIgnoreCase)
+    End Function
+
     Private Sub OpenPath(pathValue As String, actionName As String, Optional menuLabel As String = "", Optional parentLabel As String = "")
+        If IsAnniversaryMenu(menuLabel) Then
+            Using dialog As New FrmAnniversaire()
+                dialog.ShowDialog(Me)
+            End Using
+            Return
+        End If
         If String.Equals(parentLabel.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(menuLabel.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
             StarterApplisForm.DemarrerApplications(Me)
             Return
