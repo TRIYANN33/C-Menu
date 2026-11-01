@@ -827,6 +827,8 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshAppointmentsDisplay()
         appointmentLabel.Visible = False
+        appointmentLabel.Text = String.Empty
+        appointmentLabel.Size = Size.Empty
         If Not File.Exists(AppointmentDatabase) Then Return
         Try
             Dim lines As New List(Of String)()
@@ -854,7 +856,7 @@ Public Class FrmMenuAutonome
                     End Using
                 End Using
             End Using
-            If lines.Count > 0 Then
+            If lines.Any(Function(line) Not String.IsNullOrWhiteSpace(line)) Then
                 appointmentLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, lines)
                 FitEventFrame(appointmentLabel)
                 appointmentLabel.Visible = True
@@ -967,6 +969,8 @@ Public Class FrmMenuAutonome
                                 Dim stored As Date
                                 If Not Date.TryParseExact(reader.GetString(i), "yyyy-MM-dd",
                                     CultureInfo.InvariantCulture, DateTimeStyles.None, stored) Then Continue For
+                                ' Une date de naissance future ne représente pas un anniversaire valide.
+                                If i = 2 AndAlso stored.Date > Date.Today Then Continue For
                                 Dim year = Date.Today.Year
                                 Dim occurrence = New Date(year, stored.Month, Math.Min(stored.Day, Date.DaysInMonth(year, stored.Month)))
                                 If occurrence < Date.Today Then
@@ -980,8 +984,9 @@ Public Class FrmMenuAutonome
                                     End If
                                     Dim kind = If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))
                                     If i = 2 Then
-                                        Dim age = occurrence.Year - stored.Year
-                                        kind = If(age > 0 AndAlso age < 130, "Anniversaire des " & age.ToString() & " ans", "Anniversaire")
+                                        ' L'âge est celui atteint à la date anniversaire affichée.
+                                        Dim age As Integer = occurrence.Year - stored.Year
+                                        kind = "Anniversaire des " & age.ToString(CultureInfo.InvariantCulture) & " ans"
                                     End If
                                     If i = 2 Then
                                         nextTexts.Add(kind & " de" & Environment.NewLine & person & Environment.NewLine &
