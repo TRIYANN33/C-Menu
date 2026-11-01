@@ -255,10 +255,12 @@ Public Class FrmMenuAutonome
                 Math.Min(work.Width, CInt(Math.Round(8.0 * dpiX / 2.54))),
                 Math.Min(work.Height, CInt(Math.Round(8.0 * dpiY / 2.54))))
             slideshowTitleMode = True
+            customTitle.BringToFront()
         Else
             slideshowTitleMode = False
             Bounds = previousTitleBounds
             MinimumSize = previousTitleMinimum
+            customTitle.BringToFront()
         End If
     End Sub
 
@@ -1232,6 +1234,7 @@ Public Class FrmMenuAutonome
         slideshowPanel.Location = New Point(Math.Max(0, (ClientSize.Width - slideshowPanel.Width) \ 2),
                                             topOfBody + offsetPixels)
         slideshowPanel.BringToFront()
+        customTitle.BringToFront()
     End Sub
 
     Private Sub FitEventFrame(frame As Label)
