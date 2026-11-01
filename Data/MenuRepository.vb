@@ -71,6 +71,12 @@ Public Class MenuRepository
                 cmd.ExecuteNonQuery()
             End Using
         Next
+        ' Renommer l'exemple Audacity existant sans toucher aux autres applications.
+        Using renameAudacity = cn.CreateCommand()
+            renameAudacity.CommandText = "UPDATE Menus SET SousMenu='Audacity', ModifierLe=$now WHERE NumMenu='99' AND CAST(NumSousMenu AS INTEGER)=23 AND LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))='applications' AND Chemin LIKE '%Audacity%'"
+            renameAudacity.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
+            renameAudacity.ExecuteNonQuery()
+        End Using
         ' Renommer l'exemple Brother existant sans toucher aux autres applications.
         Using renameBrother = cn.CreateCommand()
             renameBrother.CommandText = "UPDATE Menus SET SousMenu='Brother', ModifierLe=$now WHERE NumMenu='99' AND CAST(NumSousMenu AS INTEGER)=24 AND LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))='applications' AND Chemin LIKE '%Brother%'"
@@ -104,7 +110,7 @@ Public Class MenuRepository
             (20, "Corbeille", "CORBEILLE", "OUVR-CORBEILLE", "Corbeille"),
             (21, "Downloads", "Downloads", "OUVR-Downloads", "C:\Users\OCTOPUS-007\Downloads"),
             (22, "Documents", "Documents", "OUVR-Documents", "C:\Users\OCTOPUS-007\Documents"),
-            (23, "Applications", "APPLICATION", "OUVR-APPLICATION", "C:\Program Files\Audacity 4\bin\Audacity4.exe"),
+            (23, "Audacity", "APPLICATION", "OUVR-APPLICATION", "C:\Program Files\Audacity 4\bin\Audacity4.exe"),
             (24, "Brother", "APPLICATION", "OUVR-APPLICATION", "C:\Program Files (x86)\Brother\BrLauncher\BrLauncher.exe"),
             (25, "Web", "WEB", "OUVR-WEB", "https://www.impots.gouv.fr/"),
             (26, "Disque", "DD", "OUVR-DD", "file:///G:\"),
