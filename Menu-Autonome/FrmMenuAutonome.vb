@@ -864,18 +864,18 @@ Public Class FrmMenuAutonome
 
     Private Sub AdjustMenuWidth()
         ' La largeur suit le libellé du formulaire ou la somme des menus visibles.
-        Dim labelText As String = "Menu--" & GeneratedConfig.FormName
+        Dim labelText As String = Text
         Dim labelFont As Font = Font
-        Dim labelWidth = TextRenderer.MeasureText(labelText, labelFont).Width + 40
+        Dim labelWidth = TextRenderer.MeasureText(labelText, labelFont).Width + 192 + 24
         Dim menusWidth As Integer = menuBar.Padding.Horizontal + 16
         For Each entry As ToolStripItem In menuBar.Items
             menusWidth += TextRenderer.MeasureText(entry.Text, menuBar.Font).Width + 30
         Next
         Dim contentWidth = Math.Max(labelWidth, menusWidth)
-        If slideshowPanel IsNot Nothing Then contentWidth += slideshowPanel.Width + 12
+        If slideshowPanel IsNot Nothing Then contentWidth = Math.Max(contentWidth, slideshowPanel.Width + 24)
         If nextEventLabel.Visible Then contentWidth += nextEventLabel.Width + 12
         Dim eventWidth = Math.Max(If(nextEventLabel.Visible, nextEventLabel.Width, 0), If(appointmentLabel.Visible, appointmentLabel.Width, 0))
-        If eventWidth > 0 Then contentWidth = Math.Max(contentWidth, eventWidth + 24 + If(slideshowPanel Is Nothing, 0, slideshowPanel.Width + 12))
+        If eventWidth > 0 Then contentWidth = Math.Max(contentWidth, eventWidth + 24)
         Dim frameWidth = Width - ClientSize.Width
         Dim targetWidth = contentWidth + frameWidth
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
