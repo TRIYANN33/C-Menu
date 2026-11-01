@@ -77,7 +77,7 @@ Public Class MenuRepository
             renameAvast.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
             renameAvast.ExecuteNonQuery()
         End Using
-        ' Exemples prédéfinis 4 à 30, ajoutés uniquement lorsqu'ils sont absents.
+        ' Exemples prédéfinis 0 et 4 à 30, ajoutés uniquement lorsqu'ils sont absents.
         Dim examples As (Number As Integer, Label As String, App As String, Action As String, Path As String)() = {
             (4, "Excel", "EXCEL", "OUVR-EXCEL", "C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE"),
             (5, "WORD", "WORD", "OUVR-WORD", "C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE"),
@@ -105,7 +105,8 @@ Public Class MenuRepository
             (27, "DuckDuckGo", "EXPLORATEUR", "OUVR-EXPLORATEUR", "DuckDuckGo.DesktopBrowser_ya2fgkz3nks94!App"),
             (28, "Firefox", "EXPLORATEUR", "OUVR-EXPLORATEUR", "C:\Program Files\Mozilla Firefox\firefox.exe"),
             (29, "Avast", "APPLICATION", "OUVR-APPLICATION", "C:\Program Files\Avast Software\Suite\AvastUI.exe"),
-            (30, "NomDeDossier", "", "", "")
+            (30, "NomDeDossier", "", "", ""),
+            (0, "NomDeFichier", "", "", "")
         }
         For Each example In examples
             Using cmd = cn.CreateCommand()
