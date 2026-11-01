@@ -915,7 +915,12 @@ Public Class FrmMenuAutonome
         Dim topPosition = topOfBody + offsetPixels
         If nextEventLabel.Visible Then topPosition = Math.Max(topPosition, nextEventLabel.Bottom + 8)
         ' Les rendez-vous restent alignés sur le bord droit, même après redimensionnement.
-        appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width), topPosition)
+        Dim rightMargin As Integer
+        Using graphics = CreateGraphics()
+            rightMargin = CInt(Math.Round(graphics.DpiX * 0.3 / 2.54))
+        End Using
+        FitEventFrame(appointmentLabel)
+        appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width - rightMargin), topPosition)
         appointmentLabel.BringToFront()
         appointmentLabel.Invalidate()
         Dim neededHeight = appointmentLabel.Bottom + 12 + (Height - ClientSize.Height)
