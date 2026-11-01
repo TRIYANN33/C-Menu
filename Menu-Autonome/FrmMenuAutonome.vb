@@ -938,7 +938,7 @@ Public Class FrmMenuAutonome
         Using graphics = CreateGraphics()
             offsetPixels = CInt(Math.Round(graphics.DpiY * 0.5 / 2.54))
         End Using
-        birthdayLabel.Location = New Point(Math.Max(0, ClientSize.Width - birthdayLabel.Width),
+        birthdayLabel.Location = New Point(0,
             menuBar.Bottom + offsetPixels)
         birthdayLabel.BringToFront()
         birthdayLabel.Invalidate()
