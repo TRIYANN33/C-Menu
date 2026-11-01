@@ -41,6 +41,16 @@ Public Class FrmMenu
         End Try
     End Sub
 
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function ReleaseCapture() As Boolean
+    End Function
+
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function SendMessage(hwnd As IntPtr, msg As Integer, wParam As Integer, lParam As Integer) As IntPtr
+    End Function
+
+    Private ReadOnly customTitleBar As New Panel With {.Dock = DockStyle.Top, .Height = 34}
+    Private ReadOnly customTitleText As New Label With {.Dock = DockStyle.Fill, .TextAlign = ContentAlignment.MiddleLeft, .AutoEllipsis = True, .Padding = New Padding(12, 0, 0, 0)}
     Private ReadOnly titleClock As New Timer With {.Interval = 1000}
     Private ReadOnly repo As New MenuRepository()
     Private themeColors As MenuColors = MenuColors.Load()
@@ -68,9 +78,11 @@ Public Class FrmMenu
         Size = New Size(1400, 770)
         MinimumSize = New Size(1100, 620)
         StartPosition = FormStartPosition.CenterScreen
+        FormBorderStyle = FormBorderStyle.None
         Font = New Font("Segoe UI", 10.0F)
         BackColor = Color.FromArgb(241, 247, 237)
         BuildUI()
+        BuildCustomTitleBar()
         ApplyColors()
         ClearForm()
         ReloadGrid()
@@ -90,6 +102,50 @@ Public Class FrmMenu
         Text = "C-Menu_Publier — Nous sommes le " &
             nowValue.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) &
             " à " & nowValue.ToString("HH:mm:ss")
+        customTitleText.Text = Text
+    End Sub
+
+    Private Sub BuildCustomTitleBar()
+        customTitleBar.BackColor = Color.FromArgb(themeColors.TitleBar)
+        Dim buttons As New FlowLayoutPanel With {
+            .Dock = DockStyle.Right, .Width = 138, .Height = 34,
+            .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False,
+            .Margin = Padding.Empty, .Padding = Padding.Empty
+        }
+        Dim minimize As New Button With {.Text = "—", .Width = 46, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        Dim maximize As New Button With {.Text = "□", .Width = 46, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        Dim closeButton As New Button With {.Text = "×", .Width = 46, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        For Each btn In {minimize, maximize, closeButton}
+            btn.FlatAppearance.BorderSize = 0
+            btn.Margin = Padding.Empty
+            btn.BackColor = customTitleBar.BackColor
+            buttons.Controls.Add(btn)
+        Next
+        AddHandler minimize.Click, Sub(sender, e) WindowState = FormWindowState.Minimized
+        AddHandler maximize.Click, Sub(sender, e)
+            If WindowState = FormWindowState.Maximized Then
+                WindowState = FormWindowState.Normal
+            Else
+                WindowState = FormWindowState.Maximized
+            End If
+        End Sub
+        AddHandler closeButton.Click, Sub(sender, e) Close()
+        AddHandler customTitleBar.MouseDown, AddressOf DragCustomTitle
+        AddHandler customTitleText.MouseDown, AddressOf DragCustomTitle
+        AddHandler customTitleText.DoubleClick, Sub(sender, e)
+            maximize.PerformClick()
+        End Sub
+        customTitleBar.Controls.Add(customTitleText)
+        customTitleBar.Controls.Add(buttons)
+        Controls.Add(customTitleBar)
+        customTitleBar.BringToFront()
+    End Sub
+
+    Private Sub DragCustomTitle(sender As Object, e As MouseEventArgs)
+        If e.Button <> MouseButtons.Left Then Return
+        If WindowState = FormWindowState.Maximized Then WindowState = FormWindowState.Normal
+        ReleaseCapture()
+        SendMessage(Handle, &HA1, 2, 0)
     End Sub
 
     Private Const WM_SYSCOMMAND As Integer = &H112
@@ -414,6 +470,10 @@ Public Class FrmMenu
     End Sub
 
     Private Sub ApplyColors()
+        customTitleBar.BackColor = Color.FromArgb(themeColors.TitleBar)
+        For Each button In customTitleBar.Controls.OfType(Of FlowLayoutPanel)().SelectMany(Function(panel) panel.Controls.OfType(Of Button)())
+            button.BackColor = customTitleBar.BackColor
+        Next
         ApplyTitleBarColor()
         toolbarPanel.BackColor = Color.FromArgb(themeColors.Toolbar)
         editorPanel.BackColor = Color.FromArgb(themeColors.Entry)
