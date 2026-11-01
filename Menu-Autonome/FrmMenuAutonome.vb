@@ -2366,6 +2366,7 @@ Public Class CountdownManager
         End Try
         Render()
         CheckExpired()
+        Render()
         tick.Start()
     End Sub
 
@@ -2378,17 +2379,19 @@ Public Class CountdownManager
         panel.SuspendLayout()
         panel.Controls.Clear()
         Dim width = Math.Max(120, (owner.ClientSize.Width - 38) \ 3)
-        For Each item In items.OrderBy(Function(x) x.Id)
+        Dim activeItems = items.Where(Function(x) x.Fin > DateTime.Now).OrderBy(Function(x) x.Id).ToList()
+        For Each item In activeItems
             Dim circle As New CountdownCircle With {.Item = item, .Width = width, .Height = 156}
             panel.Controls.Add(circle)
         Next
-        Dim rows = CInt(Math.Ceiling(items.Count / 3.0))
+        Dim rows = CInt(Math.Ceiling(activeItems.Count / 3.0))
         panel.Height = If(rows = 0, 0, Math.Min(500, rows * 162 + 16))
         owner.Height = baseHeight + panel.Height
         panel.ResumeLayout()
     End Sub
 
     Private Sub OnTick(sender As Object, e As EventArgs)
+        If panel.Controls.OfType(Of CountdownCircle)().Any(Function(x) x.Item.Fin <= DateTime.Now) Then Render()
         For Each circle As CountdownCircle In panel.Controls.OfType(Of CountdownCircle)()
             circle.Invalidate()
         Next
@@ -2421,6 +2424,7 @@ Public Class CountdownManager
         For Each item In expired
             item.Annonce = True
         Next
+        Render()
         Try
             Persist()
         Catch ex As Exception
