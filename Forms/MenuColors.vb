@@ -3,6 +3,7 @@ Imports System.IO
 Imports System.Text.Json
 
 Public Class MenuColors
+    Public Property TitleBar As Integer = Color.FromArgb(167, 232, 213).ToArgb()
     Public Property Labels As Integer = Color.Black.ToArgb()
     Public Property Toolbar As Integer = Color.FromArgb(226, 234, 240).ToArgb()
     Public Property Entry As Integer = Color.FromArgb(29, 171, 79).ToArgb()
@@ -30,6 +31,6 @@ Public Class MenuColors
     End Sub
 
     Public Function Copy() As MenuColors
-        Return New MenuColors With {.Labels = Labels, .Toolbar = Toolbar, .Entry = Entry, .Table = Table}
+        Return New MenuColors With {.TitleBar = TitleBar, .Labels = Labels, .Toolbar = Toolbar, .Entry = Entry, .Table = Table}
     End Function
 End Class
