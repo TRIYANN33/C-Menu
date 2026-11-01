@@ -2408,10 +2408,14 @@ Public Class CountdownManager
         End Try
         For Each item In expired
             Try
-                If File.Exists(item.Musique) AndAlso String.Equals(Path.GetExtension(item.Musique), ".wav", StringComparison.OrdinalIgnoreCase) Then
-                    Using player As New SoundPlayer(item.Musique)
-                        player.PlaySync()
-                    End Using
+                If File.Exists(item.Musique) Then
+                    If String.Equals(Path.GetExtension(item.Musique), ".wav", StringComparison.OrdinalIgnoreCase) Then
+                        Using player As New SoundPlayer(item.Musique)
+                            player.PlaySync()
+                        End Using
+                    Else
+                        Process.Start(New ProcessStartInfo(item.Musique) With {.UseShellExecute = True})
+                    End If
                 Else
                     SystemSounds.Exclamation.Play()
                 End If
@@ -2505,12 +2509,12 @@ Public Class CountdownEditorCard
         hours.Value = CDec(Math.Min(100000, Math.Max(0, Math.Floor(remaining.TotalHours))))
         minutes.Value = CDec(Math.Min(59, Math.Max(0, remaining.Minutes)))
         If item.ModeDate Then mode.SelectedIndex = 1
-        Dim musicLabel As New Label With {.Text = "Musique WAV :", .Location = New Point(8, 80), .AutoSize = True}
+        Dim musicLabel As New Label With {.Text = "Musique :", .Location = New Point(8, 80), .AutoSize = True}
         music.Location = New Point(115, 77)
         music.Text = item.Musique
         Dim browse As New Button With {.Text = "Parcourir", .Location = New Point(390, 75), .Width = 95}
         AddHandler browse.Click, Sub()
-            Using pick As New OpenFileDialog With {.Filter = "Fichier audio WAV (*.wav)|*.wav"}
+            Using pick As New OpenFileDialog With {.Filter = "Fichiers audio (*.wav;*.mp3;*.wma;*.m4a;*.aac;*.flac;*.ogg)|*.wav;*.mp3;*.wma;*.m4a;*.aac;*.flac;*.ogg|Tous les fichiers (*.*)|*.*"}
                 If pick.ShowDialog() = DialogResult.OK Then music.Text = pick.FileName
             End Using
         End Sub
@@ -2563,12 +2567,19 @@ Public Class CountdownCircle
     Public Property Item As CountdownItem
     Public Sub New()
         DoubleBuffered = True
+        SetStyle(ControlStyles.SupportsTransparentBackColor, True)
+        BackColor = Color.Transparent
         Font = New Font("Segoe UI", 10, FontStyle.Bold)
     End Sub
     Protected Overrides Sub OnPaint(e As PaintEventArgs)
         MyBase.OnPaint(e)
         If Item Is Nothing Then Return
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias
+        If Parent IsNot Nothing Then
+            Using brush As New SolidBrush(Parent.BackColor)
+                e.Graphics.FillRectangle(brush, ClientRectangle)
+            End Using
+        End If
         Dim diameter = Math.Min(112, Math.Min(Width - 12, Height - 35))
         Dim rect As New Rectangle((Width - diameter) \ 2, 5, diameter, diameter)
         Using pen As New Pen(Color.FromArgb(Item.CouleurFond), 12)
