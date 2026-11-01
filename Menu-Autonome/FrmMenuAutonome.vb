@@ -117,7 +117,7 @@ Public Class FrmMenuAutonome
                     cmd.CommandText =
                         "SELECT Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Chemin, Action, Info01, Info02 " &
                         "FROM Menus WHERE TRIM(COALESCE(Menu,'')) <> '' " &
-                        "AND Frm_Menu = $form COLLATE NOCASE " &
+                        "AND (Frm_Menu = $form COLLATE NOCASE OR (TRIM(NumMenu) = '99' AND LOWER(TRIM(Menu)) = 'exemple')) " &
                         "ORDER BY Frm_Menu COLLATE NOCASE, CAST(NumMenu AS INTEGER), " &
                         "CAST(NumSousMenu AS INTEGER), Menu COLLATE NOCASE, SousMenu COLLATE NOCASE"
                     cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
