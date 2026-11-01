@@ -2430,31 +2430,63 @@ Public Class CountdownManager
         Catch ex As Exception
             MessageBox.Show(owner, "Enregistrement des alertes impossible : " & ex.Message)
         End Try
-        For Each item In expired
-            Try
-                If File.Exists(item.Musique) Then
-                    Dim vlc = FindVlcExecutable()
-                    If String.IsNullOrEmpty(vlc) Then
-                        MessageBox.Show(owner, "VLC est introuvable. Installez VLC pour lire la musique du Countdown timer : " & item.Libelle,
-                                        "VLC requis", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        Dim vlcProcesses As New List(Of Process)
+        Try
+            For Each item In expired
+                Try
+                    If File.Exists(item.Musique) Then
+                        Dim vlc = FindVlcExecutable()
+                        If String.IsNullOrEmpty(vlc) Then
+                            MessageBox.Show(owner, "VLC est introuvable : " & item.Libelle, "VLC requis",
+                                            MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                        Else
+                            Dim arguments = "--intf dummy --no-video --play-and-exit --no-one-instance " &
+                                            ChrW(34) & item.Musique & ChrW(34)
+                            Dim player = Process.Start(New ProcessStartInfo(vlc, arguments) With {
+                                .UseShellExecute = False, .CreateNoWindow = True, .WindowStyle = ProcessWindowStyle.Hidden
+                            })
+                            If player IsNot Nothing Then vlcProcesses.Add(player)
+                        End If
                     Else
-                        Dim arguments = "--intf dummy --no-video --play-and-exit --no-one-instance " &
-                                        ChrW(34) & item.Musique & ChrW(34)
-                        Process.Start(New ProcessStartInfo(vlc, arguments) With {
-                            .UseShellExecute = False, .CreateNoWindow = True, .WindowStyle = ProcessWindowStyle.Hidden
-                        })
+                        SystemSounds.Exclamation.Play()
                     End If
-                Else
-                    SystemSounds.Exclamation.Play()
-                End If
-            Catch ex As Exception
-                MessageBox.Show(owner, "Lecture VLC impossible : " & ex.Message, "Countdown timer",
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            End Try
-        Next
-        MessageBox.Show(owner, "Countdown timer terminé :" & Environment.NewLine &
-            String.Join(Environment.NewLine, expired.Select(Function(x) "CT_" & x.Libelle)),
-            "Fin des Countdown timers", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Catch ex As Exception
+                    MessageBox.Show(owner, "Lecture VLC impossible : " & ex.Message, "Countdown timer",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End Try
+            Next
+            Using alert As New Form With {.Text = "Fin des Countdown timers", .StartPosition = FormStartPosition.CenterParent,
+                                          .Size = New Size(470, 250), .MinimumSize = New Size(360, 200)}
+                Dim message As New Label With {.Dock = DockStyle.Fill, .TextAlign = ContentAlignment.MiddleCenter,
+                    .Text = "Countdown timer terminé :" & Environment.NewLine &
+                            String.Join(Environment.NewLine, expired.Select(Function(x) "CT_" & x.Libelle))}
+                Dim stopButton As New Button With {.Text = "Arrêter la musique", .Dock = DockStyle.Bottom, .Height = 45}
+                Dim closeButton As New Button With {.Text = "Fermer", .Dock = DockStyle.Bottom, .Height = 40}
+                Dim stopMusic As Action = Sub()
+                    For Each player In vlcProcesses
+                        Try
+                            If Not player.HasExited Then player.Kill()
+                        Catch
+                        End Try
+                    Next
+                End Sub
+                AddHandler stopButton.Click, Sub() stopMusic()
+                AddHandler closeButton.Click, Sub() alert.Close()
+                AddHandler alert.FormClosed, Sub(sender, e) stopMusic()
+                alert.Controls.Add(message)
+                alert.Controls.Add(closeButton)
+                alert.Controls.Add(stopButton)
+                alert.ShowDialog(owner)
+            End Using
+        Finally
+            For Each player In vlcProcesses
+                Try
+                    If Not player.HasExited Then player.Kill()
+                    player.Dispose()
+                Catch
+                End Try
+            Next
+        End Try
     End Sub
 
     Public Sub OpenEditor()
