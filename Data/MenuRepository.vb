@@ -63,7 +63,7 @@ Public Class MenuRepository
         ' Le numéro 99/0 est autorisé : ne jamais le supprimer automatiquement.
         For Each subName In {"Started", "Sauvegarde", "Restauration"}
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
+                cmd.CommandText = "INSERT OR IGNORE INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
                 cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
                 cmd.Parameters.AddWithValue("$num", If(subName = "Started", "1", If(subName = "Sauvegarde", "2", "3")))
                 cmd.Parameters.AddWithValue("$sub", subName)
@@ -122,7 +122,7 @@ Public Class MenuRepository
         }
         For Each example In examples
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $label, $info1, $info2, $app, $action, $path WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE NumMenu='99' AND NumSousMenu=$num AND LOWER(TRIM(Menu))='exemple')"
+                cmd.CommandText = "INSERT OR IGNORE INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $label, $info1, $info2, $app, $action, $path WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE NumMenu='99' AND CAST(NumSousMenu AS INTEGER)=CAST($num AS INTEGER))"
                 cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
                 cmd.Parameters.AddWithValue("$num", example.Number.ToString())
                 cmd.Parameters.AddWithValue("$label", example.Label)
@@ -173,7 +173,7 @@ Public Class MenuRepository
         Using cn As New SqliteConnection(connectionString)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) VALUES ($created, $modified, $numMenu, $numSousMenu, $frmMenu, $menu, $sousMenu, $info01, $info02, $application, $action, $chemin)"
+                cmd.CommandText = "INSERT OR IGNORE INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) VALUES ($created, $modified, $numMenu, $numSousMenu, $frmMenu, $menu, $sousMenu, $info01, $info02, $application, $action, $chemin)"
                 Dim nowStamp = DateTime.Now.ToString("o")
                 cmd.Parameters.AddWithValue("$created", nowStamp)
                 cmd.Parameters.AddWithValue("$modified", nowStamp)
