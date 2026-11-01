@@ -261,7 +261,7 @@ Public Class FrmMenuAutonome
                 Dim nowValue = DateTime.Now
                 Dim prefix = String.Join(" ", terms.Select(Function(t) t.Text.Trim()).Where(Function(t) t.Length > 0))
                 preview.Text = prefix & " " & nowValue.ToString("yyyy-MM-dd") & "--" &
-                    nowValue.DayOfYear.ToString("000") & "--" & nowValue.ToString("HH-mm-ss")
+                    CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat.GetAbbreviatedDayName(nowValue.DayOfWeek).TrimEnd("."c) & "--" & nowValue.ToString("HH-mm-ss")
             End Sub
             For Each term In terms
                 AddHandler term.TextChanged, Sub(sender, e) updatePreview()
