@@ -5,6 +5,12 @@ Public Class Frm_Couleurs
     Inherits Form
 
     Private ReadOnly working As MenuColors
+    Private ReadOnly selectedImages As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+    Public ReadOnly Property Images As Dictionary(Of String, String)
+        Get
+            Return selectedImages
+        End Get
+    End Property
     Private ReadOnly previews As New Dictionary(Of String, Panel)()
     Public ReadOnly Property SelectedColors As MenuColors
         Get
@@ -19,16 +25,17 @@ Public Class Frm_Couleurs
         FormBorderStyle = FormBorderStyle.FixedDialog
         MaximizeBox = False
         MinimizeBox = False
-        ClientSize = New Size(540, 365)
+        ClientSize = New Size(690, 365)
         Font = New Font("Segoe UI", 10)
         BackColor = Color.FromArgb(241, 247, 237)
 
         Dim layout As New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 280, .Padding = New Padding(18, 14, 18, 5),
-            .ColumnCount = 3, .RowCount = 5
+            .ColumnCount = 4, .RowCount = 5
         }
-        layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 43))
-        layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25))
+        layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 24))
+        layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 24))
+        layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 20))
         layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 32))
         For i = 0 To 4
             layout.RowStyles.Add(New RowStyle(SizeType.Percent, 20))
@@ -124,5 +131,20 @@ Public Class Frm_Couleurs
             End Using
         End Sub
         layout.Controls.Add(choose, 2, rowIndex)
+        If key <> "Labels" Then
+            Dim picture As New Button With {.Text = "Image…", .Dock = DockStyle.Fill, .Margin = New Padding(8)}
+            AddHandler picture.Click, Sub(sender, e)
+                Using picker As New OpenFileDialog With {
+                    .Title = "Image pour " & title,
+                    .Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp"
+                }
+                    If picker.ShowDialog(Me) = DialogResult.OK Then
+                        selectedImages(key) = picker.FileName
+                        picture.Text = "Image ✓"
+                    End If
+                End Using
+            End Sub
+            layout.Controls.Add(picture, 3, rowIndex)
+        End If
     End Sub
 End Class
