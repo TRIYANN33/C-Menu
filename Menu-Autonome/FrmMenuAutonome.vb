@@ -910,8 +910,8 @@ Public Class FrmMenuAutonome
                 Dim pxWidth As Integer
                 Dim pxHeight As Integer
                 Using graphics = CreateGraphics()
-                    pxWidth = CInt(Math.Round(graphics.DpiX * 7.0 / 2.54))
-                    pxHeight = CInt(Math.Round(graphics.DpiY * 7.0 / 2.54))
+                    pxWidth = CInt(Math.Round(graphics.DpiX * 4.0 / 2.54))
+                    pxHeight = CInt(Math.Round(graphics.DpiY * 4.0 / 2.54))
                 End Using
                 slideshowPanel = New Panel With {
                     .Size = New Size(pxWidth, pxHeight),
