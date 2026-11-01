@@ -4,6 +4,8 @@ Imports System.Diagnostics
 Imports System.Drawing
 Imports System.Globalization
 Imports System.IO
+Imports System.IO.Compression
+Imports System.Text.Json
 Imports System.Linq
 Imports System.Windows.Forms
 Imports Microsoft.Data.Sqlite
@@ -703,21 +705,148 @@ Public Class FrmMenuAutonome
         End Using
     End Sub
 
+    Private Class BackupItem
+        Public Property Libelle As String = ""
+        Public Property Chemin As String = ""
+    End Class
+
+    Private Function BackupListPath() As String
+        Return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                            "C-Menu", "Sauvegardes_" & GeneratedConfig.SafeName & ".json")
+    End Function
+
     Private Sub SaveMenuDatabase(sender As Object, e As EventArgs)
-        Using dialog As New SaveFileDialog With {.Title = "Sauvegarder le menu autonome", .Filter = "SQLite (*.db)|*.db", .FileName = "CMenu-" & DateTime.Now.ToString("yyyyMMdd-HHmmss") & ".db"}
-            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+        Using dialog As New Form With {.Text = "Design / Sauvegarde", .StartPosition = FormStartPosition.CenterParent,
+                                      .Size = New Size(850, 530), .MinimumSize = New Size(650, 400)}
+            Dim grid As New DataGridView With {.Dock = DockStyle.Fill, .AllowUserToAddRows = True,
+                                               .AllowUserToDeleteRows = True, .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill}
+            grid.Columns.Add("Libelle", "Libellé")
+            grid.Columns.Add("Chemin", "Chemin du fichier ou dossier")
+            Dim entries As List(Of BackupItem) = Nothing
             Try
-                Using source As New SqliteConnection("Data Source=" & databasePath & ";Mode=ReadOnly")
-                    source.Open()
-                    Using dest As New SqliteConnection("Data Source=" & dialog.FileName)
-                        dest.Open()
-                        source.BackupDatabase(dest)
-                    End Using
-                End Using
-                MessageBox.Show(Me, "Sauvegarde terminée.")
+                If File.Exists(BackupListPath()) Then
+                    entries = JsonSerializer.Deserialize(Of List(Of BackupItem))(File.ReadAllText(BackupListPath()))
+                End If
             Catch ex As Exception
-                MessageBox.Show(Me, "Sauvegarde impossible : " & ex.Message)
+                MessageBox.Show(dialog, "Lecture de la liste impossible : " & ex.Message)
             End Try
+            If entries Is Nothing Then
+                entries = New List(Of BackupItem) From {
+                    New BackupItem With {.Libelle = "Base C-Menu", .Chemin = databasePath}
+                }
+            End If
+            For Each item In entries
+                grid.Rows.Add(item.Libelle, item.Chemin)
+            Next
+            Dim buttons As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .Height = 55,
+                                                      .FlowDirection = FlowDirection.LeftToRight, .Padding = New Padding(8)}
+            Dim browseFile As New Button With {.Text = "Rechercher un fichier", .AutoSize = True}
+            Dim browseFolder As New Button With {.Text = "Rechercher un dossier", .AutoSize = True}
+            Dim saveList As New Button With {.Text = "Enregistrer la liste", .AutoSize = True}
+            Dim backup As New Button With {.Text = "Sauvegarde ZIP", .AutoSize = True}
+            AddHandler browseFile.Click, Sub()
+                Using picker As New OpenFileDialog With {.Title = "Choisir un fichier à sauvegarder"}
+                    If picker.ShowDialog(dialog) = DialogResult.OK Then
+                        grid.Rows.Add(Path.GetFileName(picker.FileName), picker.FileName)
+                    End If
+                End Using
+            End Sub
+            AddHandler browseFolder.Click, Sub()
+                Using picker As New FolderBrowserDialog With {.Description = "Choisir un dossier à sauvegarder"}
+                    If picker.ShowDialog(dialog) = DialogResult.OK Then
+                        grid.Rows.Add(Path.GetFileName(picker.SelectedPath.TrimEnd(Path.DirectorySeparatorChar)), picker.SelectedPath)
+                    End If
+                End Using
+            End Sub
+            Dim readItems As Func(Of List(Of BackupItem)) = Function()
+                grid.EndEdit()
+                Dim result As New List(Of BackupItem)
+                For Each row As DataGridViewRow In grid.Rows
+                    If row.IsNewRow Then Continue For
+                    Dim label = Convert.ToString(row.Cells(0).Value).Trim()
+                    Dim path = Convert.ToString(row.Cells(1).Value).Trim()
+                    If label <> "" AndAlso path <> "" Then
+                        result.Add(New BackupItem With {.Libelle = label, .Chemin = path})
+                    End If
+                Next
+                Return result
+            End Function
+            Dim persist As Action = Sub()
+                Directory.CreateDirectory(Path.GetDirectoryName(BackupListPath()))
+                File.WriteAllText(BackupListPath(), JsonSerializer.Serialize(readItems()))
+            End Sub
+            AddHandler saveList.Click, Sub()
+                Try
+                    persist()
+                    MessageBox.Show(dialog, "Liste enregistrée.")
+                Catch ex As Exception
+                    MessageBox.Show(dialog, "Enregistrement impossible : " & ex.Message)
+                End Try
+            End Sub
+            AddHandler backup.Click, Sub()
+                Try
+                    persist()
+                    Dim selected = readItems()
+                    If selected.Count = 0 Then
+                        MessageBox.Show(dialog, "Ajoutez au moins un fichier ou dossier.")
+                        Return
+                    End If
+                    Dim missing = selected.Where(Function(item) Not File.Exists(item.Chemin) AndAlso Not Directory.Exists(item.Chemin)).
+                                           Select(Function(item) item.Chemin).ToArray()
+                    If missing.Length > 0 Then
+                        MessageBox.Show(dialog, "Chemins introuvables :" & Environment.NewLine & String.Join(Environment.NewLine, missing))
+                        Return
+                    End If
+                    Dim filename = "Sauvegarde-C-Menu-" & DateTime.Now.ToString("yyyy-MM-dd-HHmmss") & ".zip"
+                    Dim destinations = {
+                        "C:\Menu\Sauvegardes",
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Sauvegardes C-Menu"),
+                        "D:\" & DateTime.Now.ToString("yyyy-MM-dd") & "--Sauvegarde C-Menu"
+                    }
+                    Dim tempZip = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") & ".zip")
+                    Try
+                        Using archive = ZipFile.Open(tempZip, ZipArchiveMode.Create)
+                            Dim index As Integer = 0
+                            For Each item In selected
+                                index += 1
+                                Dim prefix = index.ToString("000") & "-" & String.Concat(item.Libelle.Select(Function(ch) If(Path.GetInvalidFileNameChars().Contains(ch), "_"c, ch))) & "/"
+                                If File.Exists(item.Chemin) Then
+                                    archive.CreateEntryFromFile(item.Chemin, prefix & Path.GetFileName(item.Chemin), CompressionLevel.Optimal)
+                                Else
+                                    For Each filePath In Directory.GetFiles(item.Chemin, "*", SearchOption.AllDirectories)
+                                        Dim relative = Path.GetRelativePath(item.Chemin, filePath).Replace("\", "/")
+                                        archive.CreateEntryFromFile(filePath, prefix & relative, CompressionLevel.Optimal)
+                                    Next
+                                End If
+                            Next
+                        End Using
+                        Dim success As New List(Of String)
+                        Dim failures As New List(Of String)
+                        For Each folder In destinations
+                            Try
+                                Directory.CreateDirectory(folder)
+                                Dim target = Path.Combine(folder, filename)
+                                File.Copy(tempZip, target, False)
+                                success.Add(target)
+                            Catch ex As Exception
+                                failures.Add(folder & " : " & ex.Message)
+                            End Try
+                        Next
+                        MessageBox.Show(dialog, "Sauvegarde ZIP : " & success.Count.ToString() & "/3 destination(s)." &
+                                        Environment.NewLine & String.Join(Environment.NewLine, success) &
+                                        If(failures.Count > 0, Environment.NewLine & "Échecs :" & Environment.NewLine &
+                                           String.Join(Environment.NewLine, failures), ""))
+                    Finally
+                        If File.Exists(tempZip) Then File.Delete(tempZip)
+                    End Try
+                Catch ex As Exception
+                    MessageBox.Show(dialog, "Sauvegarde impossible : " & ex.Message)
+                End Try
+            End Sub
+            buttons.Controls.AddRange(New Control() {browseFile, browseFolder, saveList, backup})
+            dialog.Controls.Add(grid)
+            dialog.Controls.Add(buttons)
+            dialog.ShowDialog(Me)
         End Using
     End Sub
 
