@@ -2381,6 +2381,7 @@ End Class
 
 Public Class CountdownItem
     Public Property Id As Integer
+    Public Property Priorite As Integer
     Public Property Libelle As String = ""
     Public Property Debut As DateTime
     Public Property Fin As DateTime
@@ -2448,7 +2449,7 @@ Public Class CountdownManager
             panel.Width = cellWidth * 3
             panel.Left = 0
             panel.Top = firstTop
-            Dim activeItems = items.Where(Function(x) x.Fin > DateTime.Now).OrderBy(Function(x) x.Id).ToList()
+            Dim activeItems = items.Where(Function(x) x.Fin > DateTime.Now).OrderBy(Function(x) If(x.Priorite > 0, x.Priorite, x.Id)).ThenBy(Function(x) x.Id).ToList()
             For index As Integer = 0 To activeItems.Count - 1
                 If index = 1 Then
                     panel.Controls.Add(New Panel With {.Width = cellWidth, .Height = 156,
@@ -2640,6 +2641,7 @@ Public Class CountdownEditorCard
     Public ReadOnly Data As CountdownItem
     Public Property Deleted As Boolean
     Private ReadOnly labelText As New TextBox With {.Width = 200}
+    Private ReadOnly priority As New NumericUpDown With {.Minimum = 1, .Maximum = 999, .Width = 65}
     Private ReadOnly mode As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 140}
     Private ReadOnly hours As New NumericUpDown With {.Minimum = 0, .Maximum = 100000, .Width = 75}
     Private ReadOnly minutes As New NumericUpDown With {.Minimum = 0, .Maximum = 100000, .Width = 75}
@@ -2656,6 +2658,9 @@ Public Class CountdownEditorCard
         Dim title As New Label With {.Text = "CT_" & item.Id.ToString("00"), .Location = New Point(8, 8), .AutoSize = True}
         labelText.Location = New Point(95, 5)
         labelText.Text = item.Libelle
+        Dim priorityLabel As New Label With {.Text = "Priorité :", .Location = New Point(325, 9), .AutoSize = True}
+        priority.Location = New Point(390, 5)
+        priority.Value = Math.Min(999, Math.Max(1, If(item.Priorite > 0, item.Priorite, item.Id)))
         mode.Items.AddRange(New Object() {"Durée HH / MM", "Date de fin"})
         mode.SelectedIndex = 0
         mode.Location = New Point(8, 40)
@@ -2687,7 +2692,7 @@ Public Class CountdownEditorCard
             Deleted = True
             Visible = False
         End Sub
-        Controls.AddRange(New Control() {title, labelText, mode, hours, minutes, dateEnd,
+        Controls.AddRange(New Control() {title, labelText, priorityLabel, priority, mode, hours, minutes, dateEnd,
             musicLabel, music, browse, bg, fg, remove})
     End Sub
 
@@ -2711,6 +2716,7 @@ Public Class CountdownEditorCard
         If Data.Libelle <> name OrElse Data.Fin <> newEnd Then Data.Annonce = False
         Data.ModeDate = (mode.SelectedIndex = 1)
         Data.Libelle = name
+        Data.Priorite = CInt(priority.Value)
         Data.Debut = DateTime.Now
         Data.Fin = newEnd
         Data.Musique = music.Text.Trim()
