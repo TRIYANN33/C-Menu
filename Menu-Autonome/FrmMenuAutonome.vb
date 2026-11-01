@@ -2615,8 +2615,28 @@ Public Class CountdownCircle
             Dim imageRect As New Rectangle(origin.X - offset.X, origin.Y - offset.Y, host.ClientSize.Width, host.ClientSize.Height)
             Dim state = e.Graphics.Save()
             e.Graphics.SetClip(ClientRectangle)
-            ControlPaint.DrawBackgroundImage(e.Graphics, host.BackgroundImage, host.BackColor,
-                host.BackgroundImageLayout, host.ClientRectangle, imageRect, host.DisplayRectangle.Location)
+            Select Case host.BackgroundImageLayout
+                Case ImageLayout.Stretch
+                    e.Graphics.DrawImage(host.BackgroundImage, imageRect)
+                Case ImageLayout.Zoom
+                    Dim image = host.BackgroundImage
+                    Dim scale = Math.Min(CDbl(host.ClientSize.Width) / image.Width, CDbl(host.ClientSize.Height) / image.Height)
+                    Dim w = CInt(image.Width * scale)
+                    Dim h = CInt(image.Height * scale)
+                    e.Graphics.DrawImage(image, New Rectangle(imageRect.X + (host.ClientSize.Width - w) \ 2,
+                                                               imageRect.Y + (host.ClientSize.Height - h) \ 2, w, h))
+                Case ImageLayout.Center
+                    e.Graphics.DrawImageUnscaled(host.BackgroundImage,
+                        imageRect.X + (host.ClientSize.Width - host.BackgroundImage.Width) \ 2,
+                        imageRect.Y + (host.ClientSize.Height - host.BackgroundImage.Height) \ 2)
+                Case ImageLayout.Tile
+                    Using tile As New TextureBrush(host.BackgroundImage, WrapMode.Tile)
+                        tile.TranslateTransform(imageRect.X, imageRect.Y)
+                        e.Graphics.FillRectangle(tile, ClientRectangle)
+                    End Using
+                Case Else
+                    e.Graphics.DrawImageUnscaled(host.BackgroundImage, imageRect.Location)
+            End Select
             e.Graphics.Restore(state)
         End If
     End Sub
