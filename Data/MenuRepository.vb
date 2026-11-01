@@ -60,12 +60,7 @@ Public Class MenuRepository
         End Using
         ' Ne jamais renommer ni déplacer les menus saisis par l'utilisateur.
         ' Les exemples 99 sont ajoutés seulement s'ils sont absents.
-        ' Le sous-menu Started doit exister uniquement sous le numéro 1.
-        ' Supprimer les anciennes lignes d'exemple 99/0 sans toucher aux autres menus.
-        Using cleanup = cn.CreateCommand()
-            cleanup.CommandText = "DELETE FROM Menus WHERE NumMenu='99' AND NumSousMenu='0' AND LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))='started'"
-            cleanup.ExecuteNonQuery()
-        End Using
+        ' Le numéro 99/0 est autorisé : ne jamais le supprimer automatiquement.
         For Each subName In {"Started", "Sauvegarde", "Restauration"}
             Using cmd = cn.CreateCommand()
                 cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, NumMenu, NumSousMenu, Frm_Menu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) SELECT $now, $now, '99', $num, '', 'Exemple', $sub, '', '', '', $action, '' WHERE NOT EXISTS (SELECT 1 FROM Menus WHERE LOWER(TRIM(Menu))='exemple' AND LOWER(TRIM(SousMenu))=LOWER($sub))"
