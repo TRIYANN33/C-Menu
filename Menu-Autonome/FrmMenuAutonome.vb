@@ -924,6 +924,8 @@ Public Class FrmMenuAutonome
                     .SizeMode = PictureBoxSizeMode.Zoom,
                     .BackColor = Color.Transparent
                 }
+                AddHandler slideshowPicture.Click, Sub(sender, e) NextSlideshowImage()
+                AddHandler slideshowPanel.Click, Sub(sender, e) NextSlideshowImage()
                 slideshowPanel.Controls.Add(slideshowPicture)
                 Controls.Add(slideshowPanel)
                 slideshowPanel.BringToFront()
