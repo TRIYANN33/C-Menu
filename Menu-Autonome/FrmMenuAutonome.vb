@@ -907,8 +907,8 @@ Public Class FrmMenuAutonome
                 Dim pxWidth As Integer
                 Dim pxHeight As Integer
                 Using graphics = CreateGraphics()
-                    pxWidth = CInt(Math.Round(graphics.DpiX * 6.22 / 2.54))
-                    pxHeight = CInt(Math.Round(graphics.DpiY * 6.19 / 2.54))
+                    pxWidth = CInt(Math.Round(graphics.DpiX * 7.0 / 2.54))
+                    pxHeight = CInt(Math.Round(graphics.DpiY * 7.0 / 2.54))
                 End Using
                 slideshowPanel = New Panel With {
                     .Size = New Size(pxWidth, pxHeight),
@@ -957,6 +957,34 @@ Public Class FrmMenuAutonome
         Next
     End Sub
 
+    Private Shared Function CorrectPhotoOrientation(sourceImage As Image) As Bitmap
+        ' Respecter l'orientation EXIF des photos prises avec un téléphone.
+        Const orientationId As Integer = &H112
+        Dim result As New Bitmap(sourceImage)
+        Try
+            If sourceImage.PropertyIdList.Contains(orientationId) Then
+                Dim orientation = sourceImage.GetPropertyItem(orientationId)
+                If orientation IsNot Nothing AndAlso orientation.Value IsNot Nothing AndAlso orientation.Value.Length >= 2 Then
+                    Dim value = BitConverter.ToUInt16(orientation.Value, 0)
+                    Dim rotation As RotateFlipType = RotateFlipType.RotateNoneFlipNone
+                    Select Case value
+                        Case 2 : rotation = RotateFlipType.RotateNoneFlipX
+                        Case 3 : rotation = RotateFlipType.Rotate180FlipNone
+                        Case 4 : rotation = RotateFlipType.Rotate180FlipX
+                        Case 5 : rotation = RotateFlipType.Rotate90FlipX
+                        Case 6 : rotation = RotateFlipType.Rotate90FlipNone
+                        Case 7 : rotation = RotateFlipType.Rotate270FlipX
+                        Case 8 : rotation = RotateFlipType.Rotate270FlipNone
+                    End Select
+                    result.RotateFlip(rotation)
+                End If
+            End If
+        Catch
+            ' En l'absence de métadonnées valides, garder la photo originale.
+        End Try
+        Return result
+    End Function
+
     Private Sub NextSlideshowImage()
         If slideshowFiles.Length = 0 OrElse slideshowPicture Is Nothing Then Return
         Dim attempts = slideshowFiles.Length
@@ -971,7 +999,7 @@ Public Class FrmMenuAutonome
             Try
                 Using stream = New FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
                     Using sourceImage = Image.FromStream(stream)
-                        Dim replacement As New Bitmap(sourceImage)
+                        Dim replacement = CorrectPhotoOrientation(sourceImage)
                         Dim previous = slideshowPicture.Image
                         slideshowPicture.Image = replacement
                         If previous IsNot Nothing Then previous.Dispose()
