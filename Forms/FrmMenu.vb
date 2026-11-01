@@ -162,10 +162,12 @@ Public Class FrmMenu
             searchPanel.Dock = DockStyle.Top
             header.Controls.Add(searchPanel)
         End If
-        header.Controls.SetChildIndex(customTitleBar, 0)
-        header.Controls.SetChildIndex(toolbarPanel, 1)
-        header.Controls.SetChildIndex(editorPanel, 2)
-        If searchPanel IsNot Nothing Then header.Controls.SetChildIndex(searchPanel, 3)
+        ' WinForms empile les contrôles Dock=Top en ordre inverse du Z-order.
+        ' Placer le titre en dernier dans le Z-order pour l'afficher en premier.
+        If searchPanel IsNot Nothing Then header.Controls.SetChildIndex(searchPanel, 0)
+        header.Controls.SetChildIndex(editorPanel, If(searchPanel Is Nothing, 0, 1))
+        header.Controls.SetChildIndex(toolbarPanel, If(searchPanel Is Nothing, 1, 2))
+        header.Controls.SetChildIndex(customTitleBar, If(searchPanel Is Nothing, 2, 3))
         Controls.Add(header)
         Controls.SetChildIndex(header, 0)
     End Sub
