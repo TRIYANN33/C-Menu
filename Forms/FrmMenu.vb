@@ -131,20 +131,23 @@ Public Class FrmMenu
     Private Sub BuildCustomTitleBar()
         customTitleBar.BackColor = Color.FromArgb(themeColors.TitleBar)
         Dim buttons As New FlowLayoutPanel With {
-            .Dock = DockStyle.Right, .Width = 138, .Height = 34,
+            .Dock = DockStyle.Right, .Width = 192, .Height = 34,
             .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False,
             .Margin = Padding.Empty, .Padding = Padding.Empty
         }
-        Dim minimize As New Button With {.Text = "—", .Width = 46, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
-        Dim maximize As New Button With {.Text = "□", .Width = 46, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
-        Dim closeButton As New Button With {.Text = "×", .Width = 46, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
-        For Each btn In {minimize, maximize, closeButton}
+        Dim minimize As New Button With {.Text = "—", .Width = 48, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        Dim maximize As New Button With {.Text = "□", .Width = 48, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        Dim closeButton As New Button With {.Text = "×", .Width = 48, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        Dim slideshowSize As New Button With {.Text = "8×8", .Width = 48, .Height = 34, .FlatStyle = FlatStyle.Flat, .TabStop = False}
+        slideshowSize.AccessibleName = "Taille diaporama 8 par 8 centimètres"
+        For Each btn In {minimize, slideshowSize, maximize, closeButton}
             btn.FlatAppearance.BorderSize = 0
             btn.Margin = Padding.Empty
             btn.BackColor = customTitleBar.BackColor
             buttons.Controls.Add(btn)
         Next
         AddHandler minimize.Click, Sub(sender, e) WindowState = FormWindowState.Minimized
+        AddHandler slideshowSize.Click, Sub(sender, e) ToggleSlideshowSize()
         AddHandler maximize.Click, Sub(sender, e)
             If WindowState = FormWindowState.Maximized Then
                 WindowState = FormWindowState.Normal
@@ -193,6 +196,34 @@ Public Class FrmMenu
         header.Controls.SetChildIndex(customTitleBar, If(searchPanel Is Nothing, 2, 3))
         Controls.Add(header)
         Controls.SetChildIndex(header, 0)
+    End Sub
+
+    Private slideshowSized As Boolean = False
+    Private slideshowPreviousBounds As Rectangle
+    Private slideshowPreviousMinimum As Size
+
+    Private Sub ToggleSlideshowSize()
+        If Not slideshowSized Then
+            If WindowState <> FormWindowState.Normal Then WindowState = FormWindowState.Normal
+            slideshowPreviousBounds = Bounds
+            slideshowPreviousMinimum = MinimumSize
+            Dim work = Screen.FromControl(Me).WorkingArea
+            Dim dpiX As Single
+            Dim dpiY As Single
+            Using graphics = CreateGraphics()
+                dpiX = graphics.DpiX
+                dpiY = graphics.DpiY
+            End Using
+            Dim sideX = Math.Min(work.Width, CInt(Math.Round(8.0 * dpiX / 2.54)))
+            Dim sideY = Math.Min(work.Height, CInt(Math.Round(8.0 * dpiY / 2.54)))
+            MinimumSize = Size.Empty
+            Bounds = New Rectangle(work.Left, work.Top, sideX, sideY)
+            slideshowSized = True
+        Else
+            slideshowSized = False
+            Bounds = slideshowPreviousBounds
+            MinimumSize = slideshowPreviousMinimum
+        End If
     End Sub
 
     Private Sub DragCustomTitle(sender As Object, e As MouseEventArgs)
