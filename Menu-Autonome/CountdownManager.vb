@@ -15,6 +15,7 @@ Public Class CountdownItem
     Public Property Musique As String = ""
     Public Property CouleurFond As Integer = Color.LightGray.ToArgb()
     Public Property CouleurProgression As Integer = Color.Teal.ToArgb()
+    Public Property ModeDate As Boolean
     Public Property Annonce As Boolean
 End Class
 
@@ -191,9 +192,7 @@ Public Class CountdownEditorCard
         Dim remaining = item.Fin - DateTime.Now
         hours.Value = CDec(Math.Min(100000, Math.Max(0, Math.Floor(remaining.TotalHours))))
         minutes.Value = CDec(Math.Min(59, Math.Max(0, remaining.Minutes)))
-        If item.Debut <> DateTime.MinValue AndAlso item.Fin > item.Debut Then
-            mode.SelectedIndex = 1
-        End If
+        If item.ModeDate Then mode.SelectedIndex = 1
         Dim musicLabel As New Label With {.Text = "Musique WAV :", .Location = New Point(8, 80), .AutoSize = True}
         music.Location = New Point(115, 77)
         music.Text = item.Musique
@@ -230,11 +229,13 @@ Public Class CountdownEditorCard
         Dim newEnd As DateTime
         If mode.SelectedIndex = 0 Then
             If hours.Value = 0 AndAlso minutes.Value = 0 Then Throw New InvalidOperationException("Durée nulle pour " & name)
-            newEnd = DateTime.Now.AddHours(CDbl(hours.Value)).AddMinutes(CDbl(minutes.Value))
+            newEnd = If(Data.Libelle = name AndAlso Not Data.ModeDate AndAlso Data.Fin > DateTime.Now, Data.Fin,
+                        DateTime.Now.AddHours(CDbl(hours.Value)).AddMinutes(CDbl(minutes.Value)))
         Else
             newEnd = dateEnd.Value
         End If
         If Data.Libelle <> name OrElse Data.Fin <> newEnd Then Data.Annonce = False
+        Data.ModeDate = (mode.SelectedIndex = 1)
         Data.Libelle = name
         Data.Debut = DateTime.Now
         Data.Fin = newEnd
