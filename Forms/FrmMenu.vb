@@ -20,15 +20,24 @@ Public Class FrmMenu
     Protected Overrides Sub OnHandleCreated(e As EventArgs)
         MyBase.OnHandleCreated(e)
         If Environment.OSVersion.Version.Build >= 22000 Then
-            ' DWMWA_CAPTION_COLOR (Windows 11) : vert d'eau #A7E8D5.
-            Dim captionColor As Integer = &HD5E8A7
-            DwmSetWindowAttribute(Handle, 35, captionColor, 4)
+            ApplyTitleBarColor()
             ' DWMWA_TEXT_COLOR : noir.
             Dim textColor As Integer = 0
             DwmSetWindowAttribute(Handle, 36, textColor, 4)
         End If
     End Sub
 
+
+    Private Sub ApplyTitleBarColor()
+        If Not IsHandleCreated OrElse Environment.OSVersion.Version.Build < 22000 Then Return
+        Try
+            Dim selected = Color.FromArgb(themeColors.TitleBar)
+            Dim captionColor As Integer = selected.R Or (selected.G << 8) Or (selected.B << 16)
+            DwmSetWindowAttribute(Handle, 35, captionColor, 4)
+        Catch
+            ' La personnalisation de la barre de titre dépend de Windows.
+        End Try
+    End Sub
 
     Private ReadOnly titleClock As New Timer With {.Interval = 1000}
     Private ReadOnly repo As New MenuRepository()
@@ -398,6 +407,7 @@ Public Class FrmMenu
     End Sub
 
     Private Sub ApplyColors()
+        ApplyTitleBarColor()
         toolbarPanel.BackColor = Color.FromArgb(themeColors.Toolbar)
         editorPanel.BackColor = Color.FromArgb(themeColors.Entry)
         For Each fieldLabel In fieldLabels
