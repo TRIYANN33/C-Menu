@@ -902,7 +902,7 @@ Public Class FrmMenuAutonome
         End Using
         Dim topPosition = topOfBody + offsetPixels
         If nextEventLabel.Visible Then topPosition = Math.Max(topPosition, nextEventLabel.Bottom + 8)
-        appointmentLabel.Location = New Point(12, topPosition)
+        appointmentLabel.Location = New Point(0, topPosition)
         appointmentLabel.BringToFront()
         appointmentLabel.Invalidate()
         Dim neededHeight = appointmentLabel.Bottom + 12 + (Height - ClientSize.Height)
@@ -926,7 +926,7 @@ Public Class FrmMenuAutonome
         End Using
         Dim topOfBody = menuBar.Bottom
         
-        nextEventLabel.Location = New Point(12,
+        nextEventLabel.Location = New Point(0,
                                             topOfBody + offsetPixels)
         nextEventLabel.Height = Math.Max(28, nextEventLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None).Length * (nextEventLabel.Font.Height + 3) + 10)
         nextEventLabel.BringToFront()
