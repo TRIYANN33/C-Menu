@@ -395,6 +395,38 @@ Public Class FrmMenuAutonome
             Dim designMenu As New ToolStripMenuItem("Design") With {.ToolTipText = "97 / 0 — Design"}
             AddHandler designMenu.Click, Sub(sender, e) ShowColorsForm()
             menuBar.Items.Add(designMenu)
+            ' Ordre croissant des menus selon NumMenu, puis des sous-menus selon NumSousMenu.
+            Dim orderedMenus = menuBar.Items.OfType(Of ToolStripMenuItem)().
+                OrderBy(Function(item)
+                    If(String.Equals(item.Text, "Design", StringComparison.OrdinalIgnoreCase), 97,
+                        records.Where(Function(rec) String.Equals(rec.MenuText.Trim(), item.Text.Trim(),
+                            StringComparison.OrdinalIgnoreCase)).
+                            Select(Function(rec)
+                                Dim number As Integer
+                                Return If(Integer.TryParse(rec.MenuNumber, number), number, Integer.MaxValue)
+                            End Function).DefaultIfEmpty(98).Min())).
+                ThenBy(Function(item) item.Text, StringComparer.CurrentCultureIgnoreCase).ToList()
+            menuBar.Items.Clear()
+            For Each item In orderedMenus
+                menuBar.Items.Add(item)
+                If item.DropDownItems.Count > 1 Then
+                    Dim menuName = item.Text
+                    Dim orderedChildren = item.DropDownItems.OfType(Of ToolStripItem)().
+                        OrderBy(Function(child)
+                            records.Where(Function(rec) String.Equals(rec.MenuText.Trim(), menuName.Trim(),
+                                StringComparison.OrdinalIgnoreCase) AndAlso
+                                String.Equals(rec.SubText.Trim(), child.Text.Trim(), StringComparison.OrdinalIgnoreCase)).
+                                Select(Function(rec)
+                                    Dim number As Integer
+                                    Return If(Integer.TryParse(rec.SubNumber, number), number, Integer.MaxValue)
+                                End Function).DefaultIfEmpty(Integer.MaxValue).Min()).
+                        ThenBy(Function(child) child.Text, StringComparer.CurrentCultureIgnoreCase).ToList()
+                    item.DropDownItems.Clear()
+                    For Each child In orderedChildren
+                        item.DropDownItems.Add(child)
+                    Next
+                End If
+            Next
             AdjustMenuWidth()
             If menuBar.Items.Count = 0 Then
                 ShowProblem("Aucun menu disponible pour " & GeneratedConfig.FormName & ".")
