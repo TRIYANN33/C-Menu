@@ -356,6 +356,9 @@ Public Class FrmMenuAutonome
                 End If
                 menuBar.Items.Add(top)
             Next
+            Dim colorsMenu As New ToolStripMenuItem("Couleurs")
+            AddHandler colorsMenu.Click, Sub(sender, e) ShowColorsForm()
+            menuBar.Items.Add(colorsMenu)
             AdjustMenuWidth()
             If menuBar.Items.Count = 0 Then
                 ShowProblem("Aucun menu disponible pour " & GeneratedConfig.FormName & ".")
@@ -623,6 +626,66 @@ Public Class FrmMenuAutonome
             Catch ex As Exception
                 MessageBox.Show(Me, "Restauration impossible : " & ex.Message)
             End Try
+        End Using
+    End Sub
+
+    Private Sub ShowColorsForm()
+        Using dialog As New Form With {
+            .Text = "Couleurs du menu — " & GeneratedConfig.FormName,
+            .StartPosition = FormStartPosition.CenterParent,
+            .FormBorderStyle = FormBorderStyle.FixedDialog,
+            .MaximizeBox = False,
+            .MinimizeBox = False,
+            .ClientSize = New Size(420, 250),
+            .Font = New Font("Segoe UI", 10)
+        }
+            Dim layout As New TableLayoutPanel With {
+                .Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 4,
+                .Padding = New Padding(16), .AutoSize = False
+            }
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 60))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 40))
+            For i As Integer = 0 To 2
+                layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 48))
+            Next
+            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
+            Dim names = {"Barre de titre", "Barre des menus", "Fond du formulaire"}
+            Dim values = {titleColor, barColor, bodyColor}
+            For i As Integer = 0 To 2
+                Dim index = i
+                Dim label As New Label With {.Text = names(i), .Dock = DockStyle.Fill, .TextAlign = ContentAlignment.MiddleLeft}
+                Dim pick As New Button With {.Text = "Choisir…", .Dock = DockStyle.Fill, .BackColor = values(i), .UseVisualStyleBackColor = False}
+                AddHandler pick.Click, Sub(sender, e)
+                    Using colorPicker As New ColorDialog With {.FullOpen = True, .AnyColor = True, .Color = values(index)}
+                        If colorPicker.ShowDialog(dialog) = DialogResult.OK Then
+                            values(index) = colorPicker.Color
+                            pick.BackColor = colorPicker.Color
+                        End If
+                    End Using
+                End Sub
+                layout.Controls.Add(label, 0, i)
+                layout.Controls.Add(pick, 1, i)
+            Next
+            Dim save As New Button With {.Text = "Enregistrer", .Dock = DockStyle.Fill}
+            Dim cancel As New Button With {.Text = "Annuler", .Dock = DockStyle.Fill}
+            AddHandler save.Click, Sub(sender, e)
+                titleColor = values(0)
+                barColor = values(1)
+                bodyColor = values(2)
+                ApplyColors()
+                Try
+                    Directory.CreateDirectory(Path.GetDirectoryName(settingsPath))
+                    File.WriteAllLines(settingsPath, {titleColor.ToArgb().ToString(), barColor.ToArgb().ToString(), bodyColor.ToArgb().ToString()})
+                    dialog.DialogResult = DialogResult.OK
+                Catch ex As Exception
+                    MessageBox.Show(dialog, "Sauvegarde impossible : " & ex.Message, "Couleurs", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End Try
+            End Sub
+            AddHandler cancel.Click, Sub(sender, e) dialog.DialogResult = DialogResult.Cancel
+            layout.Controls.Add(save, 0, 3)
+            layout.Controls.Add(cancel, 1, 3)
+            dialog.Controls.Add(layout)
+            dialog.ShowDialog(Me)
         End Using
     End Sub
 
