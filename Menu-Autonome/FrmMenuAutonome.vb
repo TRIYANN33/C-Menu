@@ -118,8 +118,8 @@ Public Class FrmMenuAutonome
                         "SELECT Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Chemin, Action, Info01, Info02 " &
                         "FROM Menus WHERE TRIM(COALESCE(Menu,'')) <> '' " &
                         "AND (Frm_Menu = $form COLLATE NOCASE OR (TRIM(NumMenu) = '99' AND LOWER(TRIM(Menu)) = 'exemple')) " &
-                        "ORDER BY Frm_Menu COLLATE NOCASE, CAST(NumMenu AS INTEGER), " &
-                        "CAST(NumSousMenu AS INTEGER), Menu COLLATE NOCASE, SousMenu COLLATE NOCASE"
+                        "ORDER BY CAST(NumMenu AS INTEGER), Menu COLLATE NOCASE, " &
+                        "CAST(NumSousMenu AS INTEGER), SousMenu COLLATE NOCASE"
                     cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
@@ -140,7 +140,7 @@ Public Class FrmMenuAutonome
             End Using
 
             For Each group In records.GroupBy(
-                Function(x) x.FormName & ChrW(31) & x.MenuNumber & ChrW(31) & x.MenuText,
+                Function(x) x.MenuNumber & ChrW(31) & x.MenuText,
                 StringComparer.OrdinalIgnoreCase)
                 Dim first = group.First()
                 Dim top As New ToolStripMenuItem(first.MenuText.Trim()) With {
