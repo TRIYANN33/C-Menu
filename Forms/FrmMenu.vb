@@ -755,12 +755,12 @@ Public Class FrmMenu
     Private Function IsProtectedExample(id As Integer) As Boolean
         If id = 0 Then Return False
         Return repo.GetAll().Any(Function(entry) entry.Id = id AndAlso
-            String.Equals(entry.Menu.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso
+            String.Equals(entry.Menu.Trim(), "Exemples", StringComparison.OrdinalIgnoreCase) AndAlso
             String.Equals(entry.NumMenu.Trim(), "99", StringComparison.OrdinalIgnoreCase))
     End Function
 
     Private Sub ShowProtectedExampleMessage()
-        MessageBox.Show(Me, "Ceci sont des exemples ni modifiables ni supprimables.", "Enregistrements protégés",
+        MessageBox.Show(Me, "Ceci sont des exempless ni modifiables ni supprimables.", "Enregistrements protégés",
                         MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
@@ -874,7 +874,7 @@ Public Class FrmMenu
             Return
         End If
         If String.Equals(item.NumMenu.Trim(), "99", StringComparison.OrdinalIgnoreCase) Then
-            MessageBox.Show(Me, "Les enregistrements du menu Exemple n° 99 ne peuvent pas être dupliqués.", "Duplication interdite",
+            MessageBox.Show(Me, "Les enregistrements du menu Exemples n° 99 ne peuvent pas être dupliqués.", "Duplication interdite",
                             MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
