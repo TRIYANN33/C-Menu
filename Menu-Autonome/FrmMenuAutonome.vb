@@ -158,7 +158,13 @@ Public Class FrmMenuAutonome
             MyBase.WndProc(m)
             If WindowState <> FormWindowState.Normal Then Return
             Dim packed = m.LParam.ToInt64()
-            Dim point = PointToClient(New Point(CInt(CShort(packed And &HFFFFL)), CInt(CShort((packed >> 16) And &HFFFFL))))
+            ' WM_NCHITTEST transporte deux coordonnées signées sur 16 bits.
+            ' CShort(0..65535) peut provoquer OverflowException lors du changement d'écran.
+            Dim screenX As Integer = CInt(packed And &HFFFFL)
+            Dim screenY As Integer = CInt((packed >> 16) And &HFFFFL)
+            If screenX >= 32768 Then screenX -= 65536
+            If screenY >= 32768 Then screenY -= 65536
+            Dim point = PointToClient(New Point(screenX, screenY))
             Const edge As Integer = 8
             Dim leftEdge = point.X >= 0 AndAlso point.X < edge
             Dim rightEdge = point.X < ClientSize.Width AndAlso point.X >= ClientSize.Width - edge
