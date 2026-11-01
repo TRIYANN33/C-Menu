@@ -2395,6 +2395,26 @@ Public Class CountdownManager
         CheckExpired()
     End Sub
 
+    Private Function FindVlcExecutable() As String
+        Dim candidates As New List(Of String)
+        For Each root In {Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                          Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)}
+            If Not String.IsNullOrWhiteSpace(root) Then candidates.Add(Path.Combine(root, "VideoLAN", "VLC", "vlc.exe"))
+        Next
+        Dim pathValue = Environment.GetEnvironmentVariable("PATH")
+        If Not String.IsNullOrEmpty(pathValue) Then
+            For Each folder In pathValue.Split(Path.PathSeparator)
+                If Not String.IsNullOrWhiteSpace(folder) Then
+                    Try
+                        candidates.Add(Path.Combine(folder.Trim().Trim(ChrW(34)), "vlc.exe"))
+                    Catch
+                    End Try
+                End If
+            Next
+        End If
+        Return candidates.FirstOrDefault(Function(candidate) File.Exists(candidate))
+    End Function
+
     Private Sub CheckExpired()
         Dim expired = items.Where(Function(x) Not x.Annonce AndAlso DateTime.Now >= x.Fin).ToList()
         If expired.Count = 0 Then Return
@@ -2409,18 +2429,23 @@ Public Class CountdownManager
         For Each item In expired
             Try
                 If File.Exists(item.Musique) Then
-                    If String.Equals(Path.GetExtension(item.Musique), ".wav", StringComparison.OrdinalIgnoreCase) Then
-                        Using player As New SoundPlayer(item.Musique)
-                            player.PlaySync()
-                        End Using
+                    Dim vlc = FindVlcExecutable()
+                    If String.IsNullOrEmpty(vlc) Then
+                        MessageBox.Show(owner, "VLC est introuvable. Installez VLC pour lire la musique du Countdown timer : " & item.Libelle,
+                                        "VLC requis", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                     Else
-                        Process.Start(New ProcessStartInfo(item.Musique) With {.UseShellExecute = True})
+                        Dim arguments = "--intf dummy --no-video --play-and-exit --no-one-instance " &
+                                        ChrW(34) & item.Musique & ChrW(34)
+                        Process.Start(New ProcessStartInfo(vlc, arguments) With {
+                            .UseShellExecute = False, .CreateNoWindow = True, .WindowStyle = ProcessWindowStyle.Hidden
+                        })
                     End If
                 Else
                     SystemSounds.Exclamation.Play()
                 End If
-            Catch
-                SystemSounds.Exclamation.Play()
+            Catch ex As Exception
+                MessageBox.Show(owner, "Lecture VLC impossible : " & ex.Message, "Countdown timer",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End Try
         Next
         MessageBox.Show(owner, "Countdown timer terminé :" & Environment.NewLine &
