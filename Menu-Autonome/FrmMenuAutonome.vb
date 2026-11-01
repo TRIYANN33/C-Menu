@@ -2499,6 +2499,15 @@ Public Class CountdownManager
                 End Try
             Next
         End Try
+        items.RemoveAll(Function(x) expired.Contains(x))
+        Try
+            Persist()
+        Catch ex As Exception
+            MessageBox.Show(owner, "Suppression des Countdown terminés impossible : " & ex.Message)
+        End Try
+        Render()
+        owner.Invalidate(True)
+        owner.Refresh()
     End Sub
 
     Public Sub OpenEditor()
