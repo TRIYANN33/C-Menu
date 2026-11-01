@@ -224,7 +224,7 @@ Public Class FrmMenuAutonome
                             For Each actionItem In exampleActions
                                 Dim currentAction = actionItem
                                 Dim actionButton As New Button With {
-                                    .Text = currentAction.Text,
+                                    .Text = "Sous-Menu : " & currentAction.Text,
                                     .Width = 570,
                                     .Height = 38,
                                     .TextAlign = ContentAlignment.MiddleLeft,
