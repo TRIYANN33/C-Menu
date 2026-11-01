@@ -2729,7 +2729,7 @@ Public Class CountdownCircle
             e.Graphics.DrawArc(pen, rect, -90, CSng(360 * Math.Min(1, remaining / total)))
         End Using
         Dim time = TimeSpan.FromSeconds(remaining)
-        Dim countdown = If(remaining <= 0, "TERMINÉ", CInt(Math.Floor(time.TotalHours)).ToString("00") & ":" & time.Minutes.ToString("00") & ":" & time.Seconds.ToString("00"))
+        Dim countdown = If(remaining <= 0, "TERMINÉ", Math.Floor(time.TotalHours).ToString("00", Globalization.CultureInfo.InvariantCulture) & ":" & time.Minutes.ToString("00") & ":" & time.Seconds.ToString("00"))
         TextRenderer.DrawText(e.Graphics, countdown, Font, rect, ForeColor, TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter)
         Dim labelRect As New Rectangle(0, diameter + 10, Width, 25)
         TextRenderer.DrawText(e.Graphics, "CT_" & Item.Libelle, Font, labelRect, ForeColor,
