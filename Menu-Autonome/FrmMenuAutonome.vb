@@ -83,12 +83,14 @@ Public Class FrmMenuAutonome
         MainMenuStrip = menuBar
 
         AddHandler Resize, Sub(sender, e)
+            UpdateRoundedCorners()
             PositionNextEvent()
             PositionAppointments()
             PositionSlideshow()
         End Sub
         AddHandler clock.Tick, Sub(sender, e) RefreshClock()
         AddHandler Shown, Sub(sender, e)
+            UpdateRoundedCorners()
             RefreshClock()
             LoadFromDatabase()
             RefreshNextEvent()
@@ -99,6 +101,64 @@ Public Class FrmMenuAutonome
             clock.Stop()
             slideshowTimer.Stop()
         End Sub
+    End Sub
+
+    Private Sub UpdateRoundedCorners()
+        If ClientSize.Width <= 24 OrElse ClientSize.Height <= 24 Then Return
+        If WindowState = FormWindowState.Maximized Then
+            Dim previous = Region
+            Region = Nothing
+            If previous IsNot Nothing Then previous.Dispose()
+            Return
+        End If
+        Const radius As Integer = 14
+        Dim diameter = radius * 2
+        Using shape As New Drawing2D.GraphicsPath()
+            Dim bounds = New Rectangle(0, 0, Width - 1, Height - 1)
+            shape.AddArc(bounds.Left, bounds.Top, diameter, diameter, 180, 90)
+            shape.AddArc(bounds.Right - diameter, bounds.Top, diameter, diameter, 270, 90)
+            shape.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90)
+            shape.AddArc(bounds.Left, bounds.Bottom - diameter, diameter, diameter, 90, 90)
+            shape.CloseFigure()
+            Dim previous = Region
+            Region = New Region(shape)
+            If previous IsNot Nothing Then previous.Dispose()
+        End Using
+    End Sub
+
+    Protected Overrides Sub WndProc(ByRef m As Message)
+        If m.Msg = &H84 Then
+            MyBase.WndProc(m)
+            If WindowState <> FormWindowState.Normal Then Return
+            Dim packed = m.LParam.ToInt64()
+            Dim point = PointToClient(New Point(CInt(CShort(packed And &HFFFFL)), CInt(CShort((packed >> 16) And &HFFFFL))))
+            Const edge As Integer = 8
+            Dim leftEdge = point.X >= 0 AndAlso point.X < edge
+            Dim rightEdge = point.X < ClientSize.Width AndAlso point.X >= ClientSize.Width - edge
+            Dim topEdge = point.Y >= 0 AndAlso point.Y < edge
+            Dim bottomEdge = point.Y < ClientSize.Height AndAlso point.Y >= ClientSize.Height - edge
+            Dim hit As Integer = 0
+            If topEdge AndAlso leftEdge Then
+                hit = 13
+            ElseIf topEdge AndAlso rightEdge Then
+                hit = 14
+            ElseIf bottomEdge AndAlso leftEdge Then
+                hit = 16
+            ElseIf bottomEdge AndAlso rightEdge Then
+                hit = 17
+            ElseIf leftEdge Then
+                hit = 10
+            ElseIf rightEdge Then
+                hit = 11
+            ElseIf topEdge Then
+                hit = 12
+            ElseIf bottomEdge Then
+                hit = 15
+            End If
+            If hit <> 0 Then m.Result = New IntPtr(hit)
+            Return
+        End If
+        MyBase.WndProc(m)
     End Sub
 
     Private Sub BuildCustomTitleBar()
