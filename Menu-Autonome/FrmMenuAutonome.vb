@@ -41,7 +41,7 @@ Public Class FrmMenuAutonome
     Private barColor As Color = Color.FromArgb(62, 130, 137)
     Private bodyColor As Color = Color.FromArgb(255, 128, 0)
     Private ReadOnly clock As New Timer With {.Interval = 1000}
-    Private ReadOnly customTitle As New Panel With {.Dock = DockStyle.Top, .Height = 34}
+    Private ReadOnly customTitle As New Panel With {.Dock = DockStyle.None, .Height = 34, .Top = 0, .Left = 0}
     Private ReadOnly customTitleText As New Label With {.Dock = DockStyle.Fill, .TextAlign = ContentAlignment.MiddleLeft, .AutoEllipsis = True, .Padding = New Padding(10, 0, 0, 0)}
     Private slideshowTitleMode As Boolean
     Private previousTitleBounds As Rectangle
@@ -65,7 +65,9 @@ Public Class FrmMenuAutonome
         BuildCustomTitleBar()
         LoadColors()
 
-        menuBar.Dock = DockStyle.Top
+        menuBar.Dock = DockStyle.None
+        menuBar.Location = New Point(0, customTitle.Height)
+        menuBar.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         menuBar.AutoSize = True
         menuBar.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
@@ -90,7 +92,9 @@ Public Class FrmMenuAutonome
             RefreshAppointmentsDisplay()
         End Sub
         Controls.Add(customTitle)
-        Controls.SetChildIndex(customTitle, Controls.Count - 1)
+        customTitle.Width = ClientSize.Width
+        menuBar.Width = ClientSize.Width
+        customTitle.BringToFront()
         ApplyColors()
         ApplyDesignBackgrounds()
         KeyPreview = True
@@ -106,6 +110,8 @@ Public Class FrmMenuAutonome
         countdowns = New CountdownManager(Me, GeneratedConfig.SafeName)
 
         AddHandler Resize, Sub(sender, e)
+            customTitle.SetBounds(0, 0, ClientSize.Width, 34)
+            menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
             UpdateRoundedCorners()
             PositionNextEvent()
             PositionAppointments()
