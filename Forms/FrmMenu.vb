@@ -8,6 +8,7 @@ Imports System.Diagnostics
 Imports System.IO
 Imports System.IO.Compression
 Imports System.Text.Json
+Imports Microsoft.Data.Sqlite
 
 Public Class FrmMenu
     Inherits Form
@@ -88,6 +89,7 @@ Public Class FrmMenu
         ApplyColors()
         ApplyDesignImages()
         ClearForm()
+        RenameExampleMenuInDatabase()
         ReloadGrid()
         ' Windows peut rétablir sa couleur d'accent à chaque activation.
         AddHandler Me.Activated, Sub(sender, e)
@@ -98,6 +100,23 @@ Public Class FrmMenu
         AddHandler FormClosed, Sub(sender, e) titleClock.Stop()
         UpdateWindowTitle()
         titleClock.Start()
+    End Sub
+
+    Private Sub RenameExampleMenuInDatabase()
+        Try
+            Dim builder As New SqliteConnectionStringBuilder(GetActiveDatabaseConnection())
+            If Not File.Exists(builder.DataSource) Then Return
+            Using cn As New SqliteConnection(builder.ToString())
+                cn.Open()
+                Using cmd = cn.CreateCommand()
+                    cmd.CommandText = "UPDATE Menus SET Menu = 'Exemples' WHERE TRIM(NumMenu) = '99' AND LOWER(TRIM(Menu)) = 'exemple'"
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show(Me, "Renommage automatique du menu Exemples impossible : " & ex.Message,
+                            "Base de données", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
     End Sub
 
     Private Sub UpdateWindowTitle()
