@@ -93,6 +93,7 @@ Public Class FrmMenuAutonome
             UpdateRoundedCorners()
             RefreshClock()
             LoadFromDatabase()
+            StartSlideshow(True)
             RefreshNextEvent()
             RefreshAppointmentsDisplay()
             clock.Start()
@@ -887,10 +888,11 @@ Public Class FrmMenuAutonome
         PositionSlideshow()
     End Sub
 
-    Private Sub StartSlideshow()
+    Private Sub StartSlideshow(Optional silent As Boolean = False)
         Try
             If Not Directory.Exists(SlideshowFolder) Then
                 Directory.CreateDirectory(SlideshowFolder)
+                If Not silent Then
                 Dim opus = "C:\Program Files\GPSoftware\Directory Opus\x64\dopus.exe"
                 If File.Exists(opus) Then
                     Dim launch As New ProcessStartInfo(opus) With {.UseShellExecute = True}
@@ -900,6 +902,7 @@ Public Class FrmMenuAutonome
                     Dim launch As New ProcessStartInfo("explorer.exe") With {.UseShellExecute = True}
                     launch.ArgumentList.Add(SlideshowFolder)
                     Process.Start(launch)
+                End If
                 End If
             End If
             If slideshowPanel Is Nothing Then
@@ -938,7 +941,7 @@ Public Class FrmMenuAutonome
             slideshowIndex = 0
             NextSlideshowImage()
             slideshowTimer.Start()
-            If slideshowFiles.Length = 0 Then
+            If slideshowFiles.Length = 0 AndAlso Not silent Then
                 MessageBox.Show(Me, "Déposez des photos dans : " & SlideshowFolder,
                                 "Diaporama", MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If
