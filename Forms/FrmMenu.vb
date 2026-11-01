@@ -74,6 +74,11 @@ Public Class FrmMenu
         ApplyColors()
         ClearForm()
         ReloadGrid()
+        ' Windows peut rétablir sa couleur d'accent à chaque activation.
+        AddHandler Me.Activated, Sub(sender, e)
+            ApplyTitleBarColor()
+            BeginInvoke(New MethodInvoker(Sub() ApplyTitleBarColor()))
+        End Sub
         AddHandler titleClock.Tick, Sub(sender, e) UpdateWindowTitle()
         AddHandler FormClosed, Sub(sender, e) titleClock.Stop()
         UpdateWindowTitle()
@@ -428,7 +433,10 @@ Public Class FrmMenu
                 ApplyColors()
                 ' Réappliquer après fermeture de la boîte de dialogue : Windows peut
                 ' rétablir la couleur d'accent lors de la réactivation de la fenêtre.
-                BeginInvoke(New MethodInvoker(Sub() ApplyTitleBarColor()))
+                BeginInvoke(New MethodInvoker(Sub()
+                    ApplyTitleBarColor()
+                    Me.Refresh()
+                End Sub))
                 Try
                     themeColors.Save()
                 Catch ex As Exception
