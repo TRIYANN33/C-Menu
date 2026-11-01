@@ -958,6 +958,12 @@ Public Class FrmMenuAutonome
         Using graphics = CreateGraphics()
             rightMargin = CInt(Math.Round(graphics.DpiX * 0.3 / 2.54))
         End Using
+        Using graphics = CreateGraphics()
+            Dim oneMillimeterX = Math.Max(1, CInt(Math.Round(graphics.DpiX / 25.4)))
+            Dim oneMillimeterY = Math.Max(1, CInt(Math.Round(graphics.DpiY / 25.4)))
+            appointmentLabel.Padding = New Padding(oneMillimeterX, oneMillimeterY,
+                oneMillimeterX, oneMillimeterY)
+        End Using
         FitEventFrame(appointmentLabel)
         appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width - rightMargin), topPosition)
         appointmentLabel.BringToFront()
