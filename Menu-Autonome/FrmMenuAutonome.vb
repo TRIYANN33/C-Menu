@@ -846,6 +846,11 @@ Public Class FrmMenuAutonome
     End Function
 
     Private Async Sub ShowInfo(info1 As String, info2 As String)
+        ' La fenêtre d'informations ne s'affiche que si les deux champs sont renseignés.
+        If String.IsNullOrWhiteSpace(info1) OrElse String.IsNullOrWhiteSpace(info2) Then
+            If infoWindow IsNot Nothing AndAlso Not infoWindow.IsDisposed Then infoWindow.Hide()
+            Return
+        End If
         If infoWindow Is Nothing OrElse infoWindow.IsDisposed Then
             Dim dpiX As Single
             Dim dpiY As Single
