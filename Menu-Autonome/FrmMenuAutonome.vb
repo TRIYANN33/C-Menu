@@ -165,7 +165,9 @@ Public Class FrmMenuAutonome
                         }
                         AddHandler child.Click, Sub(sender, e)
                             Dim clicked = DirectCast(sender, ToolStripMenuItem)
-                            If String.Equals(clicked.Text.Trim(), "Rendez-vous", StringComparison.OrdinalIgnoreCase) OrElse
+                            If String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso first.MenuNumber.Trim() = "99" Then
+                                ShowExampleDetails(DirectCast(clicked.Tag, MenuRow))
+                            ElseIf String.Equals(clicked.Text.Trim(), "Rendez-vous", StringComparison.OrdinalIgnoreCase) OrElse
                                String.Equals(clicked.Text.Trim(), "Rendez vous", StringComparison.OrdinalIgnoreCase) Then
                                 Using dialog As New FrmRendezVous()
                                     dialog.ShowDialog(Me)
@@ -202,45 +204,6 @@ Public Class FrmMenuAutonome
                         top.DropDownItems.Add(child)
                     End If
                 Next
-                If String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso
-                   first.MenuNumber.Trim() = "99" Then
-                    Dim exampleActions = top.DropDownItems.OfType(Of ToolStripMenuItem)().ToList()
-                    top.DropDownItems.Clear()
-                    AddHandler top.Click, Sub(sender, e)
-                        Using details As New Form With {
-                            .Text = "Exemple — Menu n° 99",
-                            .StartPosition = FormStartPosition.CenterParent,
-                            .Size = New Size(650, 580),
-                            .MinimumSize = New Size(430, 320),
-                            .AutoScroll = False
-                        }
-                            Dim panel As New FlowLayoutPanel With {
-                                .Dock = DockStyle.Fill,
-                                .FlowDirection = FlowDirection.TopDown,
-                                .WrapContents = False,
-                                .AutoScroll = True,
-                                .Padding = New Padding(15)
-                            }
-                            For Each actionItem In exampleActions
-                                Dim currentAction = actionItem
-                                Dim actionButton As New Button With {
-                                    .Text = "Sous-Menu : " & currentAction.Text,
-                                    .Width = 570,
-                                    .Height = 38,
-                                    .TextAlign = ContentAlignment.MiddleLeft,
-                                    .Margin = New Padding(4, 3, 4, 6)
-                                }
-                                AddHandler actionButton.Click, Sub(s, args)
-                                    details.Close()
-                                    currentAction.PerformClick()
-                                End Sub
-                                panel.Controls.Add(actionButton)
-                            Next
-                            details.Controls.Add(panel)
-                            details.ShowDialog(Me)
-                        End Using
-                    End Sub
-                End If
                 If top.Text.StartsWith("Couleurs", StringComparison.OrdinalIgnoreCase) Then
                     AddHandler top.Click, Sub(sender, e) ChangeColor(top.Text)
                 End If
@@ -253,6 +216,58 @@ Public Class FrmMenuAutonome
         Catch ex As Exception
             ShowProblem("Lecture de SQLite impossible : " & ex.Message)
         End Try
+    End Sub
+
+    Private Sub ShowExampleDetails(item As MenuRow)
+        Using details As New Form With {
+            .Text = "Exemple — " & item.SubText,
+            .StartPosition = FormStartPosition.CenterParent,
+            .Size = New Size(720, 560),
+            .MinimumSize = New Size(480, 360)
+        }
+            Dim rows As New TableLayoutPanel With {
+                .Dock = DockStyle.Top,
+                .AutoSize = True,
+                .ColumnCount = 2,
+                .Padding = New Padding(15)
+            }
+            rows.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 165))
+            rows.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+            Dim fields As (Label As String, Value As String)() = {
+                ("Frm_Menu", item.FormName),
+                ("N° Menu", item.MenuNumber),
+                ("N° Sous-Menu", item.SubNumber),
+                ("Menu", item.MenuText),
+                ("Sous-Menu", item.SubText),
+                ("Info_01", item.Info01),
+                ("Info_02", item.Info02),
+                ("Action", item.ActionName),
+                ("Chemin", item.Path)
+            }
+            For Each entry In fields
+                Dim caption As New Label With {
+                    .Text = entry.Label & " :",
+                    .AutoSize = True,
+                    .Font = New Font(details.Font, FontStyle.Bold),
+                    .Margin = New Padding(3, 9, 8, 9)
+                }
+                Dim value As New TextBox With {
+                    .Text = entry.Value,
+                    .ReadOnly = True,
+                    .Multiline = True,
+                    .Height = 45,
+                    .Dock = DockStyle.Fill,
+                    .ScrollBars = ScrollBars.Vertical
+                }
+                rows.RowCount += 1
+                rows.Controls.Add(caption, 0, rows.RowCount - 1)
+                rows.Controls.Add(value, 1, rows.RowCount - 1)
+            Next
+            Dim scroll As New Panel With {.Dock = DockStyle.Fill, .AutoScroll = True}
+            scroll.Controls.Add(rows)
+            details.Controls.Add(scroll)
+            details.ShowDialog(Me)
+        End Using
     End Sub
 
     Private Sub SaveMenuDatabase(sender As Object, e As EventArgs)
