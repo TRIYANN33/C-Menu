@@ -180,9 +180,7 @@ Public Class FrmMenuAutonome
                             ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Restauration", StringComparison.OrdinalIgnoreCase) Then
                                 RestoreMenuDatabase(sender, e)
                             ElseIf String.Equals(first.MenuText.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
-                                Using dialog As New StarterApplisForm()
-                                    dialog.ShowDialog(Me)
-                                End Using
+                                StarterApplisForm.DemarrerApplications(Me)
                             ElseIf String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(clicked.Text.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
                                 Using dialog As New StarterApplisForm()
                                     dialog.ShowDialog(Me)
@@ -1236,22 +1234,35 @@ Public Class StarterApplisForm
     End Sub
 
     Private Sub Demarrer(sender As Object, e As EventArgs)
-        Using cn = Connexion()
-            cn.Open()
-            Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Application, Chemin FROM StarterApplis ORDER BY Id"
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        Dim target = reader.GetString(1)
-                        Try
-                            System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo(target) With {.UseShellExecute = True})
-                        Catch ex As Exception
-                            MessageBox.Show(Me, "Ouverture impossible : " & reader.GetString(0) & Environment.NewLine & ex.Message)
-                        End Try
-                    End While
+        DemarrerApplications(Me)
+    End Sub
+
+    Public Shared Sub DemarrerApplications(owner As IWin32Window)
+        Dim dataFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "CMenu.db")
+        If Not File.Exists(dataFile) Then
+            MessageBox.Show(owner, "La base de données Started est introuvable.")
+            Return
+        End If
+        Try
+            Using cn As New SqliteConnection("Data Source=" & dataFile & ";Mode=ReadOnly")
+                cn.Open()
+                Using cmd = cn.CreateCommand()
+                    cmd.CommandText = "SELECT Application, Chemin FROM StarterApplis ORDER BY Id"
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim target = reader.GetString(1)
+                            Try
+                                System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo(target) With {.UseShellExecute = True})
+                            Catch ex As Exception
+                                MessageBox.Show(owner, "Ouverture impossible : " & reader.GetString(0) & Environment.NewLine & ex.Message)
+                            End Try
+                        End While
+                    End Using
                 End Using
             End Using
-        End Using
+        Catch ex As Exception
+            MessageBox.Show(owner, "Démarrage Started impossible : " & ex.Message)
+        End Try
     End Sub
 
     Private Sub Sauvegarder(sender As Object, e As EventArgs)
