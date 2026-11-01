@@ -68,6 +68,8 @@ Public Class FrmMenuAutonome
         Controls.Add(menuBar)
         Controls.Add(nextEventLabel)
         Controls.Add(appointmentLabel)
+        AddHandler nextEventLabel.Paint, AddressOf DrawEventBorder
+        AddHandler appointmentLabel.Paint, AddressOf DrawEventBorder
         Controls.Add(customTitle)
         Controls.SetChildIndex(customTitle, Controls.Count - 1)
         ApplyColors()
@@ -815,6 +817,7 @@ Public Class FrmMenuAutonome
     Private Const SlideshowFolder As String = "C:\Menu\applications\Diaporama"
 
     Private ReadOnly appointmentLabel As New Label With {
+        .BackColor = Color.Transparent,
         .AutoSize = False,
         .TextAlign = ContentAlignment.TopLeft,
         .Font = New Font("Segoe UI", 9, FontStyle.Bold),
@@ -827,6 +830,7 @@ Public Class FrmMenuAutonome
         If Not File.Exists(AppointmentDatabase) Then Return
         Try
             Dim lines As New List(Of String)()
+            Dim nearestDay As Date = Date.MaxValue
             Using cn As New SqliteConnection("Data Source=" & AppointmentDatabase & ";Mode=ReadOnly")
                 cn.Open()
                 Using cmd = cn.CreateCommand()
@@ -837,6 +841,11 @@ Public Class FrmMenuAutonome
                             Dim d As Date
                             If Not Date.TryParseExact(reader.GetString(1), "yyyy-MM-dd HH:mm:ss",
                                 CultureInfo.InvariantCulture, DateTimeStyles.None, d) Then Continue While
+                            If d.Date > nearestDay Then Exit While
+                            If d.Date < nearestDay Then
+                                nearestDay = d.Date
+                                lines.Clear()
+                            End If
                             lines.Add(reader.GetString(0).Trim() & Environment.NewLine &
                                 "le " & d.ToString("dddd d MMMM yyyy 'à' HH'h'mm", CultureInfo.GetCultureInfo("fr-FR")) &
                                 If(reader.IsDBNull(2) OrElse String.IsNullOrWhiteSpace(If(reader.IsDBNull(2), "", reader.GetString(2))), "",
@@ -876,6 +885,14 @@ Public Class FrmMenuAutonome
         slideshowPanel.BringToFront()
     End Sub
 
+    Private Sub DrawEventBorder(sender As Object, e As PaintEventArgs)
+        Dim label = DirectCast(sender, Label)
+        If label.Width <= 2 OrElse label.Height <= 2 Then Return
+        Using border As New Pen(Color.FromArgb(167, 232, 213), 2)
+            e.Graphics.DrawRectangle(border, 1, 1, label.Width - 3, label.Height - 3)
+        End Using
+    End Sub
+
     Private Sub PositionAppointments()
         If Not appointmentLabel.Visible Then Return
         Dim topOfBody = menuBar.Bottom
@@ -887,12 +904,14 @@ Public Class FrmMenuAutonome
         If nextEventLabel.Visible Then topPosition = Math.Max(topPosition, nextEventLabel.Bottom + 8)
         appointmentLabel.Location = New Point(12, topPosition)
         appointmentLabel.BringToFront()
+        appointmentLabel.Invalidate()
         Dim neededHeight = appointmentLabel.Bottom + 12 + (Height - ClientSize.Height)
         If Height < neededHeight Then Height = neededHeight
     End Sub
 
     Private ReadOnly nextEventLabel As New Label With {
         .ForeColor = Color.Black,
+        .BackColor = Color.Transparent,
         .AutoSize = False,
         .TextAlign = ContentAlignment.MiddleLeft,
         .Padding = New Padding(4, 4, 8, 4),
@@ -911,6 +930,7 @@ Public Class FrmMenuAutonome
                                             topOfBody + offsetPixels)
         nextEventLabel.Height = Math.Max(28, nextEventLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None).Length * (nextEventLabel.Font.Height + 3) + 10)
         nextEventLabel.BringToFront()
+        nextEventLabel.Invalidate()
         Dim neededHeight = nextEventLabel.Bottom + 12 + (Height - ClientSize.Height)
         If Height < neededHeight Then Height = neededHeight
         PositionAppointments()
