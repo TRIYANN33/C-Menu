@@ -359,6 +359,38 @@ Public Class FrmMenuAutonome
                 End If
                 menuBar.Items.Add(top)
             Next
+            ' Sous-menus BDD disponibles dans chaque formulaire, même absents de SQLite.
+            Dim bddMenu = menuBar.Items.OfType(Of ToolStripMenuItem)().
+                FirstOrDefault(Function(item) String.Equals(item.Text.Trim(), "BDD", StringComparison.OrdinalIgnoreCase))
+            If bddMenu Is Nothing Then
+                bddMenu = New ToolStripMenuItem("BDD")
+                menuBar.Items.Add(bddMenu)
+            End If
+            If Not bddMenu.DropDownItems.OfType(Of ToolStripItem)().
+                Any(Function(item) String.Equals(item.Text.Trim(), "Anniversaires", StringComparison.OrdinalIgnoreCase) OrElse
+                    String.Equals(item.Text.Trim(), "Anniversaire", StringComparison.OrdinalIgnoreCase)) Then
+                Dim anniversairesItem As New ToolStripMenuItem("Anniversaires")
+                AddHandler anniversairesItem.Click, Sub(sender, e)
+                    Using dialog As New FrmAnniversaire()
+                        dialog.ShowDialog(Me)
+                    End Using
+                    RefreshNextEvent()
+                End Sub
+                bddMenu.DropDownItems.Add(anniversairesItem)
+            End If
+            If Not bddMenu.DropDownItems.OfType(Of ToolStripItem)().
+                Any(Function(item) String.Equals(item.Text.Trim(), "Rendez-vous", StringComparison.OrdinalIgnoreCase) OrElse
+                    String.Equals(item.Text.Trim(), "Rendez vous", StringComparison.OrdinalIgnoreCase)) Then
+                Dim rendezVousItem As New ToolStripMenuItem("Rendez-vous")
+                AddHandler rendezVousItem.Click, Sub(sender, e)
+                    Using dialog As New FrmRendezVous()
+                        dialog.ShowDialog(Me)
+                    End Using
+                    RefreshAppointmentsDisplay()
+                    PositionAppointments()
+                End Sub
+                bddMenu.DropDownItems.Add(rendezVousItem)
+            End If
             ' Entrée systématique Design (NumMenu 97 / NumSousMenu 0), sans toucher à SQLite.
             Dim designMenu As New ToolStripMenuItem("Design") With {.ToolTipText = "97 / 0 — Design"}
             AddHandler designMenu.Click, Sub(sender, e) ShowColorsForm()
