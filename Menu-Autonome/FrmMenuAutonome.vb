@@ -856,13 +856,7 @@ Public Class FrmMenuAutonome
             End Using
             If lines.Count > 0 Then
                 appointmentLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, lines)
-                Dim widthNeeded As Integer = 0
-                For Each line In appointmentLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None)
-                    widthNeeded = Math.Max(widthNeeded, TextRenderer.MeasureText(line, appointmentLabel.Font).Width)
-                Next
-                appointmentLabel.Width = widthNeeded + 20
-                appointmentLabel.Height = (lines.Sum(Function(x) x.Split({Environment.NewLine}, StringSplitOptions.None).Length) +
-                    (lines.Count - 1)) * (appointmentLabel.Font.Height + 3) + 12
+                FitEventFrame(appointmentLabel)
                 appointmentLabel.Visible = True
             End If
         Catch ex As SqliteException
@@ -883,6 +877,19 @@ Public Class FrmMenuAutonome
         slideshowPanel.Location = New Point(Math.Max(0, (ClientSize.Width - slideshowPanel.Width) \ 2),
                                             topOfBody + offsetPixels)
         slideshowPanel.BringToFront()
+    End Sub
+
+    Private Sub FitEventFrame(frame As Label)
+        Dim contentLines = frame.Text.Split({Environment.NewLine}, StringSplitOptions.None)
+        Dim maxWidth As Integer = 0
+        For Each line In contentLines
+            If String.IsNullOrWhiteSpace(line) Then Continue For
+            maxWidth = Math.Max(maxWidth, TextRenderer.MeasureText(line, frame.Font,
+                New Size(Integer.MaxValue, Integer.MaxValue),
+                TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding).Width)
+        Next
+        frame.Width = Math.Max(30, maxWidth + frame.Padding.Horizontal + 12)
+        frame.Height = Math.Max(28, contentLines.Length * (frame.Font.Height + 3) + frame.Padding.Vertical + 8)
     End Sub
 
     Private Sub DrawEventBorder(sender As Object, e As PaintEventArgs)
@@ -929,7 +936,7 @@ Public Class FrmMenuAutonome
         
         nextEventLabel.Location = New Point(0,
                                             topOfBody + offsetPixels)
-        nextEventLabel.Height = Math.Max(28, nextEventLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None).Length * (nextEventLabel.Font.Height + 3) + 10)
+        FitEventFrame(nextEventLabel)
         nextEventLabel.BringToFront()
         nextEventLabel.Invalidate()
         Dim neededHeight = nextEventLabel.Bottom + 12 + (Height - ClientSize.Height)
@@ -974,7 +981,7 @@ Public Class FrmMenuAutonome
                                     Dim kind = If(i = 2, "Anniversaire", If(i = 3, "Fête", "Date à noter"))
                                     If i = 2 Then
                                         Dim age = occurrence.Year - stored.Year
-                                        kind = "Anniversaire des " & age.ToString() & " ans"
+                                        kind = If(age > 0 AndAlso age < 130, "Anniversaire des " & age.ToString() & " ans", "Anniversaire")
                                     End If
                                     If i = 2 Then
                                         nextTexts.Add(kind & " de" & Environment.NewLine & person & Environment.NewLine &
@@ -991,8 +998,7 @@ Public Class FrmMenuAutonome
             End Using
             If nextTexts.Count > 0 Then
                 nextEventLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, nextTexts)
-                nextEventLabel.Width = nextEventLabel.Text.Split({Environment.NewLine}, StringSplitOptions.None).
-                    Max(Function(line) TextRenderer.MeasureText(line, nextEventLabel.Font).Width) + 28
+                FitEventFrame(nextEventLabel)
                 nextEventLabel.Visible = True
                 PositionNextEvent()
             End If
