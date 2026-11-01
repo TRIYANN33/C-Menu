@@ -527,24 +527,36 @@ Public Class FrmMenu
         Dim item = CurrentItem()
         If Not IsValid(item) Then Return
         If item.Id = 0 Then
-            ' Retrouver une ligne existante par son identité de menu, sans tenir compte du filtre affiché.
             Dim existing = repo.GetAll().FirstOrDefault(Function(entry) _
                 String.Equals(entry.Frm_Menu, item.Frm_Menu, StringComparison.OrdinalIgnoreCase) AndAlso
                 String.Equals(entry.NumMenu, item.NumMenu, StringComparison.OrdinalIgnoreCase) AndAlso
                 String.Equals(entry.NumSousMenu, item.NumSousMenu, StringComparison.OrdinalIgnoreCase))
-            If existing IsNot Nothing Then item.Id = existing.Id
-        End If
-        If item.Id <> 0 Then
-            If IsProtectedExample(item.Id) Then
-                ShowProtectedExampleMessage()
-                Return
+            If existing IsNot Nothing Then
+                If item.NumMenu = "99" Then
+                    MessageBox.Show(Me, "Le sous-menu n° " & item.NumSousMenu & " du menu 99 existe déjà. Choisissez un numéro libre.", "Numéro déjà utilisé",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    Return
+                End If
+                item.Id = existing.Id
             End If
-            repo.Update(item)
-        Else
-            repo.Insert(item)
         End If
-        ClearForm()
-        ReloadGrid()
+        If item.Id <> 0 AndAlso IsProtectedExample(item.Id) Then
+            ShowProtectedExampleMessage()
+            Return
+        End If
+        Try
+            If item.Id <> 0 Then
+                repo.Update(item)
+            Else
+                repo.Insert(item)
+            End If
+            ClearForm()
+            ReloadGrid()
+        Catch ex As InvalidOperationException
+            MessageBox.Show(Me, ex.Message, "Enregistrement impossible", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        Catch ex As Microsoft.Data.Sqlite.SqliteException
+            MessageBox.Show(Me, "Enregistrement impossible : " & ex.Message, "Erreur SQLite", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
     End Sub
 
     Private Sub UpdateClicked(sender As Object, e As EventArgs)
