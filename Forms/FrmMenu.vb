@@ -422,6 +422,20 @@ Public Class FrmMenu
         grid.EnableHeadersVisualStyles = False
         grid.ColumnHeadersHeight = 36
         grid.RowTemplate.Height = 25
+        ' Éviter qu'une ligne soit partiellement visible en haut après défilement.
+        AddHandler grid.Scroll, Sub(sender, e)
+            If e.ScrollOrientation <> ScrollOrientation.VerticalScroll Then Return
+            Dim firstRow = grid.FirstDisplayedScrollingRowIndex
+            If firstRow < 0 Then Return
+            BeginInvoke(New MethodInvoker(Sub()
+                If grid.IsDisposed OrElse firstRow >= grid.RowCount Then Return
+                Try
+                    grid.FirstDisplayedScrollingRowIndex = firstRow
+                Catch
+                    ' La grille peut être en cours de rafraîchissement.
+                End Try
+            End Sub))
+        End Sub
         grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None
         grid.AllowUserToResizeRows = False
         grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(51, 119, 140)
