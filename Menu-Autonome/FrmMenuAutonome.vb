@@ -167,6 +167,8 @@ Public Class FrmMenuAutonome
                             Dim clicked = DirectCast(sender, ToolStripMenuItem)
                             If String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso first.MenuNumber.Trim() = "99" Then
                                 ShowExampleDetails(DirectCast(clicked.Tag, MenuRow))
+                            ElseIf String.Equals(clicked.Text.Trim(), "NomDeFichier", StringComparison.OrdinalIgnoreCase) Then
+                                ShowCreateFileDialog()
                             ElseIf String.Equals(clicked.Text.Trim(), "NomDeDossier", StringComparison.OrdinalIgnoreCase) Then
                                 ShowCreateFolderDialog()
                             ElseIf String.Equals(clicked.Text.Trim(), "Rendez-vous", StringComparison.OrdinalIgnoreCase) OrElse
@@ -218,6 +220,89 @@ Public Class FrmMenuAutonome
         Catch ex As Exception
             ShowProblem("Lecture de SQLite impossible : " & ex.Message)
         End Try
+    End Sub
+
+    Private Sub ShowCreateFileDialog()
+        Using dialog As New Form With {
+            .Text = "Création d'un nom de fichier",
+            .StartPosition = FormStartPosition.CenterParent,
+            .Size = New Size(700, 420),
+            .MinimumSize = New Size(570, 360)
+        }
+            Dim layout As New TableLayoutPanel With {
+                .Dock = DockStyle.Fill, .ColumnCount = 2,
+                .RowCount = 7, .Padding = New Padding(14)
+            }
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 150))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+            Dim terms As TextBox() = {
+                New TextBox With {.Text = "VB"},
+                New TextBox With {.Text = "CREATION"},
+                New TextBox With {.Text = "Menu"}
+            }
+            For i = 0 To 2
+                layout.Controls.Add(New Label With {.Text = "Terme_0" & (i + 1).ToString() & " :", .AutoSize = True}, 0, i)
+                terms(i).Dock = DockStyle.Fill
+                layout.Controls.Add(terms(i), 1, i)
+            Next
+            Dim extensionInput As New TextBox With {.Text = "txt", .Dock = DockStyle.Fill}
+            layout.Controls.Add(New Label With {.Text = "Extension :", .AutoSize = True}, 0, 3)
+            layout.Controls.Add(extensionInput, 1, 3)
+            Dim preview As New TextBox With {.ReadOnly = True, .Dock = DockStyle.Fill}
+            layout.Controls.Add(New Label With {.Text = "Nom du fichier :", .AutoSize = True}, 0, 4)
+            layout.Controls.Add(preview, 1, 4)
+            Dim folderRow As New FlowLayoutPanel With {.Dock = DockStyle.Fill, .WrapContents = False}
+            Dim parentPath As New TextBox With {.Width = 330, .ReadOnly = True}
+            Dim browse As New Button With {.Text = "Parcourir...", .AutoSize = True}
+            folderRow.Controls.Add(parentPath)
+            folderRow.Controls.Add(browse)
+            layout.Controls.Add(New Label With {.Text = "Emplacement :", .AutoSize = True}, 0, 5)
+            layout.Controls.Add(folderRow, 1, 5)
+            Dim create As New Button With {.Text = "Créer le fichier", .AutoSize = True}
+            layout.Controls.Add(create, 1, 6)
+            Dim updatePreview As Action = Sub()
+                Dim nowValue = DateTime.Now
+                Dim prefix = String.Join(" ", terms.Select(Function(t) t.Text.Trim()).Where(Function(t) t.Length > 0))
+                Dim suffix = extensionInput.Text.Trim().TrimStart("."c)
+                preview.Text = prefix & " " & nowValue.ToString("yyyy-MM-dd") & "--" &
+                    CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat.GetAbbreviatedDayName(nowValue.DayOfWeek).TrimEnd("."c) &
+                    "--" & nowValue.ToString("HH-mm-ss") & If(suffix.Length > 0, "." & suffix, "")
+            End Sub
+            For Each term In terms
+                AddHandler term.TextChanged, Sub(sender, e) updatePreview()
+            Next
+            AddHandler extensionInput.TextChanged, Sub(sender, e) updatePreview()
+            AddHandler browse.Click, Sub(sender, e)
+                Using picker As New FolderBrowserDialog With {.Description = "Choisir le dossier de destination"}
+                    If picker.ShowDialog(dialog) = DialogResult.OK Then parentPath.Text = picker.SelectedPath
+                End Using
+            End Sub
+            AddHandler create.Click, Sub(sender, e)
+                If String.IsNullOrWhiteSpace(parentPath.Text) Then
+                    MessageBox.Show(dialog, "Choisissez un emplacement.", "Création de fichier")
+                    Return
+                End If
+                Dim ext = extensionInput.Text.Trim().TrimStart("."c)
+                If terms.Any(Function(t) String.IsNullOrWhiteSpace(t.Text) OrElse t.Text.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) OrElse
+                    ext.Length = 0 OrElse ext.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 Then
+                    MessageBox.Show(dialog, "Renseignez les trois termes et une extension valide.", "Création de fichier")
+                    Return
+                End If
+                updatePreview()
+                Try
+                    Dim destination = Path.Combine(parentPath.Text, preview.Text)
+                    Using stream = New FileStream(destination, FileMode.CreateNew, FileAccess.Write)
+                    End Using
+                    MessageBox.Show(dialog, "Fichier créé : " & destination, "Création de fichier")
+                    dialog.Close()
+                Catch ex As Exception
+                    MessageBox.Show(dialog, ex.Message, "Erreur de création", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            End Sub
+            updatePreview()
+            dialog.Controls.Add(layout)
+            dialog.ShowDialog(Me)
+        End Using
     End Sub
 
     Private Sub ShowCreateFolderDialog()
