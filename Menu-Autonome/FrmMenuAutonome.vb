@@ -817,6 +817,8 @@ Public Class FrmMenuAutonome
     Private Const SlideshowFolder As String = "C:\Menu\applications\Diaporama"
 
     Private ReadOnly appointmentLabel As New Label With {
+        .Anchor = AnchorStyles.Top Or AnchorStyles.Right,
+        .Dock = DockStyle.None,
         .BackColor = Color.Transparent,
         .AutoSize = False,
         .TextAlign = ContentAlignment.TopLeft,
@@ -893,9 +895,13 @@ Public Class FrmMenuAutonome
             maxLineWidth = Math.Max(maxLineWidth, lineWidth)
         Next
         frame.AutoSize = False
-        frame.Width = Math.Max(40, maxLineWidth + frame.Padding.Horizontal + 8)
-        frame.Height = Math.Max(30, lines.Length * (frame.Font.Height + 3) +
+        frame.Dock = DockStyle.None
+        Dim exactWidth = Math.Max(40, maxLineWidth + frame.Padding.Horizontal + 8)
+        Dim exactHeight = Math.Max(30, lines.Length * (frame.Font.Height + 3) +
             frame.Padding.Vertical + 8)
+        frame.MinimumSize = Size.Empty
+        frame.MaximumSize = New Size(exactWidth, exactHeight)
+        frame.Size = New Size(exactWidth, exactHeight)
     End Sub
 
     Private Sub DrawEventBorder(sender As Object, e As PaintEventArgs)
@@ -929,6 +935,8 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private ReadOnly birthdayLabel As New Label With {
+        .Anchor = AnchorStyles.Top Or AnchorStyles.Left,
+        .Dock = DockStyle.None,
         .ForeColor = Color.Black,
         .BackColor = Color.Transparent,
         .AutoSize = False,
