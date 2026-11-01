@@ -675,6 +675,10 @@ Public Class FrmMenuAutonome
     End Function
 
     Private Sub OpenPath(pathValue As String, actionName As String, Optional menuLabel As String = "", Optional parentLabel As String = "")
+        If String.Equals(parentLabel.Trim(), "Started", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(menuLabel.Trim(), "Started", StringComparison.OrdinalIgnoreCase) Then
+            StarterApplisForm.DemarrerApplications(Me)
+            Return
+        End If
         If IsStarterApplis(menuLabel, actionName, parentLabel) Then
             Using dialog As New StarterApplisForm()
                 dialog.ShowDialog(Me)
