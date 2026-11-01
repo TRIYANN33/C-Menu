@@ -202,6 +202,45 @@ Public Class FrmMenuAutonome
                         top.DropDownItems.Add(child)
                     End If
                 Next
+                If String.Equals(first.MenuText.Trim(), "Exemple", StringComparison.OrdinalIgnoreCase) AndAlso
+                   first.MenuNumber.Trim() = "99" Then
+                    Dim exampleActions = top.DropDownItems.OfType(Of ToolStripMenuItem)().ToList()
+                    top.DropDownItems.Clear()
+                    AddHandler top.Click, Sub(sender, e)
+                        Using details As New Form With {
+                            .Text = "Exemple — Menu n° 99",
+                            .StartPosition = FormStartPosition.CenterParent,
+                            .Size = New Size(650, 580),
+                            .MinimumSize = New Size(430, 320),
+                            .AutoScroll = False
+                        }
+                            Dim panel As New FlowLayoutPanel With {
+                                .Dock = DockStyle.Fill,
+                                .FlowDirection = FlowDirection.TopDown,
+                                .WrapContents = False,
+                                .AutoScroll = True,
+                                .Padding = New Padding(15)
+                            }
+                            For Each actionItem In exampleActions
+                                Dim currentAction = actionItem
+                                Dim actionButton As New Button With {
+                                    .Text = currentAction.Text,
+                                    .Width = 570,
+                                    .Height = 38,
+                                    .TextAlign = ContentAlignment.MiddleLeft,
+                                    .Margin = New Padding(4, 3, 4, 6)
+                                }
+                                AddHandler actionButton.Click, Sub(s, args)
+                                    details.Close()
+                                    currentAction.PerformClick()
+                                End Sub
+                                panel.Controls.Add(actionButton)
+                            Next
+                            details.Controls.Add(panel)
+                            details.ShowDialog(Me)
+                        End Using
+                    End Sub
+                End If
                 If top.Text.StartsWith("Couleurs", StringComparison.OrdinalIgnoreCase) Then
                     AddHandler top.Click, Sub(sender, e) ChangeColor(top.Text)
                 End If
