@@ -1370,8 +1370,8 @@ Public Class FrmMenuAutonome
         Using g = CreateGraphics()
             side = CInt(Math.Round(g.DpiX * 6.0 / 2.54))
         End Using
-        slideshowPanel = New Panel With {.Size = New Size(side, side), .BackColor = Color.FromArgb(245, 245, 245)}
-        slideshowPicture = New PictureBox With {.Dock = DockStyle.Fill, .SizeMode = PictureBoxSizeMode.Zoom}
+        slideshowPanel = New Panel With {.Size = New Size(side, side), .BackColor = Color.Transparent}
+        slideshowPicture = New PictureBox With {.Dock = DockStyle.Fill, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.Transparent}
         slideshowPanel.Controls.Add(slideshowPicture)
         Controls.Add(slideshowPanel)
     End Sub
