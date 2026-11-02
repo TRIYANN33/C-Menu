@@ -1406,12 +1406,13 @@ Public Class FrmMenuAutonome
         appointmentLabel.Visible = True
         birthdayLabel.Visible = True
         If appointmentLabel.Parent Is Nothing Then Controls.Add(appointmentLabel)
-        appointmentLabel.SetBounds(slideshowPanel.Right + topMargin, slideshowPanel.Top, side, side)
+        appointmentLabel.SetBounds(slideshowPanel.Right + topMargin, slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
         appointmentLabel.BringToFront()
         If birthdayLabel.Parent Is Nothing Then Controls.Add(birthdayLabel)
-        birthdayLabel.SetBounds(slideshowPanel.Left - topMargin - side, slideshowPanel.Top, side, side)
+        birthdayLabel.SetBounds(slideshowPanel.Left - topMargin - slideshowPanel.Width, slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
         birthdayLabel.BringToFront()
         slideshowPanel.BringToFront()
+        menuBar.BringToFront()
         appointmentLabel.Invalidate()
         birthdayLabel.Invalidate()
         customTitle.BringToFront()
@@ -1596,6 +1597,7 @@ Public Class FrmMenuAutonome
         Dim middleWidth = If(slideshowPanel IsNot Nothing, slideshowPanel.Width, 0)
         Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
         Dim contentWidth = Math.Max(180, middleWidth * 3 + 48)
+        contentWidth = Math.Max(contentWidth, middleWidth * 3 + 2 * Math.Max(1, CInt(Math.Round(DeviceDpi * 0.3 / 2.54))) + 8)
         contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
         Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
