@@ -1797,6 +1797,9 @@ Public Class FrmAnniversaire
         Dim supprimer As New Button With {.Text = "Supprimer", .AutoSize = True}
         AddHandler supprimer.Click, AddressOf DeleteEvent
         toolbar.Controls.Add(supprimer)
+        Dim duplicate As New Button With {.Text = "Dupliquer", .AutoSize = True}
+        AddHandler duplicate.Click, AddressOf DuplicateEvent
+        toolbar.Controls.Add(duplicate)
         AddHandler eventsGrid.SelectionChanged, AddressOf SelectEvent
         Me.Controls.Add(eventsGrid)
         Me.Controls.Add(toolbar)
@@ -1868,6 +1871,23 @@ Public Class FrmAnniversaire
             If pickers(i).Checked Then pickers(i).Value = parsed
         Next
         libelleANoter.Text = Convert.ToString(row.Cells("LibelleANoter").Value)
+    End Sub
+
+    Private Sub DuplicateEvent(sender As Object, e As EventArgs)
+        If selectedId = 0 Then
+            MessageBox.Show(Me, "Sélectionnez un anniversaire à dupliquer.")
+            Return
+        End If
+        Using cn As New SqliteConnection("Data Source=" & databaseFile)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "INSERT INTO Evenements (Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter) SELECT Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter FROM Evenements WHERE Id=$id"
+                cmd.Parameters.AddWithValue("$id", selectedId)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+        ClearEntry()
+        RefreshEvents()
     End Sub
 
     Private Sub DeleteEvent(sender As Object, e As EventArgs)
@@ -1956,6 +1976,9 @@ Public Class FrmRendezVous
         AddHandler save.Click, AddressOf SaveAppointment
         Dim bar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 45, .Padding = New Padding(12, 5, 0, 0)}
         bar.Controls.Add(save)
+        Dim duplicate As New Button With {.Text = "Dupliquer", .AutoSize = True}
+        AddHandler duplicate.Click, AddressOf DuplicateAppointment
+        bar.Controls.Add(duplicate)
         Me.Controls.Add(upcoming)
         Me.Controls.Add(bar)
         Me.Controls.Add(entry)
@@ -1968,6 +1991,23 @@ Public Class FrmRendezVous
             cn.Open()
             Using cmd = cn.CreateCommand()
                 cmd.CommandText = "CREATE TABLE IF NOT EXISTS RendezVous (Id INTEGER PRIMARY KEY AUTOINCREMENT, Libelle TEXT NOT NULL, DateHeure TEXT NOT NULL, Note TEXT)"
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+        RefreshAppointments()
+    End Sub
+
+    Private Sub DuplicateAppointment(sender As Object, e As EventArgs)
+        If upcoming.SelectedRows.Count = 0 Then
+            MessageBox.Show(Me, "Sélectionnez un rendez-vous à dupliquer.")
+            Return
+        End If
+        Dim id = Convert.ToInt64(upcoming.SelectedRows(0).Cells("Id").Value)
+        Using cn As New SqliteConnection("Data Source=" & DbPath)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "INSERT INTO RendezVous (Libelle, DateHeure, Note) SELECT Libelle, DateHeure, Note FROM RendezVous WHERE Id=$id"
+                cmd.Parameters.AddWithValue("$id", id)
                 cmd.ExecuteNonQuery()
             End Using
         End Using
@@ -1997,28 +2037,31 @@ Public Class FrmRendezVous
     End Sub
 
     Private Sub RefreshAppointments()
-        Dim rows As New List(Of (DateValue As Date, Title As String, Notes As String))()
+        Dim rows As New List(Of (Id As Long, DateValue As Date, Title As String, Notes As String))()
         Using cn As New SqliteConnection("Data Source=" & DbPath)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Libelle, DateHeure, Note FROM RendezVous ORDER BY DateHeure DESC"
+                cmd.CommandText = "SELECT Id, Libelle, DateHeure, Note FROM RendezVous ORDER BY DateHeure DESC, Id DESC"
                 Using reader = cmd.ExecuteReader()
                     While reader.Read()
                         Dim d As Date
-                        If Date.TryParseExact(reader.GetString(1), "yyyy-MM-dd HH:mm:ss",
+                        If Date.TryParseExact(reader.GetString(2), "yyyy-MM-dd HH:mm:ss",
                             CultureInfo.InvariantCulture, DateTimeStyles.None, d) Then
-                            rows.Add((d, reader.GetString(0), If(reader.IsDBNull(2), "", reader.GetString(2))))
+                            rows.Add((reader.GetInt64(0), d, reader.GetString(1), If(reader.IsDBNull(3), "", reader.GetString(3))))
                         End If
                     End While
                 End Using
             End Using
         End Using
         upcoming.DataSource = rows.Select(Function(x) New With {
+            .Id = x.Id,
             .Libelle = x.Title,
             .DateEtHeure = x.DateValue.ToString("dddd d MMMM yyyy 'à' HH'h'mm", CultureInfo.GetCultureInfo("fr-FR")),
             .Note = x.Notes
         }).ToList()
-        If upcoming.Columns.Count = 3 Then
+        If upcoming.Columns.Contains("Id") Then upcoming.Columns("Id").Visible = False
+        upcoming.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+        If upcoming.Columns.Count >= 4 Then
             upcoming.Columns(0).HeaderText = "Libellé"
             upcoming.Columns(1).HeaderText = "Date et heure"
         End If
