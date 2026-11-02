@@ -1332,7 +1332,7 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshAppointmentsDisplay()
         appointmentLabel.Text = String.Empty
-        If Not File.Exists(AppointmentDatabase) Then Return
+        If Not File.Exists(AppointmentDatabase) Then\n            appointmentLabel.Text = "Aucun rendez-vous à venir"\n            Return\n        End If
         Try
             Dim lines As New List(Of String)()
             Using cn As New SqliteConnection("Data Source=" & AppointmentDatabase & ";Mode=ReadOnly")
@@ -1388,31 +1388,33 @@ Public Class FrmMenuAutonome
 
     Private Sub PositionSlideshow()
         EnsureSlideshowPanel()
-        Dim side As Integer = slideshowPanel.Width
-        ' Centrage horizontal et espacement fixe de 3 mm sous la barre des menus.
-        Dim topMargin As Integer
-        Dim horizontalGap As Integer
-        Using g = CreateGraphics()
-            topMargin = Math.Max(1, CInt(Math.Round(g.DpiY * 0.3 / 2.54)))
-            horizontalGap = Math.Max(1, CInt(Math.Round(g.DpiX * 0.3 / 2.54)))
+        ' Une seule méthode fixe les trois cadres : même taille, même hauteur et 3 mm d'écart.
+        Dim gapX As Integer
+        Dim gapY As Integer
+        Using graphics = CreateGraphics()
+            gapX = Math.Max(1, CInt(Math.Round(graphics.DpiX * 0.3 / 2.54)))
+            gapY = Math.Max(1, CInt(Math.Round(graphics.DpiY * 0.3 / 2.54)))
         End Using
+        Dim side = slideshowPanel.Width
+        Dim centerX = (ClientSize.Width - side) \ 2
+        Dim topY = menuBar.Bottom + gapY
         slideshowPanel.Dock = DockStyle.None
-        slideshowPanel.SetBounds(Math.Max(0, (ClientSize.Width - side) \ 2),
-                                 menuBar.Bottom + topMargin,
-                                 side, side)
-        nextEventLabel.Visible = False
-        appointmentLabel.Visible = True
-        birthdayLabel.Visible = True
-        If appointmentLabel.Parent Is Nothing Then Controls.Add(appointmentLabel)
-        appointmentLabel.SetBounds(slideshowPanel.Right + horizontalGap, slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
-        appointmentLabel.BringToFront()
+        slideshowPanel.SetBounds(centerX, topY, side, side)
         If birthdayLabel.Parent Is Nothing Then Controls.Add(birthdayLabel)
-        birthdayLabel.SetBounds(slideshowPanel.Left - horizontalGap - slideshowPanel.Width, slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
+        If appointmentLabel.Parent Is Nothing Then Controls.Add(appointmentLabel)
+        birthdayLabel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+        appointmentLabel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+        birthdayLabel.AutoSize = False
+        appointmentLabel.AutoSize = False
+        birthdayLabel.SetBounds(centerX - gapX - side, topY, side, side)
+        appointmentLabel.SetBounds(centerX + side + gapX, topY, side, side)
+        birthdayLabel.Visible = True
+        appointmentLabel.Visible = True
+        nextEventLabel.Visible = False
         birthdayLabel.BringToFront()
+        appointmentLabel.BringToFront()
         slideshowPanel.BringToFront()
         menuBar.BringToFront()
-        appointmentLabel.Invalidate()
-        birthdayLabel.Invalidate()
         customTitle.BringToFront()
     End Sub
 
