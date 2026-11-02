@@ -76,18 +76,29 @@ Public NotInheritable Class MenuExeGenerator
         End Using
         Dim exePath = Path.Combine(publishFolder, safe & ".exe")
         Dim compiledExe = Path.Combine(temporaryPublish, safe & ".exe")
-        If Not File.Exists(compiledExe) Then Throw New FileNotFoundException("L'exécutable n'a pas été créé.", compiledExe)
         Try
+            If Not File.Exists(compiledExe) Then
+                Throw New FileNotFoundException("Publication terminée sans exécutable. Vérifiez les fichiers produits par dotnet publish.", compiledExe)
+            End If
+            ' Publier l'exécutable en dernier : ne pas masquer un fichier source absent
+            ' sous un message trompeur demandant de fermer le menu.
             For Each generatedFile In Directory.GetFiles(temporaryPublish)
+                If String.Equals(generatedFile, compiledExe, StringComparison.OrdinalIgnoreCase) Then Continue For
                 File.Copy(generatedFile, Path.Combine(publishFolder, Path.GetFileName(generatedFile)), True)
             Next
-        Catch ex As IOException
-            Throw New IOException("Impossible de remplacer " & exePath & "." & vbCrLf &
-                "Fermez le menu " & safe & " s'il est ouvert, puis réessayez Créer Menu." & vbCrLf &
-                "Détail : " & ex.Message, ex)
-        Catch ex As UnauthorizedAccessException
-            Throw New IOException("Accès refusé lors du remplacement de " & exePath & "." & vbCrLf &
-                "Fermez le menu " & safe & " et vérifiez les autorisations du dossier.", ex)
+            If Not File.Exists(compiledExe) Then
+                Throw New FileNotFoundException("L'exécutable temporaire a disparu avant sa copie.", compiledExe)
+            End If
+            Try
+                File.Copy(compiledExe, exePath, True)
+            Catch ex As IOException
+                If Not File.Exists(compiledExe) Then
+                    Throw New FileNotFoundException("L'exécutable temporaire a disparu pendant la publication.", compiledExe)
+                End If
+                Throw New IOException("Impossible d'écrire l'exécutable de destination : " & exePath &
+                    vbCrLf & "Vérifiez qu'il n'est pas utilisé et que le dossier est accessible." &
+                    vbCrLf & "Détail : " & ex.Message, ex)
+            End Try
         Finally
             Try
                 Directory.Delete(temporaryPublish, True)
