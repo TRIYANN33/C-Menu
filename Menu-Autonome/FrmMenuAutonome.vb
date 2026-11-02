@@ -135,7 +135,7 @@ Public Class FrmMenuAutonome
             End If
         End Sub
         MainMenuStrip = menuBar
-        ' Countdowns retirés du formulaire.
+        countdowns = New CountdownManager(Me, GeneratedConfig.FormName)
 
         AddHandler Resize, Sub(sender, e)
             customTitle.SetBounds(0, 0, ClientSize.Width, 34)
@@ -164,6 +164,7 @@ Public Class FrmMenuAutonome
             StartMiddleSlideshow()
             RefreshRightDates()
             RefreshLeftBirthdays()
+            countdowns.Start()
             clock.Start()
         End Sub
         AddHandler FormClosed, Sub(sender, e)
@@ -237,8 +238,19 @@ Public Class FrmMenuAutonome
         MyBase.WndProc(m)
     End Sub
 
+    Public Function CountdownFrameWidth() As Integer
+        If emptyFrames(0).Parent Is Nothing Then Return Math.Max(100, (ClientSize.Width - 16) \ 3)
+        Return emptyFrames(0).Width + (emptyFrames(1).Left - emptyFrames(0).Right)
+    End Function
+
+    Public Function CountdownFrameLeft() As Integer
+        If emptyFrames(0).Parent Is Nothing Then Return 8
+        Return emptyFrames(0).Left
+    End Function
+
     Public Function CountdownFirstRowTop() As Integer
         Dim topValue = menuBar.Bottom + 12
+        If emptyFrames(0).Parent IsNot Nothing Then Return emptyFrames(0).Bottom + 12
         Return topValue
     End Function
 
@@ -615,7 +627,7 @@ Public Class FrmMenuAutonome
                 FirstOrDefault(Function(item) String.Equals(item.Text.Trim(), "Countdown timer", StringComparison.OrdinalIgnoreCase))
             If countdownEntry Is Nothing Then
                 Dim entry As New ToolStripMenuItem("Countdown timer")
-                AddHandler entry.Click, Sub(sender, e) MessageBox.Show(Me, "Les compteurs ont été retirés du formulaire.", "Countdown timer")
+                AddHandler entry.Click, Sub(sender, e) countdowns.OpenEditor()
                 designMenu.DropDownItems.Add(entry)
             End If
             ' Tri numérique des menus et sous-menus, sans lambda multiligne.
@@ -1377,7 +1389,7 @@ Public Class FrmMenuAutonome
             Dim requiredHeight = requiredClientHeight + (Height - ClientSize.Height)
             Dim maxHeight = Screen.FromControl(Me).WorkingArea.Height
             requiredHeight = Math.Min(requiredHeight, maxHeight)
-            If Height <> requiredHeight Then Height = requiredHeight
+            If Height < requiredHeight Then Height = requiredHeight
         End If
     End Sub
 
@@ -2991,10 +3003,15 @@ Public Class CountdownManager
                 Math.Max(menu.CountdownFirstRowTop(), menu.CountdownSlideshowBottom()))
             Const circleHeight As Integer = 156
             Const rowGap As Integer = 6
-            Dim cellWidth = Math.Max(100, (owner.ClientSize.Width - 16) \ 3)
+            Dim cellWidth As Integer = Math.Max(100, (owner.ClientSize.Width - 16) \ 3)
+            Dim startLeft As Integer = 8
+            If menu IsNot Nothing Then
+                cellWidth = menu.CountdownFrameWidth()
+                startLeft = menu.CountdownFrameLeft()
+            End If
             panel.Padding = Padding.Empty
             panel.Margin = Padding.Empty
-            panel.SetBounds(8, firstTop, cellWidth * 3, 0)
+            panel.SetBounds(startLeft, firstTop, cellWidth * 3, 0)
             Dim activeItems = items.Where(Function(x) x.Fin > DateTime.Now).
                 OrderBy(Function(x) If(x.Priorite > 0, x.Priorite, x.Id)).
                 ThenBy(Function(x) x.Id).ToList()
