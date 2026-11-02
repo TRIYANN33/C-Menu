@@ -62,6 +62,8 @@ Public Class FrmMenuAutonome
     End Function
 
     Private slideshowTitleMode As Boolean
+    Private userResizedMenu As Boolean
+    Private adjustingMenuWidth As Boolean
     Private previousTitleBounds As Rectangle
     Private previousTitleMinimum As Size
     Private ReadOnly databasePath As String = Path.Combine(AppContext.BaseDirectory, "CMenu.db")
@@ -157,6 +159,9 @@ Public Class FrmMenuAutonome
             PositionNextEvent()
             PositionAppointments()
             PositionSlideshow()
+        End Sub
+        AddHandler ResizeEnd, Sub(sender, e)
+            If Not adjustingMenuWidth AndAlso Not slideshowTitleMode Then userResizedMenu = True
         End Sub
         AddHandler clock.Tick, Sub(sender, e)
             RefreshClock()
@@ -1609,8 +1614,16 @@ Public Class FrmMenuAutonome
         Dim targetWidth = Math.Min(targetClientWidth + frameWidth, availableWidth)
 
         If WindowState = FormWindowState.Normal AndAlso Not slideshowTitleMode Then
-            MinimumSize = New Size(Math.Min(targetWidth, availableWidth), MinimumSize.Height)
-            If Width <> targetWidth Then Width = targetWidth
+            ' Ne pas écraser une largeur choisie manuellement par l'utilisateur.
+            If Not userResizedMenu Then
+                adjustingMenuWidth = True
+                Try
+                    MinimumSize = New Size(180, MinimumSize.Height)
+                    If Width <> targetWidth Then Width = targetWidth
+                Finally
+                    adjustingMenuWidth = False
+                End Try
+            End If
         End If
         customTitle.SetBounds(0, 0, ClientSize.Width, 34)
         menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
