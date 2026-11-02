@@ -1332,7 +1332,10 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshAppointmentsDisplay()
         appointmentLabel.Text = String.Empty
-        If Not File.Exists(AppointmentDatabase) Then\n            appointmentLabel.Text = "Aucun rendez-vous à venir"\n            Return\n        End If
+        If Not File.Exists(AppointmentDatabase) Then
+            appointmentLabel.Text = "Aucun rendez-vous à venir"
+            Return
+        End If
         Try
             Dim lines As New List(Of String)()
             Using cn As New SqliteConnection("Data Source=" & AppointmentDatabase & ";Mode=ReadOnly")
