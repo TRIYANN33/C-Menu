@@ -162,6 +162,7 @@ Public Class FrmMenuAutonome
             PositionEmptyFrames()
             StartMiddleSlideshow()
             RefreshRightDates()
+            RefreshLeftBirthdays()
             clock.Start()
         End Sub
         AddHandler FormClosed, Sub(sender, e)
@@ -1428,6 +1429,50 @@ Public Class FrmMenuAutonome
             If upcoming.Count > 0 Then rightDatesLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, upcoming)
         Catch ex As Exception
             rightDatesLabel.Text = "Lecture des rendez-vous impossible"
+        End Try
+    End Sub
+
+    Private ReadOnly leftBirthdaysLabel As New Label With {
+        .Dock = DockStyle.Fill, .AutoSize = False, .BackColor = Color.Transparent,
+        .TextAlign = ContentAlignment.TopLeft, .Padding = New Padding(6),
+        .Font = New Font("Segoe UI", 9, FontStyle.Bold), .ForeColor = Color.Black
+    }
+
+    Private Sub RefreshLeftBirthdays()
+        If leftBirthdaysLabel.Parent Is Nothing Then emptyFrames(0).Controls.Add(leftBirthdaysLabel)
+        leftBirthdaysLabel.Text = "Aucun anniversaire à venir"
+        If Not File.Exists(AnniversaryDatabase) Then Return
+        Try
+            Dim upcoming As New List(Of (DateValue As Date, Description As String))()
+            Using cn As New SqliteConnection("Data Source=" & AnniversaryDatabase & ";Mode=ReadOnly")
+                cn.Open()
+                Using cmd = cn.CreateCommand()
+                    cmd.CommandText = "SELECT Nom, Prenom, Naissance FROM Evenements"
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            If reader.IsDBNull(2) Then Continue While
+                            Dim born As Date
+                            If Not Date.TryParseExact(reader.GetString(2), "yyyy-MM-dd",
+                                CultureInfo.InvariantCulture, DateTimeStyles.None, born) Then Continue While
+                            Dim year = Date.Today.Year
+                            Dim nextDate = New Date(year, born.Month, Math.Min(born.Day, Date.DaysInMonth(year, born.Month)))
+                            If nextDate < Date.Today Then
+                                year += 1
+                                nextDate = New Date(year, born.Month, Math.Min(born.Day, Date.DaysInMonth(year, born.Month)))
+                            End If
+                            Dim person = reader.GetString(1).Trim() & " " & reader.GetString(0).Trim()
+                            upcoming.Add((nextDate, person & " (" & (year - born.Year).ToString(CultureInfo.InvariantCulture) &
+                                " ans)" & Environment.NewLine & nextDate.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("fr-FR"))))
+                        End While
+                    End Using
+                End Using
+            End Using
+            If upcoming.Count > 0 Then
+                leftBirthdaysLabel.Text = String.Join(Environment.NewLine & Environment.NewLine,
+                    upcoming.OrderBy(Function(item) item.DateValue).Take(4).Select(Function(item) item.Description))
+            End If
+        Catch ex As Exception
+            leftBirthdaysLabel.Text = "Lecture des anniversaires impossible"
         End Try
     End Sub
 
