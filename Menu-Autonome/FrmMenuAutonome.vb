@@ -1328,6 +1328,14 @@ Public Class FrmMenuAutonome
         Next
         menuBar.BringToFront()
         customTitle.BringToFront()
+        ' Ajuster la hauteur utile à la rangée de cadres avec une marge de 3 mm.
+        If WindowState = FormWindowState.Normal AndAlso Not slideshowTitleMode Then
+            Dim requiredClientHeight = top + side + gapY
+            Dim requiredHeight = requiredClientHeight + (Height - ClientSize.Height)
+            Dim maxHeight = Screen.FromControl(Me).WorkingArea.Height
+            requiredHeight = Math.Min(requiredHeight, maxHeight)
+            If Height <> requiredHeight Then Height = requiredHeight
+        End If
     End Sub
 
     Private ReadOnly slideshowTimer As New Timer With {.Interval = 8000}
