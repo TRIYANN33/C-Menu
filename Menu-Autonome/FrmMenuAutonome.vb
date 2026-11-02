@@ -129,19 +129,18 @@ Public Class FrmMenuAutonome
             If e.KeyCode = Keys.F5 Then
                 e.Handled = True
                 e.SuppressKeyPress = True
-                RefreshNextEvent()
-                RefreshAppointmentsDisplay()
+                ' Cadre Anniversaires retiré.
+                ' Cadre Rendez-vous retiré.
             End If
         End Sub
         MainMenuStrip = menuBar
-        countdowns = New CountdownManager(Me, GeneratedConfig.SafeName)
+        ' Countdowns retirés du formulaire.
 
         AddHandler Resize, Sub(sender, e)
             customTitle.SetBounds(0, 0, ClientSize.Width, 34)
             menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
             DistributeMenuItems()
             UpdateRoundedCorners()
-            PositionSlideshow()
         End Sub
         AddHandler ResizeEnd, Sub(sender, e)
             If Not adjustingMenuWidth AndAlso Not slideshowTitleMode Then userResizedMenu = True
@@ -157,18 +156,12 @@ Public Class FrmMenuAutonome
             RefreshClock()
             RenameExampleMenuInDatabase()
             LoadFromDatabase()
-            countdowns.Start()
-            StartSlideshow(True)
-            nextEventLabel.Visible = False
-            RefreshNextEvent()
-            RefreshAppointmentsDisplay()
-            PositionSlideshow()
             clock.Start()
         End Sub
         AddHandler FormClosed, Sub(sender, e)
             clock.Stop()
             slideshowTimer.Stop()
-            countdowns.Dispose()
+            If countdowns IsNot Nothing Then countdowns.Dispose()
         End Sub
     End Sub
 
@@ -238,13 +231,11 @@ Public Class FrmMenuAutonome
 
     Public Function CountdownFirstRowTop() As Integer
         Dim topValue = menuBar.Bottom + 12
-        If birthdayLabel.Visible Then topValue = Math.Max(topValue, birthdayLabel.Bottom + 8)
-        If appointmentLabel.Visible Then topValue = Math.Max(topValue, appointmentLabel.Bottom + 8)
         Return topValue
     End Function
 
     Public Function CountdownSlideshowBottom() As Integer
-        If slideshowPanel IsNot Nothing AndAlso slideshowPanel.Visible Then Return slideshowPanel.Bottom + 8
+        If False AndAlso slideshowPanel IsNot Nothing AndAlso slideshowPanel.Visible Then Return slideshowPanel.Bottom + 8
         Return 0
     End Function
 
@@ -566,7 +557,7 @@ Public Class FrmMenuAutonome
                     Using dialog As New FrmAnniversaire()
                         dialog.ShowDialog(Me)
                     End Using
-                    RefreshNextEvent()
+                    ' Cadre Anniversaires retiré.
                 End Sub
                 bddMenu.DropDownItems.Add(anniversairesItem)
             End If
@@ -578,7 +569,7 @@ Public Class FrmMenuAutonome
                     Using dialog As New FrmRendezVous()
                         dialog.ShowDialog(Me)
                     End Using
-                    RefreshAppointmentsDisplay()
+                    ' Cadre Rendez-vous retiré.
                     PositionAppointments()
                 End Sub
                 bddMenu.DropDownItems.Add(rendezVousItem)
@@ -616,7 +607,7 @@ Public Class FrmMenuAutonome
                 FirstOrDefault(Function(item) String.Equals(item.Text.Trim(), "Countdown timer", StringComparison.OrdinalIgnoreCase))
             If countdownEntry Is Nothing Then
                 Dim entry As New ToolStripMenuItem("Countdown timer")
-                AddHandler entry.Click, Sub(sender, e) countdowns.OpenEditor()
+                AddHandler entry.Click, Sub(sender, e) MessageBox.Show(Me, "Les compteurs ont été retirés du formulaire.", "Countdown timer")
                 designMenu.DropDownItems.Add(entry)
             End If
             ' Tri numérique des menus et sous-menus, sans lambda multiligne.
@@ -1557,8 +1548,7 @@ Public Class FrmMenuAutonome
             If birthdayTexts.Count > 0 Then
                 birthdayLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, birthdayTexts.OrderBy(Function(x) x.DateValue).Take(2).Select(Function(x) x.Description))
                 birthdayLabel.Visible = True
-                PositionSlideshow()
-            End If
+                    End If
             If False AndAlso nextTexts.Count > 0 Then
                 nextEventLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, nextTexts)
                 FitEventFrame(nextEventLabel)
