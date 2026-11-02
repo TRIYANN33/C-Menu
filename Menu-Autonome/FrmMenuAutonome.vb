@@ -1392,20 +1392,29 @@ Public Class FrmMenuAutonome
         Controls.Add(slideshowPanel)
     End Sub
 
-    Private Sub PositionSlideshow()
-        EnsureSlideshowPanel()
-        Dim side As Integer
+    Private Function EventSideLength() As Integer
+        Dim desired As Integer
         Dim gap As Integer
         Using g = CreateGraphics()
-            side = Math.Max(1, CInt(Math.Round(g.DpiX * 6.0 / 2.54)))
+            desired = CInt(Math.Round(g.DpiX * 6.0 / 2.54))
             gap = Math.Max(1, CInt(Math.Round(g.DpiX * 0.3 / 2.54)))
         End Using
+        Return Math.Max(40, Math.Min(desired, (Math.Max(150, ClientSize.Width) - 4 * gap) \ 3))
+    End Function
+
+    Private Sub PositionSlideshow()
+        EnsureSlideshowPanel()
+        Dim gap As Integer
+        Using g = CreateGraphics()
+            gap = Math.Max(1, CInt(Math.Round(g.DpiX * 0.3 / 2.54)))
+        End Using
+        Dim side = EventSideLength()
         Dim top = menuBar.Bottom + gap
         Dim centerX = (ClientSize.Width - side) \ 2
-        slideshowPanel.Dock = DockStyle.None
         slideshowPanel.SetBounds(centerX, top, side, side)
         For Each frame In {birthdayLabel, appointmentLabel}
             frame.AutoSize = False
+            frame.Dock = DockStyle.None
             frame.MinimumSize = Size.Empty
             frame.MaximumSize = Size.Empty
             frame.Size = New Size(side, side)
@@ -1419,30 +1428,12 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private Sub FitEventFrame(frame As Label)
-        ' Largeur du cadre = largeur de la ligne la plus longue + marges intérieures.
-        Dim lines = frame.Text.Split({Environment.NewLine}, StringSplitOptions.None)
-        Dim maxLineWidth As Integer = 0
-        For Each line In lines
-            If line.Length = 0 Then Continue For
-            Dim lineWidth = TextRenderer.MeasureText(line, frame.Font,
-                New Size(Integer.MaxValue, Integer.MaxValue),
-                TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding).Width
-            maxLineWidth = Math.Max(maxLineWidth, lineWidth)
-        Next
         frame.AutoSize = False
         frame.Dock = DockStyle.None
-        Dim exactWidth = Math.Max(40, maxLineWidth + frame.Padding.Horizontal + 8)
-        Dim exactHeight = Math.Max(30, lines.Length * (frame.Font.Height + 3) +
-            frame.Padding.Vertical + 8)
         frame.MinimumSize = Size.Empty
-        EnsureSlideshowPanel()
-        If slideshowPanel IsNot Nothing Then
-            exactWidth = slideshowPanel.Width
-            exactHeight = slideshowPanel.Height
-        End If
         frame.MaximumSize = Size.Empty
-        frame.AutoEllipsis = True
-        frame.Size = New Size(exactWidth, exactHeight)
+        Dim side = EventSideLength()
+        frame.Size = New Size(side, side)
     End Sub
 
     Private Sub DrawEventBorder(sender As Object, e As PaintEventArgs)
@@ -1644,7 +1635,7 @@ Public Class FrmMenuAutonome
                                  If(nextEventLabel.Visible, nextEventLabel.Width, 0))
         Dim middleWidth = If(slideshowPanel IsNot Nothing, slideshowPanel.Width, 0)
         Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
-        Dim contentWidth = Math.Max(180, 3 * Math.Max(middleWidth, Math.Max(leftWidth, rightWidth)) + 72)
+        Dim contentWidth = Math.Max(180, 3 * EventSideLength() + 72)
         contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
         Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
@@ -1687,41 +1678,15 @@ Public Class FrmMenuAutonome
                 End If
                 End If
             End If
-            If slideshowPanel Is Nothing Then
-                originalWindowSize = Size
-                Dim pxWidth As Integer
-                Dim pxHeight As Integer
-                Using graphics = CreateGraphics()
-                    pxWidth = CInt(Math.Round(graphics.DpiX * 6.0 / 2.54))
-                    pxHeight = CInt(Math.Round(graphics.DpiY * 6.0 / 2.54))
-                End Using
-                slideshowPanel = New Panel With {
-                    .Size = New Size(pxWidth, pxHeight),
-                    .Dock = DockStyle.None,
-                    .BorderStyle = BorderStyle.None,
-                    .BackColor = Color.Transparent
-                }
-                slideshowPicture = New PictureBox With {
-                    .Dock = DockStyle.Fill,
-                    .SizeMode = PictureBoxSizeMode.Zoom,
-                    .BackColor = Color.Transparent
-                }
-                AddHandler slideshowPicture.Click, Sub(sender, e) NextSlideshowImage()
-                AddHandler slideshowPanel.Click, Sub(sender, e) NextSlideshowImage()
-                slideshowPanel.Controls.Add(slideshowPicture)
-                Controls.Add(slideshowPanel)
-                slideshowPanel.BringToFront()
-                AdjustMenuWidth()
-                PositionSlideshow()
-                ' Garder 3 mm libres sous le diaporama, quelle que soit la résolution DPI.
-                Dim bottomMargin As Integer
-                Using graphics = CreateGraphics()
-                    bottomMargin = CInt(Math.Round(graphics.DpiY * 0.3 / 2.54))
-                End Using
-                Height = Math.Max(Height, slideshowPanel.Bottom + bottomMargin + (Height - ClientSize.Height))
-                PositionSlideshow()
-                AddHandler slideshowTimer.Tick, Sub(sender, e) NextSlideshowImage()
-            End If
+            EnsureSlideshowPanel()
+            AdjustMenuWidth()
+            PositionSlideshow()
+            Dim bottomMargin As Integer
+            Using graphics = CreateGraphics()
+                bottomMargin = Math.Max(1, CInt(Math.Round(graphics.DpiY * 0.3 / 2.54)))
+            End Using
+            Height = Math.Max(Height, slideshowPanel.Bottom + bottomMargin + (Height - ClientSize.Height))
+            PositionSlideshow()
             ' Le panneau peut avoir été créé pour réserver la place avant le chargement des photos.
             If slideshowPanel IsNot Nothing Then
                 RemoveHandler slideshowPicture.Click, AddressOf NextSlideshowImageFromClick
