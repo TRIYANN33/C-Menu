@@ -92,6 +92,7 @@ Public Class FrmMenuAutonome
         menuBar.Height = 36
         menuBar.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
+        menuBar.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         menuBar.Padding = New Padding(10, 6, 10, 6)
         Controls.Add(menuBar)
         Dim editingMenu As New ContextMenuStrip()
