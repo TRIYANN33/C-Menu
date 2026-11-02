@@ -131,7 +131,7 @@ Public Class FrmMenuAutonome
                 e.Handled = True
                 e.SuppressKeyPress = True
                 ' Cadre Anniversaires retiré.
-                ' Cadre Rendez-vous retiré.
+                RefreshRightDates()
             End If
         End Sub
         MainMenuStrip = menuBar
@@ -160,6 +160,7 @@ Public Class FrmMenuAutonome
             LoadFromDatabase()
             PositionEmptyFrames()
             StartMiddleSlideshow()
+            RefreshRightDates()
             clock.Start()
         End Sub
         AddHandler FormClosed, Sub(sender, e)
@@ -1366,6 +1367,47 @@ Public Class FrmMenuAutonome
         Catch ex As Exception
             MessageBox.Show(Me, "Impossible de démarrer le diaporama : " & ex.Message,
                             "Diaporama", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
+    End Sub
+
+    ' Affichage des deux prochains rendez-vous dans le cadre de droite.
+    Private ReadOnly rightDatesLabel As New Label With {
+        .Dock = DockStyle.Fill,
+        .AutoSize = False,
+        .BackColor = Color.Transparent,
+        .TextAlign = ContentAlignment.TopLeft,
+        .Padding = New Padding(6),
+        .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+        .ForeColor = Color.Black
+    }
+
+    Private Sub RefreshRightDates()
+        If rightDatesLabel.Parent Is Nothing Then emptyFrames(2).Controls.Add(rightDatesLabel)
+        rightDatesLabel.Text = "Aucun rendez-vous à venir"
+        If Not File.Exists(AppointmentDatabase) Then Return
+        Try
+            Dim upcoming As New List(Of String)()
+            Using cn As New SqliteConnection("Data Source=" & AppointmentDatabase & ";Mode=ReadOnly")
+                cn.Open()
+                Using cmd = cn.CreateCommand()
+                    cmd.CommandText = "SELECT Libelle, DateHeure, Note FROM RendezVous WHERE DateHeure >= $now ORDER BY DateHeure ASC LIMIT 2"
+                    cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim dateValue As Date
+                            If Not Date.TryParseExact(reader.GetString(1), "yyyy-MM-dd HH:mm:ss",
+                                CultureInfo.InvariantCulture, DateTimeStyles.None, dateValue) Then Continue While
+                            Dim detail = If(reader.IsDBNull(2), "", reader.GetString(2).Trim())
+                            upcoming.Add(reader.GetString(0).Trim() & Environment.NewLine &
+                                dateValue.ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("fr-FR")) &
+                                If(detail.Length = 0, "", Environment.NewLine & detail))
+                        End While
+                    End Using
+                End Using
+            End Using
+            If upcoming.Count > 0 Then rightDatesLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, upcoming)
+        Catch ex As Exception
+            rightDatesLabel.Text = "Lecture des rendez-vous impossible"
         End Try
     End Sub
 
