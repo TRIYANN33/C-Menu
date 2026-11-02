@@ -2545,8 +2545,8 @@ Public Class CountdownManager
     Private ReadOnly owner As Form
     Private ReadOnly filePath As String
     Private ReadOnly tick As New Timer With {.Interval = 1000}
-    Private ReadOnly panel As New FlowLayoutPanel With {.Dock = DockStyle.None, .Height = 0,
-        .BackColor = Color.Transparent, .AutoScroll = True, .WrapContents = True, .Padding = New Padding(8)}
+    Private ReadOnly panel As New Panel With {.Dock = DockStyle.None, .Height = 0,
+        .BackColor = Color.Transparent, .AutoScroll = False, .Padding = Padding.Empty}
     Private items As New List(Of CountdownItem)
     Private started As Boolean
     Private baseHeight As Integer
@@ -2588,37 +2588,37 @@ Public Class CountdownManager
         Try
             panel.Controls.Clear()
             Dim menu = TryCast(owner, FrmMenuAutonome)
-            Dim firstTop = If(menu Is Nothing, 120, menu.CountdownFirstRowTop())
-            Dim secondTop = Math.Max(firstTop + 162, If(menu Is Nothing, 0, menu.CountdownSlideshowBottom()))
+            Dim firstTop = If(menu Is Nothing, 120,
+                Math.Max(menu.CountdownFirstRowTop(), menu.CountdownSlideshowBottom()))
+            Const circleHeight As Integer = 156
+            Const rowGap As Integer = 6
             Dim cellWidth = Math.Max(100, (owner.ClientSize.Width - 16) \ 3)
-            panel.Padding = New Padding(0)
+            panel.Padding = Padding.Empty
             panel.Margin = Padding.Empty
-            panel.Width = cellWidth * 3
-            panel.Left = 0
-            panel.Top = firstTop
-            Dim activeItems = items.Where(Function(x) x.Fin > DateTime.Now).OrderBy(Function(x) If(x.Priorite > 0, x.Priorite, x.Id)).ThenBy(Function(x) x.Id).ToList()
+            panel.SetBounds(8, firstTop, cellWidth * 3, 0)
+            Dim activeItems = items.Where(Function(x) x.Fin > DateTime.Now).
+                OrderBy(Function(x) If(x.Priorite > 0, x.Priorite, x.Id)).
+                ThenBy(Function(x) x.Id).ToList()
             For index As Integer = 0 To activeItems.Count - 1
-                If index = 1 Then
-                    panel.Controls.Add(New Panel With {.Width = cellWidth, .Height = 156,
-                        .Margin = Padding.Empty, .BackColor = Color.Transparent})
-                End If
-                If index = 2 AndAlso secondTop > firstTop + 162 Then
-                    ' Décaler les lignes suivantes sous le diaporama.
-                    Dim spacerHeight = secondTop - firstTop - 156
-                    panel.Controls.Add(New Panel With {.Width = cellWidth * 3,
-                        .Height = spacerHeight, .Margin = Padding.Empty, .BackColor = Color.Transparent})
-                End If
-                Dim circle As New CountdownCircle With {.Item = activeItems(index),
-                    .Width = cellWidth, .Height = 156, .Margin = Padding.Empty}
+                Dim col = index Mod 3
+                Dim rowIndex = index \ 3
+                Dim circle As New CountdownCircle With {
+                    .Item = activeItems(index),
+                    .Width = cellWidth,
+                    .Height = circleHeight,
+                    .Left = col * cellWidth,
+                    .Top = rowIndex * (circleHeight + rowGap),
+                    .Margin = Padding.Empty
+                }
                 circle.Cursor = Cursors.Hand
                 AddHandler circle.Click, Sub(sender, e) OpenEditor()
                 panel.Controls.Add(circle)
             Next
-            Dim occupied = activeItems.Count + If(activeItems.Count >= 2, 1, 0)
-            Dim rows = CInt(Math.Ceiling(occupied / 3.0))
-            Dim totalHeight = If(rows = 0, 0, (If(rows > 1, secondTop - firstTop, 0)) + 156 + Math.Max(0, rows - 2) * 162)
+            Dim rows = CInt(Math.Ceiling(activeItems.Count / 3.0))
+            Dim totalHeight = If(rows = 0, 0, rows * circleHeight + (rows - 1) * rowGap)
             panel.Height = totalHeight
-            Dim desiredHeight = Math.Max(baseHeight, firstTop + totalHeight + (owner.Height - owner.ClientSize.Height) + 8)
+            Dim desiredHeight = Math.Max(baseHeight, firstTop + totalHeight +
+                (owner.Height - owner.ClientSize.Height) + 8)
             If owner.Height < desiredHeight Then owner.Height = desiredHeight
             panel.BringToFront()
         Finally
