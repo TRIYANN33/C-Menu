@@ -413,18 +413,18 @@ Public Class FrmMenuAutonome
                     }
                     fields.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 155))
                     fields.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
-                    Dim names = {"Frm_Menu", "NumMenu", "NumSousMenu", "Menu", "SousMenu",
+                    Dim fieldNames = {"Frm_Menu", "NumMenu", "NumSousMenu", "Menu", "SousMenu",
                                  "Info01", "Info02", "Application", "Action", "Chemin"}
                     Dim values As New Dictionary(Of String, TextBox)(StringComparer.OrdinalIgnoreCase)
-                    For Each name In names
+                    For Each fieldName In fieldNames
                         Dim rowIndex = fields.RowCount
                         fields.RowCount += 1
                         fields.RowStyles.Add(New RowStyle(SizeType.Absolute, 37))
-                        fields.Controls.Add(New Label With {.Text = name, .AutoSize = True,
+                        fields.Controls.Add(New Label With {.Text = fieldName, .AutoSize = True,
                             .Anchor = AnchorStyles.Left}, 0, rowIndex)
                         Dim field As New TextBox With {.Dock = DockStyle.Fill}
                         fields.Controls.Add(field, 1, rowIndex)
-                        values.Add(name, field)
+                        values.Add(fieldName, field)
                     Next
                     values("Frm_Menu").Text = GeneratedConfig.FormName
                     values("Frm_Menu").ReadOnly = True
@@ -433,18 +433,18 @@ Public Class FrmMenuAutonome
                     }
                     If isSubMenu Then
                         For Each parent In parents
-                            parentPicker.Items.Add(parent.Number & " - " & parent.Caption)
+                            parentPicker.Items.Add(parentEntry.Number & " - " & parentEntry.Caption)
                         Next
                         fields.Controls.Add(New Label With {.Text = "Menu parent", .AutoSize = True}, 0, 0)
                         fields.Controls.Add(parentPicker, 1, 0)
                         AddHandler parentPicker.SelectedIndexChanged, Sub()
-                            Dim parent = parents(parentPicker.SelectedIndex)
-                            values("NumMenu").Text = parent.Number
-                            values("Menu").Text = parent.Caption
+                            Dim selectedParent = parents(parentPicker.SelectedIndex)
+                            values("NumMenu").Text = selectedParent.Number
+                            values("Menu").Text = selectedParent.Caption
                             Using cmd = cn.CreateCommand()
                                 cmd.CommandText = "SELECT COALESCE(MAX(CAST(NumSousMenu AS INTEGER)),0)+1 FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND NumMenu=$num"
                                 cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
-                                cmd.Parameters.AddWithValue("$num", parent.Number)
+                                cmd.Parameters.AddWithValue("$num", selectedParent.Number)
                                 values("NumSousMenu").Text = Convert.ToString(cmd.ExecuteScalar())
                             End Using
                         End Sub
@@ -482,7 +482,7 @@ Public Class FrmMenuAutonome
                             Using cmd = cn.CreateCommand()
                                 cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) VALUES ($now,$now,$form,$num,$subnum,$menu,$sub,$info1,$info2,$app,$action,$path)"
                                 cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
-                                Dim parameters = New Dictionary(Of String, String) From {
+                                Dim fieldParameters = New Dictionary(Of String, String) From {
                                     {"$form", values("Frm_Menu").Text}, {"$num", values("NumMenu").Text.Trim()},
                                     {"$subnum", values("NumSousMenu").Text.Trim()},
                                     {"$menu", values("Menu").Text.Trim()}, {"$sub", values("SousMenu").Text.Trim()},
@@ -490,7 +490,7 @@ Public Class FrmMenuAutonome
                                     {"$app", values("Application").Text.Trim()}, {"$action", values("Action").Text.Trim()},
                                     {"$path", values("Chemin").Text.Trim()}
                                 }
-                                For Each parameter In parameters
+                                For Each parameter In fieldParameters
                                     cmd.Parameters.AddWithValue(parameter.Key, parameter.Value)
                                 Next
                                 cmd.ExecuteNonQuery()
