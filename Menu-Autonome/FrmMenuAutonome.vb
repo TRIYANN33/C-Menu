@@ -98,27 +98,7 @@ Public Class FrmMenuAutonome
         editingMenu.Items.Add("Ajouter un menu...", Nothing, Sub(sender, e) AddMenuLive(False))
         editingMenu.Items.Add("Ajouter un sous-menu...", Nothing, Sub(sender, e) AddMenuLive(True))
         menuBar.ContextMenuStrip = editingMenu
-        ' Première étape : afficher uniquement le diaporama sur le formulaire Menu.
-        Controls.Add(birthdayLabel)
-        Controls.Add(appointmentLabel)
-        birthdayLabel.Visible = False
-        appointmentLabel.Visible = False
-        AddHandler birthdayLabel.Paint, AddressOf DrawEventBorder
-        AddHandler appointmentLabel.Paint, AddressOf DrawEventBorder
-        birthdayLabel.Cursor = Cursors.Hand
-        appointmentLabel.Cursor = Cursors.Hand
-        AddHandler birthdayLabel.Click, Sub(sender, e)
-            Using dialog As New FrmAnniversaire()
-                dialog.ShowDialog(Me)
-            End Using
-            RefreshNextEvent()
-        End Sub
-        AddHandler appointmentLabel.Click, Sub(sender, e)
-            Using dialog As New FrmRendezVous()
-                dialog.ShowDialog(Me)
-            End Using
-            RefreshAppointmentsDisplay()
-        End Sub
+        ' Les cadres Anniversaire et Rendez-vous ne font plus partie du formulaire Menu.
         Controls.Add(customTitle)
         customTitle.Width = ClientSize.Width
         menuBar.Width = ClientSize.Width
