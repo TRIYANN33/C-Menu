@@ -1215,7 +1215,7 @@ Public Class FrmMenuAutonome
         .Font = New Font("Segoe UI", 9, FontStyle.Bold),
         .Visible = False
     }
-    Private Const AppointmentDatabase As String = "C:\Menu\applications\Rendez-vous\RendezVous.db"
+    Private Shared ReadOnly AppointmentDatabase As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "RendezVous.db")
 
     Private Sub RefreshAppointmentsDisplay()
         appointmentLabel.Visible = False
@@ -1253,10 +1253,11 @@ Public Class FrmMenuAutonome
                 FitEventFrame(appointmentLabel)
                 appointmentLabel.Visible = True
             End If
-        Catch ex As SqliteException
-        Catch ex As IOException
+        Catch ex As Exception
+            MessageBox.Show(Me, "Lecture des rendez-vous impossible : " & ex.Message, "Rendez-vous", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
         AdjustMenuWidth()
+        PositionAppointments()
     End Sub
 
     Private Sub PositionSlideshow()
@@ -1916,7 +1917,7 @@ End Class
 Public Class FrmRendezVous
     Inherits Form
 
-    Private Const DbPath As String = "C:\Menu\applications\Rendez-vous\RendezVous.db"
+    Private Shared ReadOnly DbPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "RendezVous.db")
     Private ReadOnly libelle As New TextBox()
     Private ReadOnly dateHeure As New DateTimePicker With {
         .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd/MM/yyyy HH:mm",
@@ -1973,6 +1974,7 @@ Public Class FrmRendezVous
             MessageBox.Show(Me, "Saisissez le libellé du rendez-vous.", "Rendez-vous")
             Return
         End If
+        Directory.CreateDirectory(Path.GetDirectoryName(DbPath))
         Using cn As New SqliteConnection("Data Source=" & DbPath)
             cn.Open()
             Using cmd = cn.CreateCommand()
