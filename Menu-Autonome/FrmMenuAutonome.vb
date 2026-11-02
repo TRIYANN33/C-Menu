@@ -1381,8 +1381,20 @@ Public Class FrmMenuAutonome
         PositionAppointments()
     End Sub
 
+    Private Sub EnsureSlideshowPanel()
+        If slideshowPanel IsNot Nothing Then Return
+        Dim side As Integer
+        Using g = CreateGraphics()
+            side = CInt(Math.Round(g.DpiX * 6.0 / 2.54))
+        End Using
+        slideshowPanel = New Panel With {.Size = New Size(side, side), .BackColor = Color.FromArgb(245, 245, 245)}
+        slideshowPicture = New PictureBox With {.Dock = DockStyle.Fill, .SizeMode = PictureBoxSizeMode.Zoom}
+        slideshowPanel.Controls.Add(slideshowPicture)
+        Controls.Add(slideshowPanel)
+    End Sub
+
     Private Sub PositionSlideshow()
-        If slideshowPanel Is Nothing Then Return
+        EnsureSlideshowPanel()
         slideshowPanel.Dock = DockStyle.None
         Dim topOfBody = menuBar.Bottom
         
@@ -1415,6 +1427,7 @@ Public Class FrmMenuAutonome
         Dim exactHeight = Math.Max(30, lines.Length * (frame.Font.Height + 3) +
             frame.Padding.Vertical + 8)
         frame.MinimumSize = Size.Empty
+        EnsureSlideshowPanel()
         If slideshowPanel IsNot Nothing Then
             exactWidth = slideshowPanel.Width
             exactHeight = slideshowPanel.Height
@@ -1621,8 +1634,7 @@ Public Class FrmMenuAutonome
 
         Dim leftWidth = Math.Max(If(birthdayLabel.Visible, birthdayLabel.Width, 0),
                                  If(nextEventLabel.Visible, nextEventLabel.Width, 0))
-        Dim middleWidth = If(slideshowPanel IsNot Nothing AndAlso slideshowPanel.Visible,
-                             slideshowPanel.Width, 0)
+        Dim middleWidth = If(slideshowPanel IsNot Nothing, slideshowPanel.Width, 0)
         Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
         Dim contentWidth = Math.Max(180, leftWidth + middleWidth + rightWidth + 72)
         contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
