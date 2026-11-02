@@ -1800,6 +1800,15 @@ Public Class FrmAnniversaire
         Dim duplicate As New Button With {.Text = "Dupliquer", .AutoSize = True}
         AddHandler duplicate.Click, AddressOf DuplicateEvent
         toolbar.Controls.Add(duplicate)
+        Dim modify As New Button With {.Text = "Modifier", .AutoSize = True}
+        AddHandler modify.Click, Sub(sender, e)
+            If selectedId = 0 Then
+                MessageBox.Show(Me, "Sélectionnez un anniversaire à modifier.")
+            Else
+                nom.Focus()
+            End If
+        End Sub
+        toolbar.Controls.Add(modify)
         AddHandler eventsGrid.SelectionChanged, AddressOf SelectEvent
         Me.Controls.Add(eventsGrid)
         Me.Controls.Add(toolbar)
@@ -1938,6 +1947,7 @@ Public Class FrmRendezVous
     Inherits Form
 
     Private Shared ReadOnly DbPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "RendezVous.db")
+    Private selectedId As Long
     Private ReadOnly libelle As New TextBox()
     Private ReadOnly dateHeure As New DateTimePicker With {
         .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd/MM/yyyy HH:mm",
@@ -1979,6 +1989,15 @@ Public Class FrmRendezVous
         Dim duplicate As New Button With {.Text = "Dupliquer", .AutoSize = True}
         AddHandler duplicate.Click, AddressOf DuplicateAppointment
         bar.Controls.Add(duplicate)
+        Dim modify As New Button With {.Text = "Modifier", .AutoSize = True}
+        AddHandler modify.Click, AddressOf ModifyAppointment
+        bar.Controls.Add(modify)
+        Dim deleteButton As New Button With {.Text = "Supprimer", .AutoSize = True}
+        AddHandler deleteButton.Click, AddressOf DeleteAppointment
+        bar.Controls.Add(deleteButton)
+        Dim newButton As New Button With {.Text = "Nouveau", .AutoSize = True}
+        AddHandler newButton.Click, Sub(sender, e) ClearAppointment()
+        bar.Controls.Add(newButton)
         Me.Controls.Add(upcoming)
         Me.Controls.Add(bar)
         Me.Controls.Add(entry)
@@ -1994,6 +2013,56 @@ Public Class FrmRendezVous
                 cmd.ExecuteNonQuery()
             End Using
         End Using
+        RefreshAppointments()
+    End Sub
+
+    Private Sub ClearAppointment()
+        selectedId = 0
+        libelle.Clear()
+        note.Clear()
+        dateHeure.Value = DateTime.Now.AddHours(1)
+        upcoming.ClearSelection()
+    End Sub
+
+    Private Sub ModifyAppointment(sender As Object, e As EventArgs)
+        If upcoming.SelectedRows.Count = 0 Then
+            MessageBox.Show(Me, "Sélectionnez un rendez-vous à modifier.")
+            Return
+        End If
+        Dim row = upcoming.SelectedRows(0)
+        selectedId = Convert.ToInt64(row.Cells("Id").Value)
+        libelle.Text = Convert.ToString(row.Cells("Libelle").Value)
+        note.Text = Convert.ToString(row.Cells("Note").Value)
+        Using cn As New SqliteConnection("Data Source=" & DbPath)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "SELECT DateHeure FROM RendezVous WHERE Id=$id"
+                cmd.Parameters.AddWithValue("$id", selectedId)
+                Dim parsed As DateTime
+                If DateTime.TryParseExact(Convert.ToString(cmd.ExecuteScalar()), "yyyy-MM-dd HH:mm:ss",
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, parsed) Then dateHeure.Value = parsed
+            End Using
+        End Using
+        libelle.Focus()
+    End Sub
+
+    Private Sub DeleteAppointment(sender As Object, e As EventArgs)
+        If upcoming.SelectedRows.Count = 0 Then
+            MessageBox.Show(Me, "Sélectionnez un rendez-vous à supprimer.")
+            Return
+        End If
+        Dim id = Convert.ToInt64(upcoming.SelectedRows(0).Cells("Id").Value)
+        If MessageBox.Show(Me, "Supprimer ce rendez-vous ?", "Rendez-vous",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+        Using cn As New SqliteConnection("Data Source=" & DbPath)
+            cn.Open()
+            Using cmd = cn.CreateCommand()
+                cmd.CommandText = "DELETE FROM RendezVous WHERE Id=$id"
+                cmd.Parameters.AddWithValue("$id", id)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+        ClearAppointment()
         RefreshAppointments()
     End Sub
 
@@ -2023,15 +2092,17 @@ Public Class FrmRendezVous
         Using cn As New SqliteConnection("Data Source=" & DbPath)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "INSERT INTO RendezVous (Libelle, DateHeure, Note) VALUES ($libelle, $date, $note)"
+                cmd.CommandText = If(selectedId = 0,
+                    "INSERT INTO RendezVous (Libelle, DateHeure, Note) VALUES ($libelle, $date, $note)",
+                    "UPDATE RendezVous SET Libelle=$libelle, DateHeure=$date, Note=$note WHERE Id=$id")
+                If selectedId <> 0 Then cmd.Parameters.AddWithValue("$id", selectedId)
                 cmd.Parameters.AddWithValue("$libelle", libelle.Text.Trim())
                 cmd.Parameters.AddWithValue("$date", dateHeure.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
                 cmd.Parameters.AddWithValue("$note", note.Text.Trim())
                 cmd.ExecuteNonQuery()
             End Using
         End Using
-        libelle.Clear()
-        note.Clear()
+        ClearAppointment()
         RefreshAppointments()
         MessageBox.Show(Me, "Rendez-vous enregistré.", "Rendez-vous", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
