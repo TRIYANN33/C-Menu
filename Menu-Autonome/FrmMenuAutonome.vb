@@ -1616,11 +1616,14 @@ Public Class FrmMenuAutonome
             menusWidth += TextRenderer.MeasureText(entry.Text, menuBar.Font).Width + 30
         Next
 
-        Dim leftWidth = 0
-        Dim middleWidth = 0
-        Dim rightWidth = 0
-        Dim contentWidth = Math.Max(180, middleWidth * 3 + 2 * Math.Max(1, CInt(Math.Round(DeviceDpi * 0.3 / 2.54))) + 8)
-        contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
+        ' Réserver la largeur réelle des trois cadres de 6 cm et de leurs deux écarts de 3 mm.
+        Dim frameSide As Integer
+        Dim frameGap As Integer
+        Using graphics = CreateGraphics()
+            frameSide = Math.Max(1, CInt(Math.Round(graphics.DpiX * 6.0 / 2.54)))
+            frameGap = Math.Max(1, CInt(Math.Round(graphics.DpiX * 0.3 / 2.54)))
+        End Using
+        Dim contentWidth = frameSide * 3 + frameGap * 2 + 16
         Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
         Dim frameWidth = Width - ClientSize.Width
