@@ -1935,6 +1935,7 @@ Public Class FrmRendezVous
         Size = New Size(760, 560)
         MinimumSize = New Size(620, 450)
         Font = New Font("Segoe UI", 10)
+        dateHeure.Value = DateTime.Now.AddHours(1)
         Dim entry As New TableLayoutPanel With {
             .Dock = DockStyle.Top, .Height = 215, .ColumnCount = 2, .RowCount = 3,
             .Padding = New Padding(12)
@@ -1992,6 +1993,7 @@ Public Class FrmRendezVous
         libelle.Clear()
         note.Clear()
         RefreshAppointments()
+        MessageBox.Show(Me, "Rendez-vous enregistré.", "Rendez-vous", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub RefreshAppointments()
@@ -1999,8 +2001,7 @@ Public Class FrmRendezVous
         Using cn As New SqliteConnection("Data Source=" & DbPath)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Libelle, DateHeure, Note FROM RendezVous WHERE DateHeure >= $now ORDER BY DateHeure"
-                cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
+                cmd.CommandText = "SELECT Libelle, DateHeure, Note FROM RendezVous ORDER BY DateHeure DESC"
                 Using reader = cmd.ExecuteReader()
                     While reader.Read()
                         Dim d As Date
