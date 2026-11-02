@@ -158,6 +158,7 @@ Public Class FrmMenuAutonome
             RefreshClock()
             RenameExampleMenuInDatabase()
             LoadFromDatabase()
+            AddHandler emptyFrames(0).Paint, AddressOf PaintLeftFrameBorder
             AddHandler emptyFrames(2).Paint, AddressOf PaintRightFrameBorder
             PositionEmptyFrames()
             StartMiddleSlideshow()
@@ -1307,10 +1308,29 @@ Public Class FrmMenuAutonome
 
     ' Trois cadres vides, indépendants des anciens diaporama et listes.
     Private ReadOnly emptyFrames As Panel() = {
-        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle},
+        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.None},
         New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.None},
         New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.None}
     }
+
+    Private Sub PaintLeftFrameBorder(sender As Object, e As PaintEventArgs)
+        Dim frame = emptyFrames(0)
+        If frame.ClientSize.Width < 12 OrElse frame.ClientSize.Height < 12 Then Return
+        Dim radius As Integer = 18
+        Dim rect As New Rectangle(2, 2, frame.ClientSize.Width - 5, frame.ClientSize.Height - 5)
+        e.Graphics.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+        Using outline As New Drawing2D.GraphicsPath()
+            Dim diameter = radius * 2
+            outline.AddArc(rect.Left, rect.Top, diameter, diameter, 180, 90)
+            outline.AddArc(rect.Right - diameter, rect.Top, diameter, diameter, 270, 90)
+            outline.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90)
+            outline.AddArc(rect.Left, rect.Bottom - diameter, diameter, diameter, 90, 90)
+            outline.CloseFigure()
+            Using borderPen As New Pen(Color.FromArgb(90, 190, 175), 5.0F)
+                e.Graphics.DrawPath(borderPen, outline)
+            End Using
+        End Using
+    End Sub
 
     Private Sub PaintRightFrameBorder(sender As Object, e As PaintEventArgs)
         Dim frame = emptyFrames(2)
