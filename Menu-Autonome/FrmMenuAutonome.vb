@@ -158,6 +158,7 @@ Public Class FrmMenuAutonome
             RefreshClock()
             RenameExampleMenuInDatabase()
             LoadFromDatabase()
+            AddHandler emptyFrames(2).Paint, AddressOf PaintRightFrameBorder
             PositionEmptyFrames()
             StartMiddleSlideshow()
             RefreshRightDates()
@@ -1307,8 +1308,15 @@ Public Class FrmMenuAutonome
     Private ReadOnly emptyFrames As Panel() = {
         New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle},
         New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.None},
-        New Panel With {.BackColor = Color.FromArgb(175, 225, 220), .BorderStyle = BorderStyle.FixedSingle}
+        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.None}
     }
+
+    Private Sub PaintRightFrameBorder(sender As Object, e As PaintEventArgs)
+        Using borderPen As New Pen(Color.FromArgb(90, 190, 175), 5.0F)
+            borderPen.Alignment = Drawing2D.PenAlignment.Inset
+            e.Graphics.DrawRectangle(borderPen, 0, 0, emptyFrames(2).ClientSize.Width - 1, emptyFrames(2).ClientSize.Height - 1)
+        End Using
+    End Sub
 
     Private Sub PositionEmptyFrames()
         Dim gapX As Integer
