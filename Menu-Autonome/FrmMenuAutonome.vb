@@ -98,8 +98,11 @@ Public Class FrmMenuAutonome
         editingMenu.Items.Add("Ajouter un menu...", Nothing, Sub(sender, e) AddMenuLive(False))
         editingMenu.Items.Add("Ajouter un sous-menu...", Nothing, Sub(sender, e) AddMenuLive(True))
         menuBar.ContextMenuStrip = editingMenu
+        ' Première étape : afficher uniquement le diaporama sur le formulaire Menu.
         Controls.Add(birthdayLabel)
         Controls.Add(appointmentLabel)
+        birthdayLabel.Visible = False
+        appointmentLabel.Visible = False
         AddHandler birthdayLabel.Paint, AddressOf DrawEventBorder
         AddHandler appointmentLabel.Paint, AddressOf DrawEventBorder
         birthdayLabel.Cursor = Cursors.Hand
@@ -158,7 +161,6 @@ Public Class FrmMenuAutonome
             menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
             DistributeMenuItems()
             UpdateRoundedCorners()
-            PositionNextEvent()
             PositionSlideshow()
         End Sub
         AddHandler ResizeEnd, Sub(sender, e)
@@ -177,8 +179,10 @@ Public Class FrmMenuAutonome
             LoadFromDatabase()
             countdowns.Start()
             StartSlideshow(True)
-            RefreshNextEvent()
-            RefreshAppointmentsDisplay()
+            birthdayLabel.Visible = False
+            appointmentLabel.Visible = False
+            nextEventLabel.Visible = False
+            PositionSlideshow()
             clock.Start()
         End Sub
         AddHandler FormClosed, Sub(sender, e)
@@ -1404,26 +1408,18 @@ Public Class FrmMenuAutonome
 
     Private Sub PositionSlideshow()
         EnsureSlideshowPanel()
-        Dim gap As Integer
+        Dim side As Integer
         Using g = CreateGraphics()
-            gap = Math.Max(1, CInt(Math.Round(g.DpiX * 0.3 / 2.54)))
+            side = Math.Max(1, CInt(Math.Round(g.DpiX * 6.0 / 2.54)))
         End Using
-        Dim side = EventSideLength()
-        Dim top = menuBar.Bottom + gap
-        Dim centerX = (ClientSize.Width - side) \ 2
-        slideshowPanel.SetBounds(centerX, top, side, side)
-        For Each frame In {birthdayLabel, appointmentLabel}
-            frame.AutoSize = False
-            frame.Dock = DockStyle.None
-            frame.MinimumSize = Size.Empty
-            frame.MaximumSize = Size.Empty
-            frame.Size = New Size(side, side)
-        Next
-        birthdayLabel.Location = New Point(centerX - gap - side, top)
-        appointmentLabel.Location = New Point(centerX + side + gap, top)
+        slideshowPanel.Dock = DockStyle.None
+        slideshowPanel.SetBounds(Math.Max(0, (ClientSize.Width - side) \ 2),
+                                 Math.Max(menuBar.Bottom, menuBar.Bottom + (ClientSize.Height - menuBar.Bottom - side) \ 2),
+                                 side, side)
+        birthdayLabel.Visible = False
+        appointmentLabel.Visible = False
+        nextEventLabel.Visible = False
         slideshowPanel.BringToFront()
-        birthdayLabel.BringToFront()
-        appointmentLabel.BringToFront()
         customTitle.BringToFront()
     End Sub
 
@@ -1635,7 +1631,7 @@ Public Class FrmMenuAutonome
                                  If(nextEventLabel.Visible, nextEventLabel.Width, 0))
         Dim middleWidth = If(slideshowPanel IsNot Nothing, slideshowPanel.Width, 0)
         Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
-        Dim contentWidth = Math.Max(180, 3 * EventSideLength() + 72)
+        Dim contentWidth = Math.Max(180, middleWidth + 24)
         contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
         Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
