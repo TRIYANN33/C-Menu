@@ -1307,7 +1307,7 @@ Public Class FrmMenuAutonome
     Private ReadOnly emptyFrames As Panel() = {
         New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle},
         New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.None},
-        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle}
+        New Panel With {.BackColor = Color.FromArgb(175, 225, 220), .BorderStyle = BorderStyle.FixedSingle}
     }
 
     Private Sub PositionEmptyFrames()
