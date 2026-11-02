@@ -1468,25 +1468,33 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private Sub AdjustMenuWidth()
-        ' La largeur suit le libellé du formulaire ou la somme des menus visibles.
-        Dim labelText As String = Text
-        Dim labelFont As Font = Font
-        Dim labelWidth = TextRenderer.MeasureText(labelText, labelFont).Width + 192 + 24
+        ' Adapter la largeur au plus large des trois ensembles : titre, menus, contenu.
+        Dim titleWidth = TextRenderer.MeasureText(customTitleText.Text, customTitleText.Font,
+            New Size(Integer.MaxValue, Integer.MaxValue),
+            TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding).Width + 192 + 32
         Dim menusWidth As Integer = menuBar.Padding.Horizontal + 16
         For Each entry As ToolStripItem In menuBar.Items
             menusWidth += TextRenderer.MeasureText(entry.Text, menuBar.Font).Width + 30
         Next
-        Dim contentWidth = Math.Max(labelWidth, menusWidth)
-        If slideshowPanel IsNot Nothing Then contentWidth = Math.Max(contentWidth, slideshowPanel.Width + 24)
-        If birthdayLabel.Visible Then contentWidth = Math.Max(contentWidth, birthdayLabel.Width + 32)
-        Dim eventWidth = Math.Max(If(nextEventLabel.Visible, nextEventLabel.Width, 0), If(appointmentLabel.Visible, appointmentLabel.Width, 0))
-        If eventWidth > 0 Then contentWidth = Math.Max(contentWidth, eventWidth + 24)
-        Dim frameWidth = Width - ClientSize.Width
-        Dim targetWidth = contentWidth + frameWidth
+
+        Dim leftWidth = Math.Max(If(birthdayLabel.Visible, birthdayLabel.Width, 0),
+                                 If(nextEventLabel.Visible, nextEventLabel.Width, 0))
+        Dim middleWidth = If(slideshowPanel IsNot Nothing AndAlso slideshowPanel.Visible,
+                             slideshowPanel.Width, 0)
+        Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
+        Dim contentWidth = Math.Max(180, leftWidth + middleWidth + rightWidth + 48)
+        contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
+        Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
-        targetWidth = Math.Min(targetWidth, availableWidth)
-        MinimumSize = New Size(Math.Min(targetWidth, availableWidth), MinimumSize.Height)
-        Width = targetWidth
+        Dim frameWidth = Width - ClientSize.Width
+        Dim targetWidth = Math.Min(targetClientWidth + frameWidth, availableWidth)
+
+        If WindowState = FormWindowState.Normal AndAlso Not slideshowTitleMode Then
+            MinimumSize = New Size(Math.Min(targetWidth, availableWidth), MinimumSize.Height)
+            If Width <> targetWidth Then Width = targetWidth
+        End If
+        customTitle.SetBounds(0, 0, ClientSize.Width, 34)
+        menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
         PositionNextEvent()
         PositionBirthdays()
         PositionAppointments()
