@@ -382,89 +382,134 @@ Public Class FrmMenuAutonome
 
     Private Sub AddMenuLive(isSubMenu As Boolean)
         If Not File.Exists(databasePath) Then
-            ShowProblem("Base SQLite introuvable : " & databasePath)
+            MessageBox.Show(Me, "Base SQLite introuvable : " & databasePath)
             Return
         End If
         Try
             Using cn As New SqliteConnection("Data Source=" & databasePath)
                 cn.Open()
-                Dim parentName As String = ""
-                Dim menuNumber As String = ""
-                If isSubMenu Then
-                    Dim available As New List(Of String)()
-                    Using cmd = cn.CreateCommand()
-                        cmd.CommandText = "SELECT DISTINCT NumMenu, Menu FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND TRIM(Menu)<>'' ORDER BY CAST(NumMenu AS INTEGER)"
-                        cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
-                        Using reader = cmd.ExecuteReader()
-                            While reader.Read()
-                                available.Add(reader.GetString(0) & " - " & reader.GetString(1))
-                            End While
-                        End Using
-                    End Using
-                    If available.Count = 0 Then
-                        MessageBox.Show("Créez d'abord un menu principal.", "Ajouter un sous-menu")
-                        Return
-                    End If
-                    Dim choice = Microsoft.VisualBasic.Interaction.InputBox(
-                        "Numéro du menu parent :" & Environment.NewLine & String.Join(Environment.NewLine, available),
-                        "Ajouter un sous-menu")
-                    If String.IsNullOrWhiteSpace(choice) Then Return
-                    menuNumber = choice.Trim()
-                    If menuNumber.Contains(" "c) Then menuNumber = menuNumber.Split(" "c)(0)
-                    Using cmd = cn.CreateCommand()
-                        cmd.CommandText = "SELECT Menu FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND NumMenu=$num LIMIT 1"
-                        cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
-                        cmd.Parameters.AddWithValue("$num", menuNumber)
-                        Dim found = cmd.ExecuteScalar()
-                        If found Is Nothing Then
-                            MessageBox.Show("Numéro de menu parent introuvable.", "Ajouter un sous-menu")
-                            Return
-                        End If
-                        parentName = Convert.ToString(found)
-                    End Using
-                Else
-                    parentName = Microsoft.VisualBasic.Interaction.InputBox("Nom du nouveau menu :", "Ajouter un menu").Trim()
-                    If parentName = "" Then Return
-                    Using cmd = cn.CreateCommand()
-                        cmd.CommandText = "SELECT COALESCE(MAX(CAST(NumMenu AS INTEGER)), 0) + 1 FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND CAST(NumMenu AS INTEGER) < 99"
-                        cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
-                        menuNumber = Convert.ToString(cmd.ExecuteScalar())
-                    End Using
-                End If
-                Dim subName As String = ""
-                Dim subNumber As String = "0"
-                If isSubMenu Then
-                    subName = Microsoft.VisualBasic.Interaction.InputBox("Nom du nouveau sous-menu :", "Ajouter un sous-menu").Trim()
-                    If subName = "" Then Return
-                    Using cmd = cn.CreateCommand()
-                        cmd.CommandText = "SELECT COALESCE(MAX(CAST(NumSousMenu AS INTEGER)), 0) + 1 FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND NumMenu=$num"
-                        cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
-                        cmd.Parameters.AddWithValue("$num", menuNumber)
-                        subNumber = Convert.ToString(cmd.ExecuteScalar())
-                    End Using
-                End If
-                Dim pathValue As String = ""
-                If isSubMenu Then
-                    pathValue = Microsoft.VisualBasic.Interaction.InputBox(
-                        "Chemin de l'application, du fichier ou du dossier (facultatif) :",
-                        "Chemin du sous-menu").Trim()
-                End If
+                Dim parents As New List(Of (Number As String, Caption As String))()
                 Using cmd = cn.CreateCommand()
-                    cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) VALUES ($now,$now,$form,$num,$subnum,$menu,$sub,'','','','',$path)"
-                    cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
+                    cmd.CommandText = "SELECT DISTINCT NumMenu, Menu FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND TRIM(Menu)<>'' ORDER BY CAST(NumMenu AS INTEGER)"
                     cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
-                    cmd.Parameters.AddWithValue("$num", menuNumber)
-                    cmd.Parameters.AddWithValue("$subnum", subNumber)
-                    cmd.Parameters.AddWithValue("$menu", parentName)
-                    cmd.Parameters.AddWithValue("$sub", subName)
-                    cmd.Parameters.AddWithValue("$path", pathValue)
-                    cmd.ExecuteNonQuery()
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            parents.Add((reader.GetString(0), reader.GetString(1)))
+                        End While
+                    End Using
+                End Using
+                If isSubMenu AndAlso parents.Count = 0 Then
+                    MessageBox.Show(Me, "Créez d'abord un menu principal.")
+                    Return
+                End If
+                Using editor As New Form With {
+                    .Text = If(isSubMenu, "Ajouter un sous-menu", "Ajouter un menu"),
+                    .StartPosition = FormStartPosition.CenterParent,
+                    .Size = New Size(680, 640), .MinimumSize = New Size(580, 540)
+                }
+                    Dim fields As New TableLayoutPanel With {
+                        .Dock = DockStyle.Fill, .AutoScroll = True,
+                        .ColumnCount = 2, .RowCount = 12, .Padding = New Padding(14)
+                    }
+                    fields.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 155))
+                    fields.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+                    Dim names = {"Frm_Menu", "NumMenu", "NumSousMenu", "Menu", "SousMenu",
+                                 "Info01", "Info02", "Application", "Action", "Chemin"}
+                    Dim values As New Dictionary(Of String, TextBox)(StringComparer.OrdinalIgnoreCase)
+                    For Each name In names
+                        Dim rowIndex = fields.RowCount
+                        fields.RowCount += 1
+                        fields.RowStyles.Add(New RowStyle(SizeType.Absolute, 37))
+                        fields.Controls.Add(New Label With {.Text = name, .AutoSize = True,
+                            .Anchor = AnchorStyles.Left}, 0, rowIndex)
+                        Dim field As New TextBox With {.Dock = DockStyle.Fill}
+                        fields.Controls.Add(field, 1, rowIndex)
+                        values.Add(name, field)
+                    Next
+                    values("Frm_Menu").Text = GeneratedConfig.FormName
+                    values("Frm_Menu").ReadOnly = True
+                    Dim parentPicker As New ComboBox With {
+                        .DropDownStyle = ComboBoxStyle.DropDownList, .Dock = DockStyle.Fill
+                    }
+                    If isSubMenu Then
+                        For Each parent In parents
+                            parentPicker.Items.Add(parent.Number & " - " & parent.Caption)
+                        Next
+                        fields.Controls.Add(New Label With {.Text = "Menu parent", .AutoSize = True}, 0, 0)
+                        fields.Controls.Add(parentPicker, 1, 0)
+                        AddHandler parentPicker.SelectedIndexChanged, Sub()
+                            Dim parent = parents(parentPicker.SelectedIndex)
+                            values("NumMenu").Text = parent.Number
+                            values("Menu").Text = parent.Caption
+                            Using cmd = cn.CreateCommand()
+                                cmd.CommandText = "SELECT COALESCE(MAX(CAST(NumSousMenu AS INTEGER)),0)+1 FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND NumMenu=$num"
+                                cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
+                                cmd.Parameters.AddWithValue("$num", parent.Number)
+                                values("NumSousMenu").Text = Convert.ToString(cmd.ExecuteScalar())
+                            End Using
+                        End Sub
+                        parentPicker.SelectedIndex = 0
+                        values("NumMenu").ReadOnly = True
+                        values("Menu").ReadOnly = True
+                    Else
+                        Using cmd = cn.CreateCommand()
+                            cmd.CommandText = "SELECT COALESCE(MAX(CAST(NumMenu AS INTEGER)),0)+1 FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND CAST(NumMenu AS INTEGER)<99"
+                            cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
+                            values("NumMenu").Text = Convert.ToString(cmd.ExecuteScalar())
+                        End Using
+                        values("NumSousMenu").Text = "0"
+                    End If
+                    Dim save As New Button With {.Text = "Enregistrer", .Dock = DockStyle.Right, .Width = 140}
+                    Dim cancel As New Button With {.Text = "Annuler", .Dock = DockStyle.Left,
+                        .Width = 110, .DialogResult = DialogResult.Cancel}
+                    Dim footer As New Panel With {.Dock = DockStyle.Bottom, .Height = 48}
+                    footer.Controls.Add(save)
+                    footer.Controls.Add(cancel)
+                    AddHandler save.Click, Sub()
+                        Try
+                            If String.IsNullOrWhiteSpace(values("Menu").Text) OrElse
+                               (isSubMenu AndAlso String.IsNullOrWhiteSpace(values("SousMenu").Text)) Then
+                                MessageBox.Show(editor, "Renseignez le nom du menu ou sous-menu.")
+                                Return
+                            End If
+                            Dim numberValue As Integer
+                            Dim subNumberValue As Integer
+                            If Not Integer.TryParse(values("NumMenu").Text, numberValue) OrElse
+                               Not Integer.TryParse(values("NumSousMenu").Text, subNumberValue) Then
+                                MessageBox.Show(editor, "NumMenu et NumSousMenu doivent être numériques.")
+                                Return
+                            End If
+                            Using cmd = cn.CreateCommand()
+                                cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) VALUES ($now,$now,$form,$num,$subnum,$menu,$sub,$info1,$info2,$app,$action,$path)"
+                                cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
+                                Dim parameters = New Dictionary(Of String, String) From {
+                                    {"$form", values("Frm_Menu").Text}, {"$num", values("NumMenu").Text.Trim()},
+                                    {"$subnum", values("NumSousMenu").Text.Trim()},
+                                    {"$menu", values("Menu").Text.Trim()}, {"$sub", values("SousMenu").Text.Trim()},
+                                    {"$info1", values("Info01").Text.Trim()}, {"$info2", values("Info02").Text.Trim()},
+                                    {"$app", values("Application").Text.Trim()}, {"$action", values("Action").Text.Trim()},
+                                    {"$path", values("Chemin").Text.Trim()}
+                                }
+                                For Each parameter In parameters
+                                    cmd.Parameters.AddWithValue(parameter.Key, parameter.Value)
+                                Next
+                                cmd.ExecuteNonQuery()
+                            End Using
+                            editor.DialogResult = DialogResult.OK
+                            editor.Close()
+                        Catch ex As Exception
+                            MessageBox.Show(editor, "Enregistrement impossible : " & ex.Message)
+                        End Try
+                    End Sub
+                    editor.Controls.Add(fields)
+                    editor.Controls.Add(footer)
+                    editor.AcceptButton = save
+                    editor.CancelButton = cancel
+                    If editor.ShowDialog(Me) = DialogResult.OK Then RefreshMenusLive()
                 End Using
             End Using
-            LoadFromDatabase()
-            AdjustMenuWidth()
         Catch ex As Exception
-            ShowProblem("Impossible d'ajouter le menu : " & ex.Message)
+            MessageBox.Show(Me, "Impossible d'ajouter le menu : " & ex.Message)
         End Try
     End Sub
 
