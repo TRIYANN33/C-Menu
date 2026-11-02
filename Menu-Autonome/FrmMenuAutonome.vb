@@ -432,7 +432,7 @@ Public Class FrmMenuAutonome
                         .DropDownStyle = ComboBoxStyle.DropDownList, .Dock = DockStyle.Fill
                     }
                     If isSubMenu Then
-                        For Each parent In parents
+                        For Each parentEntry In parents
                             parentPicker.Items.Add(parentEntry.Number & " - " & parentEntry.Caption)
                         Next
                         fields.Controls.Add(New Label With {.Text = "Menu parent", .AutoSize = True}, 0, 0)
