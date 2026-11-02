@@ -141,6 +141,7 @@ Public Class FrmMenuAutonome
             menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
             DistributeMenuItems()
             UpdateRoundedCorners()
+            PositionEmptyFrames()
         End Sub
         AddHandler ResizeEnd, Sub(sender, e)
             If Not adjustingMenuWidth AndAlso Not slideshowTitleMode Then userResizedMenu = True
@@ -156,6 +157,7 @@ Public Class FrmMenuAutonome
             RefreshClock()
             RenameExampleMenuInDatabase()
             LoadFromDatabase()
+            PositionEmptyFrames()
             clock.Start()
         End Sub
         AddHandler FormClosed, Sub(sender, e)
@@ -1298,6 +1300,35 @@ Public Class FrmMenuAutonome
         MessageBox.Show(Me, message, "Menu autonome", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
+    ' Trois cadres vides, indépendants des anciens diaporama et listes.
+    Private ReadOnly emptyFrames As Panel() = {
+        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle},
+        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle},
+        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle}
+    }
+
+    Private Sub PositionEmptyFrames()
+        Dim gapX As Integer
+        Dim gapY As Integer
+        Dim side As Integer
+        Using graphics = CreateGraphics()
+            gapX = Math.Max(1, CInt(Math.Round(graphics.DpiX * 0.3 / 2.54)))
+            gapY = Math.Max(1, CInt(Math.Round(graphics.DpiY * 0.3 / 2.54)))
+            side = Math.Max(1, CInt(Math.Round(graphics.DpiX * 6.0 / 2.54)))
+        End Using
+        Dim totalWidth = side * 3 + gapX * 2
+        Dim left = (ClientSize.Width - totalWidth) \ 2
+        Dim top = menuBar.Bottom + gapY
+        For i As Integer = 0 To emptyFrames.Length - 1
+            Dim frame = emptyFrames(i)
+            If frame.Parent Is Nothing Then Controls.Add(frame)
+            frame.SetBounds(left + i * (side + gapX), top, side, side)
+            frame.BringToFront()
+        Next
+        menuBar.BringToFront()
+        customTitle.BringToFront()
+    End Sub
+
     Private ReadOnly slideshowTimer As New Timer With {.Interval = 8000}
     Private slideshowPanel As Panel
     Private slideshowPicture As PictureBox
@@ -1610,7 +1641,7 @@ Public Class FrmMenuAutonome
         menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
         DistributeMenuItems()
         PositionNextEvent()
-        ' Diaporama et cadres supprimés du formulaire.
+        PositionEmptyFrames()
     End Sub
 
     Private Sub StartSlideshow(Optional silent As Boolean = False)
