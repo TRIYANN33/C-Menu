@@ -1489,8 +1489,7 @@ Public Class FrmMenuAutonome
         nextEventLabel.Invalidate()
         Dim neededHeight = nextEventLabel.Bottom + 12 + (Height - ClientSize.Height)
         If Height < neededHeight Then Height = neededHeight
-        PositionBirthdays()
-        PositionAppointments()
+        ' Cadres supprimés du formulaire.
     End Sub
 
     Private Const AnniversaryDatabase As String = "C:\Menu\applications\Anniversaire\Anniversaires.db"
@@ -1585,10 +1584,9 @@ Public Class FrmMenuAutonome
             menusWidth += TextRenderer.MeasureText(entry.Text, menuBar.Font).Width + 30
         Next
 
-        Dim leftWidth = Math.Max(If(birthdayLabel.Visible, birthdayLabel.Width, 0),
-                                 If(nextEventLabel.Visible, nextEventLabel.Width, 0))
-        Dim middleWidth = If(slideshowPanel IsNot Nothing, slideshowPanel.Width, 0)
-        Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
+        Dim leftWidth = 0
+        Dim middleWidth = 0
+        Dim rightWidth = 0
         Dim contentWidth = Math.Max(180, middleWidth * 3 + 2 * Math.Max(1, CInt(Math.Round(DeviceDpi * 0.3 / 2.54))) + 8)
         contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
         Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
@@ -1612,7 +1610,7 @@ Public Class FrmMenuAutonome
         menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
         DistributeMenuItems()
         PositionNextEvent()
-        PositionSlideshow()
+        ' Diaporama et cadres supprimés du formulaire.
     End Sub
 
     Private Sub StartSlideshow(Optional silent As Boolean = False)
@@ -1634,7 +1632,7 @@ Public Class FrmMenuAutonome
             End If
             EnsureSlideshowPanel()
             AdjustMenuWidth()
-            PositionSlideshow()
+            ' Diaporama et cadres supprimés du formulaire.
             Dim bottomMargin As Integer
             Using graphics = CreateGraphics()
                 bottomMargin = Math.Max(1, CInt(Math.Round(graphics.DpiY * 0.3 / 2.54)))
