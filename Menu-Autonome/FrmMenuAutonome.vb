@@ -3253,6 +3253,7 @@ Public Class CountdownEditorCard
     Private ReadOnly hours As New NumericUpDown With {.Minimum = 0, .Maximum = 100000, .Width = 75}
     Private ReadOnly minutes As New NumericUpDown With {.Minimum = 0, .Maximum = 100000, .Width = 75}
     Private ReadOnly dateEnd As New DateTimePicker With {.Format = DateTimePickerFormat.Custom, .CustomFormat = "dd/MM/yyyy HH:mm", .Width = 155}
+    Private ReadOnly confirmDate As New CheckBox With {.Text = "Valider date et heure", .AutoSize = True, .Location = New Point(495, 43)}
     Private ReadOnly music As New TextBox With {.Width = 260}
     Private ReadOnly bg As New Button With {.Text = "Cercle fond", .Width = 115}
     Private ReadOnly fg As New Button With {.Text = "Cercle restant", .Width = 125}
@@ -3279,6 +3280,12 @@ Public Class CountdownEditorCard
         hours.Value = CDec(Math.Min(100000, Math.Max(0, Math.Floor(remaining.TotalHours))))
         minutes.Value = CDec(Math.Min(59, Math.Max(0, remaining.Minutes)))
         If item.ModeDate Then mode.SelectedIndex = 1
+        confirmDate.Enabled = (mode.SelectedIndex = 1)
+        AddHandler mode.SelectedIndexChanged, Sub()
+            confirmDate.Enabled = (mode.SelectedIndex = 1)
+            confirmDate.Checked = False
+        End Sub
+        AddHandler dateEnd.ValueChanged, Sub() confirmDate.Checked = False
         Dim musicLabel As New Label With {.Text = "Musique :", .Location = New Point(8, 80), .AutoSize = True}
         music.Location = New Point(115, 77)
         music.Text = item.Musique
@@ -3300,7 +3307,7 @@ Public Class CountdownEditorCard
             Visible = False
         End Sub
         Controls.AddRange(New Control() {title, labelText, priorityLabel, priority, mode, hours, minutes, dateEnd,
-            musicLabel, music, browse, bg, fg, remove})
+            confirmDate, musicLabel, music, browse, bg, fg, remove})
     End Sub
 
     Private Sub ChooseColor(button As Button)
@@ -3318,6 +3325,9 @@ Public Class CountdownEditorCard
             newEnd = If(Data.Libelle = name AndAlso Not Data.ModeDate AndAlso Data.Fin > DateTime.Now, Data.Fin,
                         DateTime.Now.AddHours(CDbl(hours.Value)).AddMinutes(CDbl(minutes.Value)))
         Else
+            If Not confirmDate.Checked Then
+                Throw New InvalidOperationException("Validez la date et l'heure du compteur " & name & " avant d'enregistrer.")
+            End If
             newEnd = dateEnd.Value
         End If
         If Data.Libelle <> name OrElse Data.Fin <> newEnd Then Data.Annonce = False
