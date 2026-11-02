@@ -2128,6 +2128,7 @@ Public Class FrmRendezVous
 
     Private Shared ReadOnly DbPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "RendezVous.db")
     Private selectedId As Long
+    Private appointmentSort As New List(Of (Field As String, Descending As Boolean))()
     Private ReadOnly libelle As New TextBox()
     Private ReadOnly dateHeure As New DateTimePicker With {
         .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd/MM/yyyy HH:mm",
@@ -2164,9 +2165,9 @@ Public Class FrmRendezVous
         Next
         Dim save As New Button With {.Text = "Enregistrer", .AutoSize = True}
         AddHandler save.Click, AddressOf SaveAppointment
-        Dim bar As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 48, .ColumnCount = 5, .RowCount = 1, .Padding = New Padding(8, 5, 8, 5)}
-        For i As Integer = 1 To 5
-            bar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 20.0F))
+        Dim bar As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 48, .ColumnCount = 6, .RowCount = 1, .Padding = New Padding(8, 5, 8, 5)}
+        For i As Integer = 1 To 6
+            bar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F / 6.0F))
         Next
         save.AutoSize = False
         save.Dock = DockStyle.Fill
@@ -2191,6 +2192,9 @@ Public Class FrmRendezVous
         newButton.AutoSize = False
         newButton.Dock = DockStyle.Fill
         bar.Controls.Add(newButton, 4, 0)
+        Dim sortButton As New Button With {.Text = "Trier", .Dock = DockStyle.Fill}
+        AddHandler sortButton.Click, AddressOf SortAppointments
+        bar.Controls.Add(sortButton, 5, 0)
         Me.Controls.Add(upcoming)
         Me.Controls.Add(bar)
         Me.Controls.Add(entry)
@@ -2300,6 +2304,52 @@ Public Class FrmRendezVous
         MessageBox.Show(Me, "Rendez-vous enregistré.", "Rendez-vous", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
+    Private Sub SortAppointments(sender As Object, e As EventArgs)
+        Using dialog As New Form With {.Text = "Trier les rendez-vous sur 3 champs",
+                                       .StartPosition = FormStartPosition.CenterParent,
+                                       .Size = New Size(550, 310), .MinimumSize = New Size(480, 290)}
+            Dim layout As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2,
+                                                       .RowCount = 4, .Padding = New Padding(12)}
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 65))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 35))
+            Dim fields As New List(Of ComboBox)()
+            Dim directions As New List(Of ComboBox)()
+            For i = 0 To 2
+                Dim field As New ComboBox With {.Dock = DockStyle.Fill, .DropDownStyle = ComboBoxStyle.DropDownList}
+                field.Items.AddRange(New Object() {"(Aucun)", "Libellé", "Date et heure", "Note", "N°"})
+                Dim direction As New ComboBox With {.Dock = DockStyle.Fill, .DropDownStyle = ComboBoxStyle.DropDownList}
+                direction.Items.AddRange(New Object() {"Croissant", "Décroissant"})
+                field.SelectedIndex = 0
+                direction.SelectedIndex = 0
+                If i < appointmentSort.Count Then
+                    field.SelectedItem = appointmentSort(i).Field
+                    direction.SelectedIndex = If(appointmentSort(i).Descending, 1, 0)
+                End If
+                fields.Add(field)
+                directions.Add(direction)
+                layout.Controls.Add(field, 0, i)
+                layout.Controls.Add(direction, 1, i)
+            Next
+            Dim apply As New Button With {.Text = "Appliquer", .DialogResult = DialogResult.OK, .Dock = DockStyle.Right, .Width = 125}
+            layout.Controls.Add(apply, 1, 3)
+            dialog.AcceptButton = apply
+            dialog.Controls.Add(layout)
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            Dim selected As New List(Of (Field As String, Descending As Boolean))()
+            For i = 0 To 2
+                Dim fieldName = Convert.ToString(fields(i).SelectedItem)
+                If fieldName = "(Aucun)" Then Continue For
+                If selected.Any(Function(x) x.Field = fieldName) Then
+                    MessageBox.Show(Me, "Un champ ne peut être choisi qu'une seule fois.", "Tri")
+                    Return
+                End If
+                selected.Add((fieldName, directions(i).SelectedIndex = 1))
+            Next
+            appointmentSort = selected
+            RefreshAppointments()
+        End Using
+    End Sub
+
     Private Sub RefreshAppointments()
         Dim rows As New List(Of (Id As Long, DateValue As Date, Title As String, Notes As String))()
         Using cn As New SqliteConnection("Data Source=" & DbPath)
@@ -2317,6 +2367,26 @@ Public Class FrmRendezVous
                 End Using
             End Using
         End Using
+        If appointmentSort.Count > 0 Then
+            Dim ordered As IOrderedEnumerable(Of (Id As Long, DateValue As Date, Title As String, Notes As String)) = Nothing
+            For Each criterion In appointmentSort
+                Dim selector As Func(Of (Id As Long, DateValue As Date, Title As String, Notes As String), IComparable) =
+                    Function(x)
+                        Select Case criterion.Field
+                            Case "Libellé" : Return x.Title
+                            Case "Date et heure" : Return x.DateValue
+                            Case "Note" : Return x.Notes
+                            Case Else : Return x.Id
+                        End Select
+                    End Function
+                If ordered Is Nothing Then
+                    ordered = If(criterion.Descending, rows.OrderByDescending(selector), rows.OrderBy(selector))
+                Else
+                    ordered = If(criterion.Descending, ordered.ThenByDescending(selector), ordered.ThenBy(selector))
+                End If
+            Next
+            rows = ordered.ToList()
+        End If
         upcoming.DataSource = rows.Select(Function(x) New With {
             .Id = x.Id,
             .Libelle = x.Title,
