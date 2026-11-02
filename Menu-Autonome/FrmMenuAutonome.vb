@@ -88,7 +88,7 @@ Public Class FrmMenuAutonome
         menuBar.Dock = DockStyle.None
         menuBar.Location = New Point(0, customTitle.Height)
         menuBar.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
-        menuBar.AutoSize = True
+        menuBar.AutoSize = False
         menuBar.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
         menuBar.Padding = New Padding(10, 6, 10, 6)
@@ -155,6 +155,7 @@ Public Class FrmMenuAutonome
         AddHandler Resize, Sub(sender, e)
             customTitle.SetBounds(0, 0, ClientSize.Width, 34)
             menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
+            DistributeMenuItems()
             UpdateRoundedCorners()
             PositionNextEvent()
             PositionAppointments()
@@ -653,6 +654,7 @@ Public Class FrmMenuAutonome
                 End If
             Next
             AdjustMenuWidth()
+            DistributeMenuItems()
             If menuBar.Items.Count = 0 Then
                 ShowProblem("Aucun menu disponible pour " & GeneratedConfig.FormName & ".")
             End If
@@ -1591,6 +1593,30 @@ Public Class FrmMenuAutonome
         AdjustMenuWidth()
     End Sub
 
+    Private Sub DistributeMenuItems()
+        If menuBar.Items.Count = 0 OrElse menuBar.ClientSize.Width <= 0 Then Return
+        Dim available = Math.Max(0, menuBar.ClientSize.Width - menuBar.Padding.Horizontal - 4)
+        Dim items = menuBar.Items.Cast(Of ToolStripItem)().Where(Function(item) item.Available).ToList()
+        If items.Count = 0 Then Return
+        Dim natural = items.Select(Function(item) TextRenderer.MeasureText(item.Text, item.Font).Width + 24).ToArray()
+        Dim total = natural.Sum()
+        Dim remaining = available
+        menuBar.SuspendLayout()
+        Try
+            For i = 0 To items.Count - 1
+                Dim width = If(i = items.Count - 1, remaining,
+                               If(total > available, CInt(Math.Floor(CDbl(available) * natural(i) / Math.Max(1, total))),
+                                  natural(i) + (available - total) \ items.Count))
+                width = Math.Max(1, width)
+                items(i).AutoSize = False
+                items(i).Width = width
+                remaining -= width
+            Next
+        Finally
+            menuBar.ResumeLayout(True)
+        End Try
+    End Sub
+
     Private Sub AdjustMenuWidth()
         ' Adapter la largeur au plus large des trois ensembles : titre, menus, contenu.
         Dim titleWidth = TextRenderer.MeasureText(customTitleText.Text, customTitleText.Font,
@@ -1627,6 +1653,7 @@ Public Class FrmMenuAutonome
         End If
         customTitle.SetBounds(0, 0, ClientSize.Width, 34)
         menuBar.SetBounds(0, customTitle.Bottom, ClientSize.Width, menuBar.Height)
+        DistributeMenuItems()
         PositionNextEvent()
         PositionBirthdays()
         PositionAppointments()
