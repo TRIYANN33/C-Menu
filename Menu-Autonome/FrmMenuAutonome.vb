@@ -1351,7 +1351,6 @@ Public Class FrmMenuAutonome
         If Not File.Exists(AppointmentDatabase) Then Return
         Try
             Dim lines As New List(Of String)()
-            Dim nearestDay As Date = Date.MaxValue
             Using cn As New SqliteConnection("Data Source=" & AppointmentDatabase & ";Mode=ReadOnly")
                 cn.Open()
                 Using cmd = cn.CreateCommand()
@@ -1362,11 +1361,6 @@ Public Class FrmMenuAutonome
                             Dim d As Date
                             If Not Date.TryParseExact(reader.GetString(1), "yyyy-MM-dd HH:mm:ss",
                                 CultureInfo.InvariantCulture, DateTimeStyles.None, d) Then Continue While
-                            If d.Date > nearestDay Then Exit While
-                            If d.Date < nearestDay Then
-                                nearestDay = d.Date
-                                lines.Clear()
-                            End If
                             lines.Add(reader.GetString(0).Trim() & Environment.NewLine &
                                 "le " & d.ToString("dddd d MMMM yyyy 'à' HH'h'mm", CultureInfo.GetCultureInfo("fr-FR")) &
                                 If(reader.IsDBNull(2) OrElse String.IsNullOrWhiteSpace(If(reader.IsDBNull(2), "", reader.GetString(2))), "",
@@ -1544,8 +1538,7 @@ Public Class FrmMenuAutonome
         Try
             Dim nextDate As Date = Date.MaxValue
             Dim nextTexts As New List(Of String)()
-            Dim birthdayDate As Date = Date.MaxValue
-            Dim birthdayTexts As New List(Of String)()
+            Dim birthdayTexts As New List(Of (DateValue As Date, Description As String))()
             Using cn As New SqliteConnection("Data Source=" & AnniversaryDatabase & ";Mode=ReadOnly")
                 cn.Open()
                 Using cmd = cn.CreateCommand()
@@ -1565,17 +1558,12 @@ Public Class FrmMenuAutonome
                                     occurrence = New Date(year, stored.Month, Math.Min(stored.Day, Date.DaysInMonth(year, stored.Month)))
                                 End If
                                 If i = 2 Then
-                                    If occurrence <= birthdayDate Then
-                                        If occurrence < birthdayDate Then
-                                            birthdayDate = occurrence
-                                            birthdayTexts.Clear()
-                                        End If
-                                        Dim age = occurrence.Year - stored.Year
-                                        birthdayTexts.Add(person & Environment.NewLine &
-                                            "Va avoir " & age.ToString(CultureInfo.InvariantCulture) & " ans" & Environment.NewLine &
-                                            "Le " & CultureInfo.GetCultureInfo("fr-FR").TextInfo.ToTitleCase(
-                                                occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"))))
-                                    End If
+                                    Dim age = occurrence.Year - stored.Year
+                                    Dim description = person & Environment.NewLine &
+                                        "Va avoir " & age.ToString(CultureInfo.InvariantCulture) & " ans" & Environment.NewLine &
+                                        "Le " & CultureInfo.GetCultureInfo("fr-FR").TextInfo.ToTitleCase(
+                                            occurrence.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")))
+                                    birthdayTexts.Add((occurrence, description))
                                 ElseIf occurrence <= nextDate Then
                                     If occurrence < nextDate Then
                                         nextDate = occurrence
@@ -1591,7 +1579,7 @@ Public Class FrmMenuAutonome
                 End Using
             End Using
             If birthdayTexts.Count > 0 Then
-                birthdayLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, birthdayTexts)
+                birthdayLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, birthdayTexts.OrderBy(Function(x) x.DateValue).Take(2).Select(Function(x) x.Description))
                 birthdayLabel.Visible = True
                 PositionBirthdays()
             End If
