@@ -172,11 +172,11 @@ Public Class FrmMenuAutonome
             If slideshowPicture IsNot Nothing Then
                 slideshowPicture.Cursor = Cursors.Hand
                 RemoveHandler slideshowPicture.Click, AddressOf NextSlideshowImageFromClick
-                AddHandler slideshowPicture.Click, AddressOf OpenSlideshowFromFrame
+                AddHandler slideshowPicture.Click, AddressOf NextSlideshowImageFromClick
             End If
             AddHandler emptyFrames(0).Click, AddressOf OpenBirthdaysFromFrame
             AddHandler leftBirthdaysLabel.Click, AddressOf OpenBirthdaysFromFrame
-            AddHandler emptyFrames(1).Click, AddressOf OpenSlideshowFromFrame
+            AddHandler emptyFrames(1).Click, AddressOf NextSlideshowImageFromClick
             AddHandler emptyFrames(2).Click, AddressOf OpenAppointmentsFromFrame
             AddHandler rightDatesLabel.Click, AddressOf OpenAppointmentsFromFrame
             countdowns.Start()
