@@ -33,7 +33,9 @@ Public NotInheritable Class MenuExeGenerator
         Dim publishFolder = Path.Combine("C:\\", "Menu", "applications", safe)
         Directory.CreateDirectory(sourceFolder)
         Directory.CreateDirectory(publishFolder)
-        Dim temporaryPublish = Path.Combine(Path.GetTempPath(), "CMenu-Menu-" & Guid.NewGuid().ToString("N"))
+        ' Publier dans un dossier persistant : les exécutables créés dans %TEMP%
+        ' peuvent être supprimés ou mis en quarantaine pendant leur copie.
+        Dim temporaryPublish = Path.Combine(outputRoot, "Publication-" & Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory(temporaryPublish)
 
         File.WriteAllText(Path.Combine(sourceFolder, "Program.vb"), EmbeddedSource("Program.vb"), Encoding.UTF8)
@@ -87,13 +89,13 @@ Public NotInheritable Class MenuExeGenerator
                 File.Copy(generatedFile, Path.Combine(publishFolder, Path.GetFileName(generatedFile)), True)
             Next
             If Not File.Exists(compiledExe) Then
-                Throw New FileNotFoundException("L'exécutable temporaire a disparu avant sa copie.", compiledExe)
+                Throw New FileNotFoundException("L'exécutable généré a disparu avant sa copie. Vérifiez l'historique de protection de Windows Sécurité ou de votre antivirus. Dossier de publication : " & temporaryPublish, compiledExe)
             End If
             Try
                 File.Copy(compiledExe, exePath, True)
             Catch ex As IOException
                 If Not File.Exists(compiledExe) Then
-                    Throw New FileNotFoundException("L'exécutable temporaire a disparu pendant la publication.", compiledExe)
+                    Throw New FileNotFoundException("L'exécutable généré a disparu pendant la publication. Vérifiez l'historique de protection de Windows Sécurité ou de votre antivirus. Dossier : " & temporaryPublish, compiledExe)
                 End If
                 Throw New IOException("Impossible d'écrire l'exécutable de destination : " & exePath &
                     vbCrLf & "Vérifiez qu'il n'est pas utilisé et que le dossier est accessible." &
@@ -101,7 +103,7 @@ Public NotInheritable Class MenuExeGenerator
             End Try
         Finally
             Try
-                Directory.Delete(temporaryPublish, True)
+                If File.Exists(exePath) Then Directory.Delete(temporaryPublish, True)
             Catch
             End Try
         End Try
