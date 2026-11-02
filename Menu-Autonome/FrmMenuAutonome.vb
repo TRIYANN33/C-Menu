@@ -164,6 +164,21 @@ Public Class FrmMenuAutonome
             StartMiddleSlideshow()
             RefreshRightDates()
             RefreshLeftBirthdays()
+            emptyFrames(0).Cursor = Cursors.Hand
+            emptyFrames(1).Cursor = Cursors.Hand
+            emptyFrames(2).Cursor = Cursors.Hand
+            leftBirthdaysLabel.Cursor = Cursors.Hand
+            rightDatesLabel.Cursor = Cursors.Hand
+            If slideshowPicture IsNot Nothing Then
+                slideshowPicture.Cursor = Cursors.Hand
+                RemoveHandler slideshowPicture.Click, AddressOf NextSlideshowImageFromClick
+                AddHandler slideshowPicture.Click, AddressOf OpenSlideshowFromFrame
+            End If
+            AddHandler emptyFrames(0).Click, AddressOf OpenBirthdaysFromFrame
+            AddHandler leftBirthdaysLabel.Click, AddressOf OpenBirthdaysFromFrame
+            AddHandler emptyFrames(1).Click, AddressOf OpenSlideshowFromFrame
+            AddHandler emptyFrames(2).Click, AddressOf OpenAppointmentsFromFrame
+            AddHandler rightDatesLabel.Click, AddressOf OpenAppointmentsFromFrame
             countdowns.Start()
             clock.Start()
         End Sub
@@ -1394,6 +1409,26 @@ Public Class FrmMenuAutonome
     End Sub
 
     ' Le diaporama utilise exclusivement le cadre central existant.
+    Private Sub OpenBirthdaysFromFrame(sender As Object, e As EventArgs)
+        Using dialog As New FrmAnniversaire()
+            dialog.ShowDialog(Me)
+        End Using
+        RefreshLeftBirthdays()
+    End Sub
+
+    Private Sub OpenAppointmentsFromFrame(sender As Object, e As EventArgs)
+        Using dialog As New FrmRendezVous()
+            dialog.ShowDialog(Me)
+        End Using
+        RefreshRightDates()
+    End Sub
+
+    Private Sub OpenSlideshowFromFrame(sender As Object, e As EventArgs)
+        If Directory.Exists(SlideshowFolder) Then
+            Process.Start(New ProcessStartInfo("explorer.exe", ChrW(34) & SlideshowFolder & ChrW(34)) With {.UseShellExecute = True})
+        End If
+    End Sub
+
     Private Sub StartMiddleSlideshow()
         Try
             If Not Directory.Exists(SlideshowFolder) Then Directory.CreateDirectory(SlideshowFolder)
