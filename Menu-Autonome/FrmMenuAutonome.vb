@@ -1789,17 +1789,28 @@ Public Class FrmAnniversaire
         Next
         Dim saveButton As New Button With {.Text = "Enregistrer", .AutoSize = True}
         AddHandler saveButton.Click, AddressOf SaveEvent
-        Dim toolbar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 43, .Padding = New Padding(12, 5, 0, 0)}
-        toolbar.Controls.Add(saveButton)
+        Dim toolbar As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 48, .ColumnCount = 5, .RowCount = 1, .Padding = New Padding(8, 5, 8, 5)}
+        For i As Integer = 1 To 5
+            toolbar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 20.0F))
+        Next
+        saveButton.AutoSize = False
+        saveButton.Dock = DockStyle.Fill
+        toolbar.Controls.Add(saveButton, 0, 0)
         Dim nouveau As New Button With {.Text = "Nouveau", .AutoSize = True}
         AddHandler nouveau.Click, Sub(sender, e) ClearEntry()
-        toolbar.Controls.Add(nouveau)
+        nouveau.AutoSize = False
+        nouveau.Dock = DockStyle.Fill
+        toolbar.Controls.Add(nouveau, 1, 0)
         Dim supprimer As New Button With {.Text = "Supprimer", .AutoSize = True}
         AddHandler supprimer.Click, AddressOf DeleteEvent
-        toolbar.Controls.Add(supprimer)
+        supprimer.AutoSize = False
+        supprimer.Dock = DockStyle.Fill
+        toolbar.Controls.Add(supprimer, 2, 0)
         Dim duplicate As New Button With {.Text = "Dupliquer", .AutoSize = True}
         AddHandler duplicate.Click, AddressOf DuplicateEvent
-        toolbar.Controls.Add(duplicate)
+        duplicate.AutoSize = False
+        duplicate.Dock = DockStyle.Fill
+        toolbar.Controls.Add(duplicate, 3, 0)
         Dim modify As New Button With {.Text = "Modifier", .AutoSize = True}
         AddHandler modify.Click, Sub(sender, e)
             If selectedId = 0 Then
@@ -1808,7 +1819,9 @@ Public Class FrmAnniversaire
                 nom.Focus()
             End If
         End Sub
-        toolbar.Controls.Add(modify)
+        modify.AutoSize = False
+        modify.Dock = DockStyle.Fill
+        toolbar.Controls.Add(modify, 4, 0)
         AddHandler eventsGrid.SelectionChanged, AddressOf SelectEvent
         Me.Controls.Add(eventsGrid)
         Me.Controls.Add(toolbar)
@@ -1984,20 +1997,33 @@ Public Class FrmRendezVous
         Next
         Dim save As New Button With {.Text = "Enregistrer", .AutoSize = True}
         AddHandler save.Click, AddressOf SaveAppointment
-        Dim bar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 45, .Padding = New Padding(12, 5, 0, 0)}
-        bar.Controls.Add(save)
+        Dim bar As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 48, .ColumnCount = 5, .RowCount = 1, .Padding = New Padding(8, 5, 8, 5)}
+        For i As Integer = 1 To 5
+            bar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 20.0F))
+        Next
+        save.AutoSize = False
+        save.Dock = DockStyle.Fill
+        bar.Controls.Add(save, 0, 0)
         Dim duplicate As New Button With {.Text = "Dupliquer", .AutoSize = True}
         AddHandler duplicate.Click, AddressOf DuplicateAppointment
-        bar.Controls.Add(duplicate)
+        duplicate.AutoSize = False
+        duplicate.Dock = DockStyle.Fill
+        bar.Controls.Add(duplicate, 1, 0)
         Dim modify As New Button With {.Text = "Modifier", .AutoSize = True}
         AddHandler modify.Click, AddressOf ModifyAppointment
-        bar.Controls.Add(modify)
+        modify.AutoSize = False
+        modify.Dock = DockStyle.Fill
+        bar.Controls.Add(modify, 2, 0)
         Dim deleteButton As New Button With {.Text = "Supprimer", .AutoSize = True}
         AddHandler deleteButton.Click, AddressOf DeleteAppointment
-        bar.Controls.Add(deleteButton)
+        deleteButton.AutoSize = False
+        deleteButton.Dock = DockStyle.Fill
+        bar.Controls.Add(deleteButton, 3, 0)
         Dim newButton As New Button With {.Text = "Nouveau", .AutoSize = True}
         AddHandler newButton.Click, Sub(sender, e) ClearAppointment()
-        bar.Controls.Add(newButton)
+        newButton.AutoSize = False
+        newButton.Dock = DockStyle.Fill
+        bar.Controls.Add(newButton, 4, 0)
         Me.Controls.Add(upcoming)
         Me.Controls.Add(bar)
         Me.Controls.Add(entry)
