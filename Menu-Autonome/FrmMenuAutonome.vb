@@ -409,7 +409,7 @@ Public Class FrmMenuAutonome
                 }
                     Dim fields As New TableLayoutPanel With {
                         .Dock = DockStyle.Fill, .AutoScroll = True,
-                        .ColumnCount = 2, .RowCount = 12, .Padding = New Padding(14)
+                        .ColumnCount = 2, .RowCount = 1, .Padding = New Padding(14)
                     }
                     fields.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 155))
                     fields.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
