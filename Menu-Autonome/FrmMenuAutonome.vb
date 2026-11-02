@@ -1392,9 +1392,14 @@ Public Class FrmMenuAutonome
         Using g = CreateGraphics()
             side = Math.Max(1, CInt(Math.Round(g.DpiX * 6.0 / 2.54)))
         End Using
+        ' Centrage horizontal et espacement fixe de 3 mm sous la barre des menus.
+        Dim topMargin As Integer
+        Using g = CreateGraphics()
+            topMargin = Math.Max(1, CInt(Math.Round(g.DpiY * 0.3 / 2.54)))
+        End Using
         slideshowPanel.Dock = DockStyle.None
         slideshowPanel.SetBounds(Math.Max(0, (ClientSize.Width - side) \ 2),
-                                 Math.Max(menuBar.Bottom, menuBar.Bottom + (ClientSize.Height - menuBar.Bottom - side) \ 2),
+                                 menuBar.Bottom + topMargin,
                                  side, side)
         birthdayLabel.Visible = False
         appointmentLabel.Visible = False
