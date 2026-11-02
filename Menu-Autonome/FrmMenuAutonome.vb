@@ -98,7 +98,10 @@ Public Class FrmMenuAutonome
         Dim editingMenu As New ContextMenuStrip()
         editingMenu.Items.Add("Ajouter un menu...", Nothing, Sub(sender, e) AddMenuLive(False))
         editingMenu.Items.Add("Ajouter un sous-menu...", Nothing, Sub(sender, e) AddMenuLive(True))
+        editingMenu.Items.Add(New ToolStripSeparator())
+        editingMenu.Items.Add("Actualiser les menus", Nothing, Sub(sender, e) RefreshMenusLive())
         menuBar.ContextMenuStrip = editingMenu
+        ContextMenuStrip = editingMenu
         ' Les cadres Anniversaire et Rendez-vous ne font plus partie du formulaire Menu.
         Controls.Add(customTitle)
         customTitle.Width = ClientSize.Width
@@ -130,7 +133,8 @@ Public Class FrmMenuAutonome
             If e.KeyCode = Keys.F5 Then
                 e.Handled = True
                 e.SuppressKeyPress = True
-                ' Cadre Anniversaires retiré.
+                RefreshMenusLive()
+                RefreshLeftBirthdays()
                 RefreshRightDates()
             End If
         End Sub
@@ -369,6 +373,11 @@ Public Class FrmMenuAutonome
         Catch ex As Exception
             ShowProblem("Renommage automatique du menu Exemples impossible : " & ex.Message)
         End Try
+    End Sub
+
+    Private Sub RefreshMenusLive()
+        LoadFromDatabase()
+        AdjustMenuWidth()
     End Sub
 
     Private Sub AddMenuLive(isSubMenu As Boolean)
