@@ -89,6 +89,7 @@ Public Class FrmMenuAutonome
         menuBar.Location = New Point(0, customTitle.Height)
         menuBar.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         menuBar.AutoSize = False
+        menuBar.Height = 36
         menuBar.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
         menuBar.Padding = New Padding(10, 6, 10, 6)
@@ -1418,7 +1419,12 @@ Public Class FrmMenuAutonome
         Dim exactHeight = Math.Max(30, lines.Length * (frame.Font.Height + 3) +
             frame.Padding.Vertical + 8)
         frame.MinimumSize = Size.Empty
-        frame.MaximumSize = New Size(exactWidth, exactHeight)
+        If slideshowPanel IsNot Nothing Then
+            exactWidth = slideshowPanel.Width
+            exactHeight = slideshowPanel.Height
+        End If
+        frame.MaximumSize = Size.Empty
+        frame.AutoEllipsis = True
         frame.Size = New Size(exactWidth, exactHeight)
     End Sub
 
@@ -1454,7 +1460,7 @@ Public Class FrmMenuAutonome
         appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width - rightMargin), topPosition)
         appointmentLabel.BringToFront()
         appointmentLabel.Invalidate()
-        Dim neededHeight = appointmentLabel.Bottom + 12 + (Height - ClientSize.Height)
+        Dim neededHeight = Math.Max(appointmentLabel.Bottom, If(slideshowPanel Is Nothing, 0, slideshowPanel.Bottom)) + 12 + (Height - ClientSize.Height)
         If Height < neededHeight Then Height = neededHeight
     End Sub
 
@@ -1485,7 +1491,7 @@ Public Class FrmMenuAutonome
             menuBar.Bottom + offsetPixels)
         birthdayLabel.BringToFront()
         birthdayLabel.Invalidate()
-        Dim neededHeight = birthdayLabel.Bottom + 12 + (Height - ClientSize.Height)
+        Dim neededHeight = Math.Max(birthdayLabel.Bottom, If(slideshowPanel Is Nothing, 0, slideshowPanel.Bottom)) + 12 + (Height - ClientSize.Height)
         If Height < neededHeight Then Height = neededHeight
     End Sub
 
@@ -1594,23 +1600,12 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private Sub DistributeMenuItems()
-        If menuBar.Items.Count = 0 OrElse menuBar.ClientSize.Width <= 0 Then Return
-        Dim available = Math.Max(0, menuBar.ClientSize.Width - menuBar.Padding.Horizontal - 4)
-        Dim items = menuBar.Items.Cast(Of ToolStripItem)().Where(Function(item) item.Available).ToList()
-        If items.Count = 0 Then Return
-        Dim natural = items.Select(Function(item) TextRenderer.MeasureText(item.Text, item.Font).Width + 24).ToArray()
-        Dim total = natural.Sum()
-        Dim remaining = available
+        If menuBar.Items.Count = 0 Then Return
+        ' Ne jamais compresser les intitulés : laisser ToolStrip gérer le débordement.
         menuBar.SuspendLayout()
         Try
-            For i = 0 To items.Count - 1
-                Dim width = If(i = items.Count - 1, remaining,
-                               If(total > available, CInt(Math.Floor(CDbl(available) * natural(i) / Math.Max(1, total))),
-                                  natural(i) + (available - total) \ items.Count))
-                width = Math.Max(1, width)
-                items(i).AutoSize = False
-                items(i).Width = width
-                remaining -= width
+            For Each item As ToolStripItem In menuBar.Items
+                item.AutoSize = True
             Next
         Finally
             menuBar.ResumeLayout(True)
