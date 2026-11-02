@@ -1305,7 +1305,7 @@ Public Class FrmMenuAutonome
     ' Trois cadres vides, indépendants des anciens diaporama et listes.
     Private ReadOnly emptyFrames As Panel() = {
         New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle},
-        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle},
+        New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.None},
         New Panel With {.BackColor = Color.Transparent, .BorderStyle = BorderStyle.FixedSingle}
     }
 
