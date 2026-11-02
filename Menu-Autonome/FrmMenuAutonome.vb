@@ -1322,6 +1322,9 @@ Public Class FrmMenuAutonome
         .BackColor = Color.Transparent,
         .AutoSize = False,
         .TextAlign = ContentAlignment.TopLeft,
+        .BorderStyle = BorderStyle.FixedSingle,
+        .Padding = New Padding(6),
+        .ForeColor = Color.Black,
         .Font = New Font("Segoe UI", 9, FontStyle.Bold),
         .Visible = False
     }
@@ -1330,7 +1333,6 @@ Public Class FrmMenuAutonome
     Private Sub RefreshAppointmentsDisplay()
         appointmentLabel.Visible = False
         appointmentLabel.Text = String.Empty
-        appointmentLabel.Size = Size.Empty
         If Not File.Exists(AppointmentDatabase) Then Return
         Try
             Dim lines As New List(Of String)()
@@ -1401,6 +1403,8 @@ Public Class FrmMenuAutonome
                                  menuBar.Bottom + topMargin,
                                  side, side)
         nextEventLabel.Visible = False
+        appointmentLabel.Visible = True
+        birthdayLabel.Visible = True
         If appointmentLabel.Parent Is Nothing Then Controls.Add(appointmentLabel)
         appointmentLabel.SetBounds(slideshowPanel.Right + topMargin, slideshowPanel.Top, side, side)
         appointmentLabel.BringToFront()
@@ -1408,6 +1412,8 @@ Public Class FrmMenuAutonome
         birthdayLabel.SetBounds(slideshowPanel.Left - topMargin - side, slideshowPanel.Top, side, side)
         birthdayLabel.BringToFront()
         slideshowPanel.BringToFront()
+        appointmentLabel.Invalidate()
+        birthdayLabel.Invalidate()
         customTitle.BringToFront()
     End Sub
 
@@ -1447,6 +1453,7 @@ Public Class FrmMenuAutonome
         .BackColor = Color.Transparent,
         .AutoSize = False,
         .TextAlign = ContentAlignment.MiddleLeft,
+        .BorderStyle = BorderStyle.FixedSingle,
         .Padding = New Padding(4, 4, 8, 4),
         .Font = New Font("Segoe UI", 9, FontStyle.Bold),
         .Visible = False
