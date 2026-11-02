@@ -43,6 +43,24 @@ Public Class FrmMenuAutonome
     Private ReadOnly clock As New Timer With {.Interval = 1000}
     Private ReadOnly customTitle As New Panel With {.Dock = DockStyle.None, .Height = 34, .Top = 0, .Left = 0}
     Private ReadOnly customTitleText As New Label With {.Dock = DockStyle.Fill, .TextAlign = ContentAlignment.MiddleLeft, .AutoEllipsis = True, .Padding = New Padding(10, 0, 0, 0)}
+    <System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)>
+    Private Structure LastInputInfo
+        Public cbSize As UInteger
+        Public dwTime As UInteger
+    End Structure
+
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function GetLastInputInfo(ByRef info As LastInputInfo) As Boolean
+    End Function
+
+    Private Function PcIdleForTenMinutes() As Boolean
+        Dim info As New LastInputInfo With {.cbSize = CUInt(System.Runtime.InteropServices.Marshal.SizeOf(Of LastInputInfo)())}
+        If Not GetLastInputInfo(info) Then Return False
+        Dim currentTick As ULong = CULng(CLng(Environment.TickCount) And &HFFFFFFFFL)
+        Dim elapsed As ULong = (currentTick + &H100000000UL - CULng(info.dwTime)) Mod &H100000000UL
+        Return elapsed >= 600000UL
+    End Function
+
     Private slideshowTitleMode As Boolean
     Private previousTitleBounds As Rectangle
     Private previousTitleMinimum As Size
@@ -136,7 +154,12 @@ Public Class FrmMenuAutonome
             PositionAppointments()
             PositionSlideshow()
         End Sub
-        AddHandler clock.Tick, Sub(sender, e) RefreshClock()
+        AddHandler clock.Tick, Sub(sender, e)
+            RefreshClock()
+            If slideshowTitleMode AndAlso PcIdleForTenMinutes() Then
+                ToggleTitleSlideshowSize()
+            End If
+        End Sub
         AddHandler Shown, Sub(sender, e)
             UpdateRoundedCorners()
             RefreshClock()
@@ -295,7 +318,11 @@ Public Class FrmMenuAutonome
             customTitle.BringToFront()
         Else
             slideshowTitleMode = False
-            Bounds = previousTitleBounds
+            Dim work = Screen.FromControl(Me).WorkingArea
+            Dim restoredSize = previousTitleBounds.Size
+            Bounds = New Rectangle(work.Left + (work.Width - restoredSize.Width) \ 2,
+                                   work.Top + (work.Height - restoredSize.Height) \ 2,
+                                   restoredSize.Width, restoredSize.Height)
             MinimumSize = previousTitleMinimum
             customTitle.BringToFront()
         End If
