@@ -159,6 +159,7 @@ Public Class FrmMenuAutonome
             RenameExampleMenuInDatabase()
             LoadFromDatabase()
             PositionEmptyFrames()
+            StartMiddleSlideshow()
             clock.Start()
         End Sub
         AddHandler FormClosed, Sub(sender, e)
@@ -1336,6 +1337,36 @@ Public Class FrmMenuAutonome
             requiredHeight = Math.Min(requiredHeight, maxHeight)
             If Height <> requiredHeight Then Height = requiredHeight
         End If
+    End Sub
+
+    ' Le diaporama utilise exclusivement le cadre central existant.
+    Private Sub StartMiddleSlideshow()
+        Try
+            If Not Directory.Exists(SlideshowFolder) Then Directory.CreateDirectory(SlideshowFolder)
+            If slideshowPicture Is Nothing Then
+                slideshowPicture = New PictureBox With {
+                    .Dock = DockStyle.Fill,
+                    .SizeMode = PictureBoxSizeMode.Zoom,
+                    .BackColor = Color.Transparent
+                }
+                emptyFrames(1).Controls.Add(slideshowPicture)
+            End If
+            slideshowFiles = Directory.GetFiles(SlideshowFolder).
+                Where(Function(f) {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp"}.
+                Contains(Path.GetExtension(f).ToLowerInvariant())).
+                OrderBy(Function(f) f, StringComparer.CurrentCultureIgnoreCase).ToArray()
+            ShuffleSlideshowFiles()
+            slideshowIndex = 0
+            NextSlideshowImage()
+            RemoveHandler slideshowPicture.Click, AddressOf NextSlideshowImageFromClick
+            AddHandler slideshowPicture.Click, AddressOf NextSlideshowImageFromClick
+            RemoveHandler slideshowTimer.Tick, AddressOf NextSlideshowImageFromTimer
+            AddHandler slideshowTimer.Tick, AddressOf NextSlideshowImageFromTimer
+            If slideshowFiles.Length > 0 Then slideshowTimer.Start()
+        Catch ex As Exception
+            MessageBox.Show(Me, "Impossible de démarrer le diaporama : " & ex.Message,
+                            "Diaporama", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
     End Sub
 
     Private ReadOnly slideshowTimer As New Timer With {.Interval = 8000}
