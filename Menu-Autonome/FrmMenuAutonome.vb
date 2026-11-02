@@ -1410,7 +1410,7 @@ Public Class FrmMenuAutonome
             Using cn As New SqliteConnection("Data Source=" & AppointmentDatabase & ";Mode=ReadOnly")
                 cn.Open()
                 Using cmd = cn.CreateCommand()
-                    cmd.CommandText = "SELECT Libelle, DateHeure, Note FROM RendezVous WHERE DateHeure >= $now ORDER BY DateHeure ASC LIMIT 2"
+                    cmd.CommandText = "SELECT Libelle, DateHeure, Note FROM RendezVous WHERE DateHeure >= $now ORDER BY DateHeure ASC LIMIT 4"
                     cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
