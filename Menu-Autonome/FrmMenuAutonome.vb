@@ -2106,7 +2106,7 @@ Public Class FrmAnniversaire
         Using cn As New SqliteConnection("Data Source=" & databaseFile)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Id, Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter FROM Evenements ORDER BY Nom, Prenom, Id"
+                cmd.CommandText = "SELECT Id, Nom, Prenom, Naissance, Fete, ANoter, LibelleANoter FROM Evenements ORDER BY MIN(COALESCE(NULLIF(Naissance, ''), '9999-12-31'), COALESCE(NULLIF(Fete, ''), '9999-12-31'), COALESCE(NULLIF(ANoter, ''), '9999-12-31')) ASC, Nom, Prenom, Id"
                 Using reader = cmd.ExecuteReader()
                     records.Load(reader)
                 End Using
@@ -2358,7 +2358,7 @@ Public Class FrmRendezVous
         Using cn As New SqliteConnection("Data Source=" & DbPath)
             cn.Open()
             Using cmd = cn.CreateCommand()
-                cmd.CommandText = "SELECT Id, Libelle, DateHeure, Note FROM RendezVous ORDER BY DateHeure DESC, Id DESC"
+                cmd.CommandText = "SELECT Id, Libelle, DateHeure, Note FROM RendezVous ORDER BY DateHeure ASC, Id ASC"
                 Using reader = cmd.ExecuteReader()
                     While reader.Read()
                         Dim d As Date
