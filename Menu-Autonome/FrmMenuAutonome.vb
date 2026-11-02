@@ -1716,6 +1716,13 @@ Public Class FrmMenuAutonome
                 PositionSlideshow()
                 AddHandler slideshowTimer.Tick, Sub(sender, e) NextSlideshowImage()
             End If
+            ' Le panneau peut avoir été créé pour réserver la place avant le chargement des photos.
+            If slideshowPanel IsNot Nothing Then
+                RemoveHandler slideshowPicture.Click, AddressOf NextSlideshowImageFromClick
+                AddHandler slideshowPicture.Click, AddressOf NextSlideshowImageFromClick
+                RemoveHandler slideshowTimer.Tick, AddressOf NextSlideshowImageFromTimer
+                AddHandler slideshowTimer.Tick, AddressOf NextSlideshowImageFromTimer
+            End If
             slideshowFiles = Directory.GetFiles(SlideshowFolder).
                 Where(Function(f) {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp"}.
                 Contains(Path.GetExtension(f).ToLowerInvariant())).
@@ -1732,6 +1739,14 @@ Public Class FrmMenuAutonome
             MessageBox.Show(Me, "Impossible de démarrer le diaporama : " & ex.Message,
                             "Diaporama", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
+    End Sub
+
+    Private Sub NextSlideshowImageFromClick(sender As Object, e As EventArgs)
+        NextSlideshowImage()
+    End Sub
+
+    Private Sub NextSlideshowImageFromTimer(sender As Object, e As EventArgs)
+        NextSlideshowImage()
     End Sub
 
     Private Sub ShuffleSlideshowFiles()
