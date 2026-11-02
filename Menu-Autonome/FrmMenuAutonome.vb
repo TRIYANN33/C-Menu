@@ -1331,7 +1331,6 @@ Public Class FrmMenuAutonome
     Private Shared ReadOnly AppointmentDatabase As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "RendezVous.db")
 
     Private Sub RefreshAppointmentsDisplay()
-        appointmentLabel.Visible = False
         appointmentLabel.Text = String.Empty
         If Not File.Exists(AppointmentDatabase) Then Return
         Try
@@ -1389,14 +1388,13 @@ Public Class FrmMenuAutonome
 
     Private Sub PositionSlideshow()
         EnsureSlideshowPanel()
-        Dim side As Integer
-        Using g = CreateGraphics()
-            side = Math.Max(1, CInt(Math.Round(g.DpiX * 6.0 / 2.54)))
-        End Using
+        Dim side As Integer = slideshowPanel.Width
         ' Centrage horizontal et espacement fixe de 3 mm sous la barre des menus.
         Dim topMargin As Integer
+        Dim horizontalGap As Integer
         Using g = CreateGraphics()
             topMargin = Math.Max(1, CInt(Math.Round(g.DpiY * 0.3 / 2.54)))
+            horizontalGap = Math.Max(1, CInt(Math.Round(g.DpiX * 0.3 / 2.54)))
         End Using
         slideshowPanel.Dock = DockStyle.None
         slideshowPanel.SetBounds(Math.Max(0, (ClientSize.Width - side) \ 2),
@@ -1406,10 +1404,10 @@ Public Class FrmMenuAutonome
         appointmentLabel.Visible = True
         birthdayLabel.Visible = True
         If appointmentLabel.Parent Is Nothing Then Controls.Add(appointmentLabel)
-        appointmentLabel.SetBounds(slideshowPanel.Right + topMargin, slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
+        appointmentLabel.SetBounds(slideshowPanel.Right + horizontalGap, slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
         appointmentLabel.BringToFront()
         If birthdayLabel.Parent Is Nothing Then Controls.Add(birthdayLabel)
-        birthdayLabel.SetBounds(slideshowPanel.Left - topMargin - slideshowPanel.Width, slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
+        birthdayLabel.SetBounds(slideshowPanel.Left - horizontalGap - slideshowPanel.Width, slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
         birthdayLabel.BringToFront()
         slideshowPanel.BringToFront()
         menuBar.BringToFront()
@@ -1503,7 +1501,7 @@ Public Class FrmMenuAutonome
 
     Private Sub RefreshNextEvent()
         nextEventLabel.Visible = False
-        birthdayLabel.Visible = False
+        birthdayLabel.Text = String.Empty
         If Not File.Exists(AnniversaryDatabase) Then
             AdjustMenuWidth()
             Return
@@ -1596,8 +1594,7 @@ Public Class FrmMenuAutonome
                                  If(nextEventLabel.Visible, nextEventLabel.Width, 0))
         Dim middleWidth = If(slideshowPanel IsNot Nothing, slideshowPanel.Width, 0)
         Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
-        Dim contentWidth = Math.Max(180, middleWidth * 3 + 48)
-        contentWidth = Math.Max(contentWidth, middleWidth * 3 + 2 * Math.Max(1, CInt(Math.Round(DeviceDpi * 0.3 / 2.54))) + 8)
+        Dim contentWidth = Math.Max(180, middleWidth * 3 + 2 * Math.Max(1, CInt(Math.Round(DeviceDpi * 0.3 / 2.54))) + 8)
         contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
         Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
