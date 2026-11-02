@@ -159,9 +159,9 @@ Public Class FrmMenuAutonome
             LoadFromDatabase()
             countdowns.Start()
             StartSlideshow(True)
-            birthdayLabel.Visible = False
             appointmentLabel.Visible = False
             nextEventLabel.Visible = False
+            RefreshNextEvent()
             PositionSlideshow()
             clock.Start()
         End Sub
@@ -1401,9 +1401,11 @@ Public Class FrmMenuAutonome
         slideshowPanel.SetBounds(Math.Max(0, (ClientSize.Width - side) \ 2),
                                  menuBar.Bottom + topMargin,
                                  side, side)
-        birthdayLabel.Visible = False
         appointmentLabel.Visible = False
         nextEventLabel.Visible = False
+        If birthdayLabel.Parent Is Nothing Then Controls.Add(birthdayLabel)
+        birthdayLabel.SetBounds(slideshowPanel.Left - topMargin - side, slideshowPanel.Top, side, side)
+        birthdayLabel.BringToFront()
         slideshowPanel.BringToFront()
         customTitle.BringToFront()
     End Sub
@@ -1470,25 +1472,14 @@ Public Class FrmMenuAutonome
     }
 
     Private Sub PositionBirthdays()
-        If Not birthdayLabel.Visible Then Return
-        FitEventFrame(birthdayLabel)
-        Dim offsetPixels As Integer
-        Using graphics = CreateGraphics()
-            offsetPixels = CInt(Math.Round(graphics.DpiY * 0.5 / 2.54))
+        If slideshowPanel Is Nothing Then Return
+        Dim gap As Integer
+        Using g = CreateGraphics()
+            gap = Math.Max(1, CInt(Math.Round(g.DpiX * 0.3 / 2.54)))
         End Using
-        Dim leftMargin As Integer
-        Using graphics = CreateGraphics()
-            leftMargin = CInt(Math.Round(graphics.DpiX * 0.3 / 2.54))
-        End Using
-        If slideshowPanel IsNot Nothing Then
-            birthdayLabel.Location = New Point(slideshowPanel.Left - leftMargin - birthdayLabel.Width, slideshowPanel.Top)
-        Else
-            birthdayLabel.Location = New Point(leftMargin, menuBar.Bottom + offsetPixels)
-        End If
+        birthdayLabel.SetBounds(slideshowPanel.Left - gap - slideshowPanel.Width,
+                                slideshowPanel.Top, slideshowPanel.Width, slideshowPanel.Height)
         birthdayLabel.BringToFront()
-        birthdayLabel.Invalidate()
-        Dim neededHeight = Math.Max(birthdayLabel.Bottom, If(slideshowPanel Is Nothing, 0, slideshowPanel.Bottom)) + 12 + (Height - ClientSize.Height)
-        If Height < neededHeight Then Height = neededHeight
     End Sub
 
     Private ReadOnly nextEventLabel As New Label With {
@@ -1574,7 +1565,7 @@ Public Class FrmMenuAutonome
             If birthdayTexts.Count > 0 Then
                 birthdayLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, birthdayTexts.OrderBy(Function(x) x.DateValue).Take(2).Select(Function(x) x.Description))
                 birthdayLabel.Visible = True
-                PositionBirthdays()
+                PositionSlideshow()
             End If
             If False AndAlso nextTexts.Count > 0 Then
                 nextEventLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, nextTexts)
