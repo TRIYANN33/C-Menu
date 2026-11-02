@@ -91,6 +91,10 @@ Public Class FrmMenuAutonome
         menuBar.BackColor = Color.FromArgb(226, 234, 240)
         menuBar.Padding = New Padding(10, 6, 10, 6)
         Controls.Add(menuBar)
+        Dim editingMenu As New ContextMenuStrip()
+        editingMenu.Items.Add("Ajouter un menu...", Nothing, Sub(sender, e) AddMenuLive(False))
+        editingMenu.Items.Add("Ajouter un sous-menu...", Nothing, Sub(sender, e) AddMenuLive(True))
+        menuBar.ContextMenuStrip = editingMenu
         Controls.Add(birthdayLabel)
         Controls.Add(appointmentLabel)
         AddHandler birthdayLabel.Paint, AddressOf DrawEventBorder
@@ -348,6 +352,94 @@ Public Class FrmMenuAutonome
             End Using
         Catch ex As Exception
             ShowProblem("Renommage automatique du menu Exemples impossible : " & ex.Message)
+        End Try
+    End Sub
+
+    Private Sub AddMenuLive(isSubMenu As Boolean)
+        If Not File.Exists(databasePath) Then
+            ShowProblem("Base SQLite introuvable : " & databasePath)
+            Return
+        End If
+        Try
+            Using cn As New SqliteConnection("Data Source=" & databasePath)
+                cn.Open()
+                Dim parentName As String = ""
+                Dim menuNumber As String = ""
+                If isSubMenu Then
+                    Dim available As New List(Of String)()
+                    Using cmd = cn.CreateCommand()
+                        cmd.CommandText = "SELECT DISTINCT NumMenu, Menu FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND TRIM(Menu)<>'' ORDER BY CAST(NumMenu AS INTEGER)"
+                        cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
+                        Using reader = cmd.ExecuteReader()
+                            While reader.Read()
+                                available.Add(reader.GetString(0) & " - " & reader.GetString(1))
+                            End While
+                        End Using
+                    End Using
+                    If available.Count = 0 Then
+                        MessageBox.Show("Créez d'abord un menu principal.", "Ajouter un sous-menu")
+                        Return
+                    End If
+                    Dim choice = Microsoft.VisualBasic.Interaction.InputBox(
+                        "Numéro du menu parent :" & Environment.NewLine & String.Join(Environment.NewLine, available),
+                        "Ajouter un sous-menu")
+                    If String.IsNullOrWhiteSpace(choice) Then Return
+                    menuNumber = choice.Trim()
+                    If menuNumber.Contains(" "c) Then menuNumber = menuNumber.Split(" "c)(0)
+                    Using cmd = cn.CreateCommand()
+                        cmd.CommandText = "SELECT Menu FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND NumMenu=$num LIMIT 1"
+                        cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
+                        cmd.Parameters.AddWithValue("$num", menuNumber)
+                        Dim found = cmd.ExecuteScalar()
+                        If found Is Nothing Then
+                            MessageBox.Show("Numéro de menu parent introuvable.", "Ajouter un sous-menu")
+                            Return
+                        End If
+                        parentName = Convert.ToString(found)
+                    End Using
+                Else
+                    parentName = Microsoft.VisualBasic.Interaction.InputBox("Nom du nouveau menu :", "Ajouter un menu").Trim()
+                    If parentName = "" Then Return
+                    Using cmd = cn.CreateCommand()
+                        cmd.CommandText = "SELECT COALESCE(MAX(CAST(NumMenu AS INTEGER)), 0) + 1 FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND CAST(NumMenu AS INTEGER) < 99"
+                        cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
+                        menuNumber = Convert.ToString(cmd.ExecuteScalar())
+                    End Using
+                End If
+                Dim subName As String = ""
+                Dim subNumber As String = "0"
+                If isSubMenu Then
+                    subName = Microsoft.VisualBasic.Interaction.InputBox("Nom du nouveau sous-menu :", "Ajouter un sous-menu").Trim()
+                    If subName = "" Then Return
+                    Using cmd = cn.CreateCommand()
+                        cmd.CommandText = "SELECT COALESCE(MAX(CAST(NumSousMenu AS INTEGER)), 0) + 1 FROM Menus WHERE Frm_Menu=$form COLLATE NOCASE AND NumMenu=$num"
+                        cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
+                        cmd.Parameters.AddWithValue("$num", menuNumber)
+                        subNumber = Convert.ToString(cmd.ExecuteScalar())
+                    End Using
+                End If
+                Dim pathValue As String = ""
+                If isSubMenu Then
+                    pathValue = Microsoft.VisualBasic.Interaction.InputBox(
+                        "Chemin de l'application, du fichier ou du dossier (facultatif) :",
+                        "Chemin du sous-menu").Trim()
+                End If
+                Using cmd = cn.CreateCommand()
+                    cmd.CommandText = "INSERT INTO Menus (SaisieLe, ModifierLe, Frm_Menu, NumMenu, NumSousMenu, Menu, SousMenu, Info01, Info02, Application, Action, Chemin) VALUES ($now,$now,$form,$num,$subnum,$menu,$sub,'','','','',$path)"
+                    cmd.Parameters.AddWithValue("$now", DateTime.Now.ToString("o"))
+                    cmd.Parameters.AddWithValue("$form", GeneratedConfig.FormName)
+                    cmd.Parameters.AddWithValue("$num", menuNumber)
+                    cmd.Parameters.AddWithValue("$subnum", subNumber)
+                    cmd.Parameters.AddWithValue("$menu", parentName)
+                    cmd.Parameters.AddWithValue("$sub", subName)
+                    cmd.Parameters.AddWithValue("$path", pathValue)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+            LoadFromDatabase()
+            AdjustMenuWidth()
+        Catch ex As Exception
+            ShowProblem("Impossible d'ajouter le menu : " & ex.Message)
         End Try
     End Sub
 
