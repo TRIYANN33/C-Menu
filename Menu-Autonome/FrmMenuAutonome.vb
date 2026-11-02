@@ -159,9 +159,9 @@ Public Class FrmMenuAutonome
             LoadFromDatabase()
             countdowns.Start()
             StartSlideshow(True)
-            appointmentLabel.Visible = False
             nextEventLabel.Visible = False
             RefreshNextEvent()
+            RefreshAppointmentsDisplay()
             PositionSlideshow()
             clock.Start()
         End Sub
@@ -1354,7 +1354,6 @@ Public Class FrmMenuAutonome
             End Using
             If lines.Any(Function(line) Not String.IsNullOrWhiteSpace(line)) Then
                 appointmentLabel.Text = String.Join(Environment.NewLine & Environment.NewLine, lines)
-                FitEventFrame(appointmentLabel)
                 appointmentLabel.Visible = True
             End If
         Catch ex As Exception
@@ -1401,8 +1400,10 @@ Public Class FrmMenuAutonome
         slideshowPanel.SetBounds(Math.Max(0, (ClientSize.Width - side) \ 2),
                                  menuBar.Bottom + topMargin,
                                  side, side)
-        appointmentLabel.Visible = False
         nextEventLabel.Visible = False
+        If appointmentLabel.Parent Is Nothing Then Controls.Add(appointmentLabel)
+        appointmentLabel.SetBounds(slideshowPanel.Right + topMargin, slideshowPanel.Top, side, side)
+        appointmentLabel.BringToFront()
         If birthdayLabel.Parent Is Nothing Then Controls.Add(birthdayLabel)
         birthdayLabel.SetBounds(slideshowPanel.Left - topMargin - side, slideshowPanel.Top, side, side)
         birthdayLabel.BringToFront()
@@ -1428,35 +1429,15 @@ Public Class FrmMenuAutonome
     End Sub
 
     Private Sub PositionAppointments()
-        If Not appointmentLabel.Visible Then Return
-        Dim topOfBody = menuBar.Bottom
-        Dim offsetPixels As Integer
-        Using graphics = CreateGraphics()
-            offsetPixels = CInt(Math.Round(graphics.DpiY * 0.5 / 2.54))
+        If slideshowPanel Is Nothing Then Return
+        Dim gap As Integer
+        Using g = CreateGraphics()
+            gap = Math.Max(1, CInt(Math.Round(g.DpiX * 0.3 / 2.54)))
         End Using
-        Dim topPosition = topOfBody + offsetPixels
-        If nextEventLabel.Visible Then topPosition = Math.Max(topPosition, nextEventLabel.Bottom + 8)
-        ' Les rendez-vous restent alignés sur le bord droit, même après redimensionnement.
-        Dim rightMargin As Integer
-        Using graphics = CreateGraphics()
-            rightMargin = CInt(Math.Round(graphics.DpiX * 0.3 / 2.54))
-        End Using
-        Using graphics = CreateGraphics()
-            Dim oneMillimeterX = Math.Max(1, CInt(Math.Round(graphics.DpiX / 25.4)))
-            Dim oneMillimeterY = Math.Max(1, CInt(Math.Round(graphics.DpiY / 25.4)))
-            appointmentLabel.Padding = New Padding(oneMillimeterX, oneMillimeterY,
-                oneMillimeterX, oneMillimeterY)
-        End Using
-        FitEventFrame(appointmentLabel)
-        If slideshowPanel IsNot Nothing Then
-            appointmentLabel.Location = New Point(slideshowPanel.Right + rightMargin, slideshowPanel.Top)
-        Else
-            appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width - rightMargin), topPosition)
-        End If
+        If appointmentLabel.Parent Is Nothing Then Controls.Add(appointmentLabel)
+        appointmentLabel.SetBounds(slideshowPanel.Right + gap, slideshowPanel.Top,
+                                   slideshowPanel.Width, slideshowPanel.Height)
         appointmentLabel.BringToFront()
-        appointmentLabel.Invalidate()
-        Dim neededHeight = Math.Max(appointmentLabel.Bottom, If(slideshowPanel Is Nothing, 0, slideshowPanel.Bottom)) + 12 + (Height - ClientSize.Height)
-        If Height < neededHeight Then Height = neededHeight
     End Sub
 
     Private ReadOnly birthdayLabel As New Label With {
@@ -1607,7 +1588,7 @@ Public Class FrmMenuAutonome
                                  If(nextEventLabel.Visible, nextEventLabel.Width, 0))
         Dim middleWidth = If(slideshowPanel IsNot Nothing, slideshowPanel.Width, 0)
         Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
-        Dim contentWidth = Math.Max(180, middleWidth + 24)
+        Dim contentWidth = Math.Max(180, middleWidth * 3 + 48)
         contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
         Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
