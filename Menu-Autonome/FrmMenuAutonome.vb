@@ -1399,6 +1399,8 @@ Public Class FrmMenuAutonome
         slideshowPanel.Location = New Point(Math.Max(0, (ClientSize.Width - slideshowPanel.Width) \ 2),
                                             topOfBody + offsetPixels)
         slideshowPanel.BringToFront()
+        PositionBirthdays()
+        PositionAppointments()
         customTitle.BringToFront()
     End Sub
 
@@ -1457,7 +1459,11 @@ Public Class FrmMenuAutonome
                 oneMillimeterX, oneMillimeterY)
         End Using
         FitEventFrame(appointmentLabel)
-        appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width - rightMargin), topPosition)
+        If slideshowPanel IsNot Nothing Then
+            appointmentLabel.Location = New Point(slideshowPanel.Right + rightMargin, slideshowPanel.Top)
+        Else
+            appointmentLabel.Location = New Point(Math.Max(0, ClientSize.Width - appointmentLabel.Width - rightMargin), topPosition)
+        End If
         appointmentLabel.BringToFront()
         appointmentLabel.Invalidate()
         Dim neededHeight = Math.Max(appointmentLabel.Bottom, If(slideshowPanel Is Nothing, 0, slideshowPanel.Bottom)) + 12 + (Height - ClientSize.Height)
@@ -1487,8 +1493,11 @@ Public Class FrmMenuAutonome
         Using graphics = CreateGraphics()
             leftMargin = CInt(Math.Round(graphics.DpiX * 0.3 / 2.54))
         End Using
-        birthdayLabel.Location = New Point(leftMargin,
-            menuBar.Bottom + offsetPixels)
+        If slideshowPanel IsNot Nothing Then
+            birthdayLabel.Location = New Point(slideshowPanel.Left - leftMargin - birthdayLabel.Width, slideshowPanel.Top)
+        Else
+            birthdayLabel.Location = New Point(leftMargin, menuBar.Bottom + offsetPixels)
+        End If
         birthdayLabel.BringToFront()
         birthdayLabel.Invalidate()
         Dim neededHeight = Math.Max(birthdayLabel.Bottom, If(slideshowPanel Is Nothing, 0, slideshowPanel.Bottom)) + 12 + (Height - ClientSize.Height)
@@ -1627,7 +1636,7 @@ Public Class FrmMenuAutonome
         Dim middleWidth = If(slideshowPanel IsNot Nothing AndAlso slideshowPanel.Visible,
                              slideshowPanel.Width, 0)
         Dim rightWidth = If(appointmentLabel.Visible, appointmentLabel.Width, 0)
-        Dim contentWidth = Math.Max(180, leftWidth + middleWidth + rightWidth + 48)
+        Dim contentWidth = Math.Max(180, leftWidth + middleWidth + rightWidth + 72)
         contentWidth = Math.Max(contentWidth, Math.Max(leftWidth, Math.Max(middleWidth, rightWidth)) + 24)
         Dim targetClientWidth = Math.Max(titleWidth, Math.Max(menusWidth, contentWidth))
         Dim availableWidth = Screen.FromControl(Me).WorkingArea.Width
