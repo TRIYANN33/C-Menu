@@ -1611,9 +1611,13 @@ Public Class FrmMenuAutonome
         Dim titleWidth = TextRenderer.MeasureText(customTitleText.Text, customTitleText.Font,
             New Size(Integer.MaxValue, Integer.MaxValue),
             TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding).Width + 192 + 32
-        Dim menusWidth As Integer = menuBar.Padding.Horizontal + 16
+        ' Utiliser la largeur réellement demandée par chaque élément, sans ajouter
+        ' artificiellement 30 pixels par menu (ce qui agrandissait trop le formulaire).
+        Dim menusWidth As Integer = menuBar.Padding.Horizontal + 12
         For Each entry As ToolStripItem In menuBar.Items
-            menusWidth += TextRenderer.MeasureText(entry.Text, menuBar.Font).Width + 30
+            If entry.Available Then
+                menusWidth += entry.GetPreferredSize(Size.Empty).Width
+            End If
         Next
 
         ' Réserver la largeur réelle des trois cadres de 6 cm et de leurs deux écarts de 3 mm.
