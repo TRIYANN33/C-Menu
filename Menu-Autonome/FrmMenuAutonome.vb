@@ -1312,9 +1312,21 @@ Public Class FrmMenuAutonome
     }
 
     Private Sub PaintRightFrameBorder(sender As Object, e As PaintEventArgs)
-        Using borderPen As New Pen(Color.FromArgb(90, 190, 175), 5.0F)
-            borderPen.Alignment = Drawing2D.PenAlignment.Inset
-            e.Graphics.DrawRectangle(borderPen, 0, 0, emptyFrames(2).ClientSize.Width - 1, emptyFrames(2).ClientSize.Height - 1)
+        Dim frame = emptyFrames(2)
+        If frame.ClientSize.Width < 12 OrElse frame.ClientSize.Height < 12 Then Return
+        Dim radius As Integer = 18
+        Dim rect As New Rectangle(2, 2, frame.ClientSize.Width - 5, frame.ClientSize.Height - 5)
+        e.Graphics.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+        Using outline As New Drawing2D.GraphicsPath()
+            Dim diameter = radius * 2
+            outline.AddArc(rect.Left, rect.Top, diameter, diameter, 180, 90)
+            outline.AddArc(rect.Right - diameter, rect.Top, diameter, diameter, 270, 90)
+            outline.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90)
+            outline.AddArc(rect.Left, rect.Bottom - diameter, diameter, diameter, 90, 90)
+            outline.CloseFigure()
+            Using borderPen As New Pen(Color.FromArgb(90, 190, 175), 5.0F)
+                e.Graphics.DrawPath(borderPen, outline)
+            End Using
         End Using
     End Sub
 
