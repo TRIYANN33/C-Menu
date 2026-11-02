@@ -2128,6 +2128,7 @@ Public Class FrmRendezVous
 
     Private Shared ReadOnly DbPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "C-Menu", "RendezVous.db")
     Private selectedId As Long
+    Private ReadOnly searchAppointments As New TextBox With {.Dock = DockStyle.Fill, .PlaceholderText = "Rechercher un rendez-vous..."}
     Private appointmentSort As New List(Of (Field As String, Descending As Boolean))()
     Private ReadOnly libelle As New TextBox()
     Private ReadOnly dateHeure As New DateTimePicker With {
@@ -2195,7 +2196,14 @@ Public Class FrmRendezVous
         Dim sortButton As New Button With {.Text = "Trier", .Dock = DockStyle.Fill}
         AddHandler sortButton.Click, AddressOf SortAppointments
         bar.Controls.Add(sortButton, 5, 0)
+        Dim searchBar As New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 43, .ColumnCount = 2, .Padding = New Padding(8, 4, 8, 4)}
+        searchBar.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 105))
+        searchBar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+        searchBar.Controls.Add(New Label With {.Text = "Recherche :", .Dock = DockStyle.Fill, .TextAlign = ContentAlignment.MiddleLeft}, 0, 0)
+        searchBar.Controls.Add(searchAppointments, 1, 0)
+        AddHandler searchAppointments.TextChanged, Sub(sender, e) RefreshAppointments()
         Me.Controls.Add(upcoming)
+        Me.Controls.Add(searchBar)
         Me.Controls.Add(bar)
         Me.Controls.Add(entry)
         Directory.CreateDirectory(Path.GetDirectoryName(DbPath))
@@ -2367,6 +2375,13 @@ Public Class FrmRendezVous
                 End Using
             End Using
         End Using
+        Dim searchTerm = searchAppointments.Text.Trim()
+        If searchTerm <> "" Then
+            rows = rows.Where(Function(x) x.Title.IndexOf(searchTerm, StringComparison.CurrentCultureIgnoreCase) >= 0 OrElse
+                                          x.Notes.IndexOf(searchTerm, StringComparison.CurrentCultureIgnoreCase) >= 0 OrElse
+                                          x.DateValue.ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("fr-FR")).Contains(searchTerm) OrElse
+                                          x.Id.ToString().Contains(searchTerm)).ToList()
+        End If
         If appointmentSort.Count > 0 Then
             Dim ordered As IOrderedEnumerable(Of (Id As Long, DateValue As Date, Title As String, Notes As String)) = Nothing
             For Each criterion In appointmentSort
