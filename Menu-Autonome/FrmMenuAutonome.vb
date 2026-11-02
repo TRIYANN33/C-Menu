@@ -1959,6 +1959,10 @@ Public Class FrmRendezVous
         Me.Controls.Add(bar)
         Me.Controls.Add(entry)
         Directory.CreateDirectory(Path.GetDirectoryName(DbPath))
+        Dim legacyPath = "C:\Menu\applications\Rendez-vous\RendezVous.db"
+        If Not File.Exists(DbPath) AndAlso File.Exists(legacyPath) Then
+            File.Copy(legacyPath, DbPath)
+        End If
         Using cn As New SqliteConnection("Data Source=" & DbPath)
             cn.Open()
             Using cmd = cn.CreateCommand()
