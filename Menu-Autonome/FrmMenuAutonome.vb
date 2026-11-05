@@ -3292,6 +3292,7 @@ Public Class CountdownEditorCard
     Inherits Panel
     Public ReadOnly Data As CountdownItem
     Public Property Deleted As Boolean
+    Private ReadOnly editorOpenedAt As DateTime = DateTime.Now
     Private ReadOnly labelText As New TextBox With {.Width = 200}
     Private ReadOnly priority As New NumericUpDown With {.Minimum = 1, .Maximum = 999, .Width = 65}
     Private ReadOnly mode As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 140}
@@ -3367,8 +3368,13 @@ Public Class CountdownEditorCard
         Dim newEnd As DateTime
         If mode.SelectedIndex = 0 Then
             If hours.Value = 0 AndAlso minutes.Value = 0 Then Throw New InvalidOperationException("Durée nulle pour " & name)
-            newEnd = If(Data.Libelle = name AndAlso Not Data.ModeDate AndAlso Data.Fin > DateTime.Now, Data.Fin,
-                        DateTime.Now.AddHours(CDbl(hours.Value)).AddMinutes(CDbl(minutes.Value)))
+            Dim requestedDuration = TimeSpan.FromHours(CDbl(hours.Value)) + TimeSpan.FromMinutes(CDbl(minutes.Value))
+            Dim originalRemaining = Data.Fin - editorOpenedAt
+            Dim displayedOriginalDuration = TimeSpan.FromHours(Math.Floor(Math.Max(0, originalRemaining.TotalHours))) +
+                TimeSpan.FromMinutes(Math.Min(59, Math.Max(0, originalRemaining.Minutes)))
+            Dim durationChanged = requestedDuration <> displayedOriginalDuration
+            newEnd = If(Not durationChanged AndAlso Not Data.ModeDate AndAlso Data.Fin > DateTime.Now,
+                        Data.Fin, DateTime.Now.Add(requestedDuration))
         Else
             If Not confirmDate.Checked Then
                 Throw New InvalidOperationException("Validez la date et l'heure du compteur " & name & " avant d'enregistrer.")
